@@ -135,12 +135,15 @@ function calcAll(d){
   const viviBank=d.viviBank==="北陸銀行"?"北陸銀行 富山南中央支店 普通 №5437740\n(名義) ViVi不動産株式会社":"富山第一銀行 富山南センター支店 普通 №054370\n(名義) ViVi不動産株式会社";
   const sellerBank=`${d.sellerBankName} ${d.sellerBankType} ${d.sellerBankNo}\n(名義) ${d.sellerBankHolder} 様`;
   // 売主が支払う最終月（清算範囲に連動）
+  // 当月のみ→決済月、翌月まで→翌月、翌々月まで→翌々月
   let mgmtSellerLastMonth="";
   if(d.propType==="マンション"){
     const baseDate=new Date(d.settlementDT);
     const addMonth=d.mgmtClearMonths==="翌々月まで"?2:d.mgmtClearMonths==="翌月まで"?1:0;
     const targetDate=new Date(baseDate.getFullYear(),baseDate.getMonth()+addMonth,1);
-    mgmtSellerLastMonth=jYearMonth(targetDate.toISOString().split("T")[0]);
+    const ry=targetDate.getFullYear()-2018;
+    const rm=targetDate.getMonth()+1;
+    mgmtSellerLastMonth=`令和${ry}年${rm}月`;
   }
   // 固定資産税の売主負担年度表示
   // 起算日4/1の場合：stYearが課税年度
