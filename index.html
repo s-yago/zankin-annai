@@ -138,12 +138,16 @@ function calcAll(d){
   let mgmtSellerLastMonth="";
   if(d.propType==="マンション"){
     const baseDate=new Date(d.settlementDT);
-    // 当月のみ→決済月、翌月まで→翌月、翌々月まで→翌々月
     const addMonth=d.mgmtClearMonths==="翌々月まで"?2:d.mgmtClearMonths==="翌月まで"?1:0;
     const targetDate=new Date(baseDate.getFullYear(),baseDate.getMonth()+addMonth,1);
     mgmtSellerLastMonth=jYearMonth(targetDate.toISOString().split("T")[0]);
   }
-  return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,    incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
+  // 固定資産税の売主負担年度（越年ありの場合は翌年度まで）
+  const taxSellerYear=`令和${stYear-2018}年`;
+  const taxSellerYearFull=d.overYear==="あり"
+    ?`令和${stYear-2018}年度・令和${stYear-2018+1}年度`
+    :`令和${stYear-2018}年度`;
+  return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,taxSellerYear,taxSellerYearFull,    incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
     viviBank,sellerBank,taxLabel,stYear};
@@ -264,7 +268,7 @@ function SellerGuide({d,c}){
       </>}
       <div style={DOC.sectionHead}>▼ {c.taxLabel}の清算について</div>
       <div style={{...DOC.infoBox,marginBottom:6}}>
-        <div>{c.taxLabel}は、日割り清算させていただきますので、<strong>{taxYear}度分の全額</strong>を、最後まで売主様がお支払いください。</div>
+        <div>{c.taxLabel}は、日割り清算させていただきますので、<strong>{c.taxSellerYearFull}の全額</strong>を、最後まで売主様がお支払いください。</div>
         {d.propType==="マンション"&&c.mgmtSellerLastMonth&&(
           <div style={{marginTop:4}}>また、{c.mgmtLabel}についても日割り清算させていただきますので、<strong>{c.mgmtSellerLastMonth}分まで</strong>売主様がお支払いください。</div>
         )}
