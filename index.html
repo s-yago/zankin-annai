@@ -134,9 +134,16 @@ function calcAll(d){
   const overLoan=aToS<loanBal&&loanBal>0;
   const viviBank=d.viviBank==="北陸銀行"?"北陸銀行 富山南中央支店 普通 №5437740\n(名義) ViVi不動産株式会社":"富山第一銀行 富山南センター支店 普通 №054370\n(名義) ViVi不動産株式会社";
   const sellerBank=`${d.sellerBankName} ${d.sellerBankType} ${d.sellerBankNo}\n(名義) ${d.sellerBankHolder} 様`;
-  const mgmtSellerLastMonth=d.propType==="マンション"?jYearMonth(d.settlementDT):"";
-  return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,
-    incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
+  // 売主が支払う最終月（清算範囲に連動）
+  let mgmtSellerLastMonth="";
+  if(d.propType==="マンション"){
+    const baseDate=new Date(d.settlementDT);
+    // 当月のみ→決済月、翌月まで→翌月、翌々月まで→翌々月
+    const addMonth=d.mgmtClearMonths==="翌々月まで"?2:d.mgmtClearMonths==="翌月まで"?1:0;
+    const targetDate=new Date(baseDate.getFullYear(),baseDate.getMonth()+addMonth,1);
+    mgmtSellerLastMonth=jYearMonth(targetDate.toISOString().split("T")[0]);
+  }
+  return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,    incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
     viviBank,sellerBank,taxLabel,stYear};
@@ -258,7 +265,9 @@ function SellerGuide({d,c}){
       <div style={DOC.sectionHead}>▼ {c.taxLabel}の清算について</div>
       <div style={{...DOC.infoBox,marginBottom:6}}>
         <div>{c.taxLabel}は、日割り清算させていただきますので、<strong>{taxYear}度分の全額</strong>を、最後まで売主様がお支払いください。</div>
-        {d.propType==="マンション"&&c.mgmtSellerLastMonth&&<div style={{marginTop:4}}>また、{c.mgmtLabel}についても日割り清算させていただきますので、<strong>{c.mgmtSellerLastMonth}分まで</strong>売主様がお支払いください。</div>}
+        {d.propType==="マンション"&&c.mgmtSellerLastMonth&&(
+          <div style={{marginTop:4}}>また、{c.mgmtLabel}についても日割り清算させていただきますので、<strong>{c.mgmtSellerLastMonth}分まで</strong>売主様がお支払いください。</div>
+        )}
       </div>
       <div style={DOC.sectionHead}>▼ 火災保険について</div>
       <div style={DOC.infoBox}>お引渡し日付での火災保険の解約手続きを予めお願い申し上げます。<br/>（長期契約であれば解約返戻金があると思われます。）</div>
