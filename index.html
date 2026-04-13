@@ -142,11 +142,14 @@ function calcAll(d){
     const targetDate=new Date(baseDate.getFullYear(),baseDate.getMonth()+addMonth,1);
     mgmtSellerLastMonth=jYearMonth(targetDate.toISOString().split("T")[0]);
   }
-  // 固定資産税の売主負担年度（越年ありの場合は翌年度まで）
-  const taxSellerYear=`令和${stYear-2018}年`;
-  const taxSellerYearFull=d.overYear==="あり"
-    ?`令和${stYear-2018}年度・令和${stYear-2018+1}年度`
-    :`令和${stYear-2018}年度`;
+  // 固定資産税の売主負担年度表示
+  // 起算日4/1の場合：stYearが課税年度
+  // 越年なし→stYear年度のみ、越年あり→翌年(stYear+1)年度も追加
+  const taxNendo = stYear; // 課税年度（起算日ベース）
+  const reiwaBase = taxNendo - 2018;
+  const taxSellerYearFull = d.overYear==="あり"
+    ? `令和${reiwaBase}年度・令和${reiwaBase+1}年度`
+    : `令和${reiwaBase}年度`;
   return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,taxSellerYear,taxSellerYearFull,    incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
