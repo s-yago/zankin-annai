@@ -54,15 +54,18 @@ const INIT={
   loanBalance:15000000,sBrokerTotal:600000,sBrokerPaid:300000,
   sProxy1:0,sProxy2:15000,sProxy3:0,sProxy4:0,sProxy5:50000,sProxy6:0,
   sCashLabel1:"印紙代",sCashAmt1:10000,sCashLabel2:"",sCashAmt2:0,
-  sJuminCount:1,sInkanCount:1,sKenriCount:1,
+  sJuminCount:"1",sInkanCount:"1",sKenriCount:"1",
+  sKosekiHuhyo:"表示",
+  showInkanWarning:"表示",
+  sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
   sellerBankName:"北陸銀行 富山駅前支店",sellerBankType:"普通",sellerBankNo:"1234567",sellerBankHolder:"売主 太郎",
   bBrokerTotal:600000,bBrokerPaid:0,loanUse:"あり",loanAmount:15000000,
   kinshoDT:"2026-03-10",kinshoTime:"10:00",kinshoPlace:"北陸銀行 〇〇支店",
-  preMove:"あり",bJuminKinsho:2,bInkanKinsho:2,bOtherKinsho:"収入印紙 20,000円",
-  bJuminSettle:1,bInkanSettle:0,bRegFee:250000,reformTotal:0,reformDepositYN:"なし",reformDepositAmt:0,
+  preMove:"あり",bJuminKinsho:"2",bInkanKinsho:"2",bOtherKinsho:"収入印紙 20,000円",
+  bJuminSettle:"1",bInkanSettle:"0",bRegFee:250000,reformTotal:0,reformDepositYN:"なし",reformDepositAmt:0,
   bOtherProxy:0,bLoanFee:300000,bFireInsurance:150000,bMgmtFund:0,bTransferFee:1100,bOtherDraw:0,
   bCashLabel1:"印紙代",bCashAmt1:10000,bCashLabel2:"",bCashAmt2:0,
-  bJuminTransfer:0,bInkanTransfer:0,
+  bJuminTransfer:"0",bInkanTransfer:"0",
   staff:"ViVi 太郎",
 };
 
@@ -188,15 +191,20 @@ function TRow({label,value,bold,indent,sub,total,warn,colSpan,wrap}){
   );
 }
 
+// 売主持参物リスト
 function SellerItems({d,c}){
   return(
     <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
       {num(d.sKenriCount)>0&&<div>□　登記識別情報通知（権利証）　{d.sKenriCount}通</div>}
       <div>□　実印、本人確認書類、通帳</div>
       {num(d.sJuminCount)>0&&<div>□　住民票　{d.sJuminCount}通</div>}
-      {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず現住所のものをご用意ください</span></div>}
+      {d.sKosekiHuhyo==="表示"&&<div>□　戸籍の附票の写し</div>}
+      {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず残金決済時より３か月以内のものをご用意ください</span></div>}
       {c.sCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{d.sCashLabel1}{d.sCashLabel2?`・${d.sCashLabel2}`:""}）</div>}
       <div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>
+      {d.sExtraLabel1&&<div>□　{d.sExtraLabel1}</div>}
+      {d.sExtraLabel2&&<div>□　{d.sExtraLabel2}</div>}
+      {d.sExtraLabel3&&<div>□　{d.sExtraLabel3}</div>}
     </div>
   );
 }
@@ -222,11 +230,9 @@ function SellerGuide({d,c}){
           </tbody>
         </table>
         <div style={{...DOC.noteBox,marginBottom:4,fontSize:10,color:"#555"}}>※ご本人確認のため、司法書士が事前に面談を行う場合がございます。上記日時にご対応をお願いいたします。</div>
-        <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
-          <div style={{fontWeight:"bold",marginBottom:3,color:"#1a3a6b"}}>【本人面談時のご持参いただくもの】</div>
-          <div style={{fontSize:9,color:"#888",marginBottom:3}}>※残金決済時に必要なものと同じものをお持ちください。</div>
-          <SellerItems d={d} c={c}/>
-        </div>
+        <div style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",marginBottom:3,marginTop:4}}>【本人面談時のご持参いただくもの】</div>
+        <div style={{fontSize:9,color:"#888",marginBottom:3}}>※残金決済時に必要なものと同じものをお持ちください。</div>
+        <SellerItems d={d} c={c}/>
       </>}
       <div style={DOC.sectionHead}>■ 残金決済について</div>
       <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
@@ -241,17 +247,18 @@ function SellerGuide({d,c}){
         </tbody>
       </table>
       <div style={DOC.sectionHead}>■ 当日ご持参いただくもの</div>
-      {d.gathering==="あり"?<SellerItems d={d} c={c}/>:(
-        <div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※本取引は振込手続き等にて行いますので、お持ちいただくものはございません。</div>
-      )}
-      <div style={DOC.sectionHeadRed}>【重要】印鑑証明書に関するご注意</div>
-      <div style={DOC.warningBox}>お住み替え等で住所を移転される場合は、必ず【ご移転前（現住所）の印鑑証明書】をご取得ください。<br/>※引越しにより住所が変更になると「住所変更登記」が必要となり、別途費用が発生いたします。</div>
-      <div style={DOC.sectionHead}>▼ {c.taxLabel}・{d.propType==="マンション"?c.mgmtLabel:"管理費等"}の清算について</div>
+      {d.gathering==="あり"
+        ?<SellerItems d={d} c={c}/>
+        :<div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※本取引は振込手続き等にて行いますので、お持ちいただくものはございません。</div>
+      }
+      {d.showInkanWarning==="表示"&&<>
+        <div style={DOC.sectionHeadRed}>【重要】印鑑証明書に関するご注意</div>
+        <div style={DOC.warningBox}>お住み替え等で住所を移転される場合は、必ず【ご移転前（現住所）の印鑑証明書】をご取得ください。<br/>※引越しにより住所が変更になると「住所変更登記」が必要となり、別途費用が発生いたします。</div>
+      </>}
+      <div style={DOC.sectionHead}>▼ {c.taxLabel}の清算について</div>
       <div style={{...DOC.infoBox,marginBottom:6}}>
         <div>{c.taxLabel}は、日割り清算させていただきますので、<strong>{taxYear}度分の全額</strong>を、最後まで売主様がお支払いください。</div>
-        {d.propType==="マンション"&&c.mgmtSellerLastMonth&&(
-          <div style={{marginTop:4}}>また、{c.mgmtLabel}についても日割り清算させていただきますので、<strong>{c.mgmtSellerLastMonth}分まで</strong>売主様がお支払いください。</div>
-        )}
+        {d.propType==="マンション"&&c.mgmtSellerLastMonth&&<div style={{marginTop:4}}>また、{c.mgmtLabel}についても日割り清算させていただきますので、<strong>{c.mgmtSellerLastMonth}分まで</strong>売主様がお支払いください。</div>}
       </div>
       <div style={DOC.sectionHead}>▼ 火災保険について</div>
       <div style={DOC.infoBox}>お引渡し日付での火災保険の解約手続きを予めお願い申し上げます。<br/>（長期契約であれば解約返戻金があると思われます。）</div>
@@ -310,38 +317,32 @@ function BuyerGuide({d,c}){
       <div style={{fontSize:10,color:"#555",margin:"4px 0 8px"}}>平素よりお世話になっております。下記の通り残金決済のご案内をいたします。</div>
       <div style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
       <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>担当：</span>{shiho}</div>
-      {d.bMendan==="あり"&&(()=>{
-        return<>
-          <div style={DOC.sectionHead}>■ 司法書士との本人確認{isKinshoTiming?"（金消契約時に併せて実施）":"（別途面談）"}</div>
-          {!isKinshoTiming&&<table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
-            <tbody>
-              <TRow label="日　時" value={`${jDate(d.bMendanDT)} ${d.bMendanTime}`}/>
-              <TRow label="場　所" value={d.bMendanPlace}/>
-              <TRow label="担当司法書士" value={shiho}/>
-            </tbody>
-          </table>}
-          <div style={{...DOC.noteBox,marginBottom:4,fontSize:10,color:"#555"}}>
-            {isKinshoTiming?"※振込決済のためご来場は不要ですが、金消契約時に本人確認書類をご提出ください。":"※ご本人確認のため、司法書士が事前に面談を行います。上記日時にご対応をお願いいたします。"}
-          </div>
-          <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
-            <div style={{fontWeight:"bold",marginBottom:3,color:"#1a3a6b"}}>
-              {isKinshoTiming?"【金消契約時にご持参いただくもの（本人確認分を含む）】":"【本人面談時のご持参いただくもの】"}
-            </div>
-            <div style={{fontSize:9,color:"#888",marginBottom:3}}>
-              {d.gathering==="なし"?"※振込決済のため決済当日のご来場は不要です。下記書類をご用意ください。":"※残金決済時に必要なものと同じものをお持ちください。"}
-            </div>
-            <div>□　実印、本人確認書類、通帳（スマホ）</div>
-            {d.gathering==="あり"?<>
-              {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{d.bJuminSettle}通</div>}
-              {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanSettle}通</div>}
-              {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円（{d.bCashLabel1}{d.bCashLabel2?`・${d.bCashLabel2}`:""}）</div>}
-            </>:<>
-              {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{d.bJuminTransfer}通</div>}
-              {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanTransfer}通</div>}
-            </>}
-          </div>
-        </>;
-      })()}
+      {d.bMendan==="あり"&&<>
+        <div style={DOC.sectionHead}>■ 司法書士との本人確認{isKinshoTiming?"（金消契約時に併せて実施）":"（別途面談）"}</div>
+        {!isKinshoTiming&&<table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
+          <tbody>
+            <TRow label="日　時" value={`${jDate(d.bMendanDT)} ${d.bMendanTime}`}/>
+            <TRow label="場　所" value={d.bMendanPlace}/>
+            <TRow label="担当司法書士" value={shiho}/>
+          </tbody>
+        </table>}
+        <div style={{...DOC.noteBox,marginBottom:4,fontSize:10,color:"#555"}}>
+          {isKinshoTiming?"※振込決済のためご来場は不要ですが、金消契約時に本人確認書類をご提出ください。":"※ご本人確認のため、司法書士が事前に面談を行います。上記日時にご対応をお願いいたします。"}
+        </div>
+        <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
+          <div style={{fontWeight:"bold",marginBottom:3,color:"#1a3a6b"}}>{isKinshoTiming?"【金消契約時にご持参いただくもの（本人確認分を含む）】":"【本人面談時のご持参いただくもの】"}</div>
+          <div style={{fontSize:9,color:"#888",marginBottom:3}}>{d.gathering==="なし"?"※振込決済のため決済当日のご来場は不要です。下記書類をご用意ください。":"※残金決済時に必要なものと同じものをお持ちください。"}</div>
+          <div>□　実印、本人確認書類、通帳（スマホ）</div>
+          {d.gathering==="あり"?<>
+            {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{d.bJuminSettle}通</div>}
+            {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanSettle}通</div>}
+            {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円（{d.bCashLabel1}{d.bCashLabel2?`・${d.bCashLabel2}`:""}）</div>}
+          </>:<>
+            {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{d.bJuminTransfer}通</div>}
+            {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanTransfer}通</div>}
+          </>}
+        </div>
+      </>}
       {isLoan&&<>
         <div style={DOC.sectionHead}>■ 金銭消費貸借契約（ローン契約）</div>
         {isPreMove&&<div style={DOC.warningBox}>★【重要】金消契約の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.address}</div>}
@@ -425,14 +426,8 @@ function BuyerGuide({d,c}){
         ・電　気：北陸電力 (0120-776-453)　・水　道：水道局 (0120-310-0599)<br/>
         ・ガ　ス：日本海ガス (0570-024-077) ※都市ガスの場合　・電　話：各通信会社へご連絡ください
       </div>
-      {d.propType==="マンション"&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #1a3a6b"}}>
-        <span style={{fontWeight:"bold",color:"#1a3a6b"}}>【マンション管理組合へのご連絡】</span><br/>
-        お引っ越し日が決まりましたら、遅くとも<span style={{fontWeight:"bold"}}>1週間前まで</span>に管理会社または管理組合へご連絡ください。
-      </div>}
-      {(d.propType==="戸建"||d.propType==="マンション")&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #c8860a"}}>
-        <span style={{fontWeight:"bold",color:"#c8860a"}}>【引越し業者のご紹介】</span><br/>
-        当社提携の引越し業者（サカイ引越センター）を<span style={{fontWeight:"bold"}}>割引価格</span>でご紹介することも可能です。ご希望の際は担当までお気軽にお申し付けください。
-      </div>}
+      {d.propType==="マンション"&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #1a3a6b"}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>【マンション管理組合へのご連絡】</span><br/>お引っ越し日が決まりましたら、遅くとも<span style={{fontWeight:"bold"}}>1週間前まで</span>に管理会社または管理組合へご連絡ください。</div>}
+      {(d.propType==="戸建"||d.propType==="マンション")&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #c8860a"}}><span style={{fontWeight:"bold",color:"#c8860a"}}>【引越し業者のご紹介】</span><br/>当社提携の引越し業者（サカイ引越センター）を<span style={{fontWeight:"bold"}}>割引価格</span>でご紹介することも可能です。ご希望の際は担当までお気軽にお申し付けください。</div>}
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
@@ -526,7 +521,7 @@ function MgmtDoc({d,c}){
             </tr>
           ))}
           <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={3}>合　計</td><td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+r.mAmt,0))}円</td><td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+r.rAmt,0))}円</td>{c.mOther>0&&<td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+(r.oAmt||0),0))}円</td>}</tr>
-          <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={c.mOther>0?4:4}>清算金　総合計</td><td style={{...DOC.tdRight,color:"#fff",fontSize:13}} colSpan={2}>{fmt(c.mBuy)}円</td></tr>
+          <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={4}>清算金　総合計</td><td style={{...DOC.tdRight,color:"#fff",fontSize:13}} colSpan={2}>{fmt(c.mBuy)}円</td></tr>
         </tbody>
       </table>
       <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>売主氏名　{d.sellerName}　　　<span style={DOC.stamp}>印</span></div>
@@ -535,6 +530,7 @@ function MgmtDoc({d,c}){
   );
 }
 
+// UI部品
 const iS={width:"100%",padding:"4px 6px",fontSize:11,border:"0.5px solid #ccc",borderRadius:4,background:"#fff",color:"#222",boxSizing:"border-box"};
 const NI=({val,onChange,step})=><input type="number" value={val} onChange={e=>onChange(e.target.value)} step={step||1} style={{...iS,textAlign:"right"}}/>;
 const TI=({val,onChange,placeholder})=><input type="text" value={val} onChange={e=>onChange(e.target.value)} placeholder={placeholder||""} style={iS}/>;
@@ -559,6 +555,7 @@ function App(){
   const [curId,setCurId]=useState(null);
   const [curName,setCurName]=useState("");
   const c=useMemo(()=>calcAll(d),[d]);
+
   const set=k=>v=>{
     setD(p=>{
       const next={...p,[k]:v};
@@ -566,6 +563,7 @@ function App(){
       return next;
     });
   };
+
   useEffect(()=>{try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{};},[]);
   const doSave=()=>{
     const name=saveName||`${d.sellerName}→${d.buyerName} (${d.settlementDT})`;
@@ -591,6 +589,7 @@ function App(){
 
   return(
     <div style={{display:"flex",height:"100vh",background:"#e8e8e8",fontSize:12}}>
+      {/* 左：入力パネル */}
       <div style={{width:275,flexShrink:0,overflowY:"auto",background:"#fff",borderRight:"1px solid #ddd",padding:"8px 10px"}}>
         {curId&&curName&&<div style={{background:"#eef3fb",border:"1px solid #b0c8e8",borderRadius:4,padding:"4px 8px",marginBottom:4,fontSize:10,color:"#1a3a6b"}}>✏️ 編集中：<strong>{curName}</strong></div>}
         <div style={{display:"flex",gap:4,marginBottom:8}}>
@@ -637,11 +636,7 @@ function App(){
         </>}
         <F label="買主：本人面談"><TB val={d.bMendan} onChange={set("bMendan")} opts={["あり","なし"]}/></F>
         {d.bMendan==="あり"&&<>
-          {d.gathering==="なし"&&d.loanUse==="あり"&&(
-            <F label="本人面談のタイミング">
-              <TB val={d.bMendanTiming} onChange={set("bMendanTiming")} opts={["本人面談を別途実施","金消契約時に併せて実施"]}/>
-            </F>
-          )}
+          {d.gathering==="なし"&&d.loanUse==="あり"&&<F label="本人面談のタイミング"><TB val={d.bMendanTiming} onChange={set("bMendanTiming")} opts={["本人面談を別途実施","金消契約時に併せて実施"]}/></F>}
           {!(d.gathering==="なし"&&d.loanUse==="あり"&&d.bMendanTiming==="金消契約時に併せて実施")&&<>
             <div style={{display:"flex",gap:3}}><F label="面談日" half><DI val={d.bMendanDT} onChange={set("bMendanDT")}/></F><F label="時間" half><input type="time" value={d.bMendanTime} onChange={e=>set("bMendanTime")(e.target.value)} style={iS}/></F></div>
             <F label="面談場所"><TI val={d.bMendanPlace} onChange={set("bMendanPlace")} placeholder="場所を入力"/></F>
@@ -696,7 +691,12 @@ function App(){
         <div style={{display:"flex",gap:3}}><F label="現金名目②" half><TI val={d.sCashLabel2} onChange={set("sCashLabel2")}/></F><F label="金額②" half><NI val={d.sCashAmt2} onChange={set("sCashAmt2")}/></F></div>
         <F label="登記識別情報通知通数"><SI val={String(d.sKenriCount)} onChange={set("sKenriCount")} opts={["0","1","2","3"]}/></F>
         <F label="住民票通数"><SI val={String(d.sJuminCount)} onChange={set("sJuminCount")} opts={["0","1","2","3"]}/></F>
+        <F label="戸籍の附票の写し"><TB val={d.sKosekiHuhyo} onChange={set("sKosekiHuhyo")} opts={["表示","非表示"]}/></F>
         <F label="印鑑証明通数"><SI val={String(d.sInkanCount)} onChange={set("sInkanCount")} opts={["0","1","2","3"]}/></F>
+        <F label="印鑑証明書注意事項"><TB val={d.showInkanWarning} onChange={set("showInkanWarning")} opts={["表示","非表示"]}/></F>
+        <F label="その他持参物①"><TI val={d.sExtraLabel1} onChange={set("sExtraLabel1")} placeholder="例：固定資産税納税通知書"/></F>
+        <F label="その他持参物②"><TI val={d.sExtraLabel2} onChange={set("sExtraLabel2")} placeholder="例：建物図面"/></F>
+        <F label="その他持参物③"><TI val={d.sExtraLabel3} onChange={set("sExtraLabel3")} placeholder="例：マンション管理費領収書"/></F>
         <F label="振込先(銀行・支店)"><TI val={d.sellerBankName} onChange={set("sellerBankName")}/></F>
         <div style={{display:"flex",gap:3}}><F label="種類" half><SI val={d.sellerBankType} onChange={set("sellerBankType")} opts={["普通","当座"]}/></F><F label="口座番号" half><TI val={d.sellerBankNo} onChange={set("sellerBankNo")}/></F></div>
         <F label="口座名義"><TI val={d.sellerBankHolder} onChange={set("sellerBankHolder")}/></F>
@@ -738,6 +738,7 @@ function App(){
         <div style={{height:20}}/>
       </div>
 
+      {/* 右：プレビュー */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <div style={{display:"flex",gap:6,padding:"6px 10px",flexWrap:"wrap",background:"#1a3a6b",alignItems:"center"}}>
           {[["残代金",c.fRem,false],["売主受取(C)",c.aToS,c.overLoan],["買主総額(A)",c.tExpB,false],["自己資金",c.selfFunds,false],[d.cityTax==="あり"?"固定資産税等清算":"固定資産税清算",c.tBuy,false]].map(([lbl,val,warn])=>(
@@ -762,6 +763,7 @@ function App(){
         </div>
       </div>
 
+      {/* 保存ダイアログ */}
       {showSaveDlg&&(
         <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
           <div style={{background:"#fff",borderRadius:8,padding:"24px",width:360,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
@@ -775,6 +777,7 @@ function App(){
         </div>
       )}
 
+      {/* 履歴パネル */}
       {showHist&&(
         <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
           <div style={{background:"#fff",borderRadius:8,padding:"24px",width:480,maxHeight:"70vh",display:"flex",flexDirection:"column",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
