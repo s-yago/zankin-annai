@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>残金決済のご案内システム｜ViVi不動産</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ViVi不動産 残金決済・清算書作成ツール</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Meiryo UI','Meiryo','MS Gothic',sans-serif;font-size:12px;background:#e8e8e8}
+body{font-family:'Meiryo UI','Meiryo','MS Gothic',sans-serif;background:#e8e8e8;font-size:12px}
+input,select,button{font-family:inherit}
+input[type=number]::-webkit-inner-spin-button{opacity:0.3}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   body *{visibility:hidden!important}
@@ -19,85 +23,84 @@ body{font-family:'Meiryo UI','Meiryo','MS Gothic',sans-serif;font-size:12px;back
   table{page-break-inside:avoid;border-collapse:collapse}
   tr{page-break-inside:avoid}
   @page{margin:0}
-  .no-print{display:none!important}
 }
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useMemo, useEffect } = React;
+const {useState,useMemo,useEffect}=React;
+const yen=(v)=>(Math.round(Number(v)||0)).toLocaleString("ja-JP")+" 円";
+const num=(v)=>parseFloat(String(v).replace(/,/g,""))||0;
+const fmt=(v)=>(Math.round(Number(v)||0)).toLocaleString("ja-JP");
+const jDate=(s)=>{if(!s)return"";const d=new Date(s);return`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`};
+const jYearMonth=(s)=>{if(!s)return"";const d=new Date(s);return`令和${d.getFullYear()-2018}年${d.getMonth()+1}月`};
+const md=(d)=>`${d.getMonth()+1}月${d.getDate()}日`;
 
-const yen = (v) => (Math.round(Number(v)||0)).toLocaleString("ja-JP") + " 円";
-const num = (v) => parseFloat(String(v).replace(/,/g,""))||0;
-const fmt = (v) => (Math.round(Number(v)||0)).toLocaleString("ja-JP");
-const jDate = (s) => { if(!s) return ""; const d=new Date(s); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`; };
-const md = (d) => `${d.getMonth()+1}月${d.getDate()}日`;
-
-const STORAGE_KEY = "vivi_saved_cases";
-
-const INIT = {
-  txType:"売主", propType:"戸建", address:"富山市〇〇町1-2-3", addressZip:"",
-  sellerName:"売主 太郎", sellerAddr:"富山市△△町4-5-6", buyerName:"買主 次郎",
-  contractDate:"2026-02-10", settlementDT:"2026-03-19", settlementTime:"10:00",
-  gathering:"あり", gatheringPlace:"北陸銀行 〇〇支店", viviBank:"北陸銀行",
-  shihoShoshi:"廣田司法書士事務所　076-423-6826", shihoShoshiOther:"",
-  mendan:"なし", mendanDT:"2026-03-18", mendanTime:"10:00", mendanPlace:"",
-  taxRounding:"切り捨て", cityTax:"あり",
-  salePrice:19000000, deposit:1000000, unitPrice:0, officialArea:0, actualArea:0,
-  taxAnnual:83574, taxBase:"4/1", overYear:"なし",
-  mgmtMonthly:12000, repairMonthly:8000, mgmtClearMonths:"当月のみ",
-  mgmtOtherLabel:"", mgmtOtherAmt:0,
-  loanBalance:15000000, sBrokerTotal:600000, sBrokerPaid:300000,
-  sProxy1:0, sProxy2:15000, sProxy3:0, sProxy4:0, sProxy5:50000, sProxy6:0,
-  sCashLabel1:"印紙代", sCashAmt1:10000, sCashLabel2:"", sCashAmt2:0,
-  sJuminCount:1, sInkanCount:1, sKenriCount:1,
-  sellerBankName:"北陸銀行 富山駅前支店", sellerBankType:"普通", sellerBankNo:"1234567", sellerBankHolder:"売主 太郎",
-  bBrokerTotal:600000, bBrokerPaid:0, loanUse:"あり", loanAmount:15000000,
-  kinshoDT:"2026-03-10", kinshoTime:"10:00", kinshoPlace:"北陸銀行 〇〇支店",
-  preMove:"あり", bJuminKinsho:2, bInkanKinsho:2, bOtherKinsho:"収入印紙 20,000円",
-  bJuminSettle:1, bInkanSettle:0, bRegFee:250000, reformTotal:0, reformDepositYN:"なし", reformDepositAmt:0,
-  bOtherProxy:0, bLoanFee:300000, bFireInsurance:150000, bMgmtFund:0, bTransferFee:1100, bOtherDraw:0,
-  bCashLabel1:"印紙代", bCashAmt1:10000, bCashLabel2:"", bCashAmt2:0,
+const INIT={
+  propType:"戸建",txType:"売主",address:"富山市〇〇町1-2-3",addressZip:"",
+  sellerName:"売主 太郎",sellerAddr:"富山市△△町4-5-6",buyerName:"買主 次郎",
+  contractDate:"2026-02-10",settlementDT:"2026-03-19",settlementTime:"10:00",
+  gathering:"あり",gatheringPlace:"北陸銀行 〇〇支店",viviBank:"北陸銀行",
+  shihoShoshi:"廣田司法書士事務所　076-423-6826",shihoShoshiOther:"",
+  mendan:"なし",mendanDT:"2026-03-18",mendanTime:"10:00",mendanPlace:"",
+  bMendan:"なし",bMendanDT:"2026-03-18",bMendanTime:"10:00",bMendanPlace:"",
+  bMendanTiming:"本人面談を別途実施",
+  taxRounding:"切り捨て",cityTax:"あり",
+  salePrice:19000000,deposit:1000000,unitPrice:0,officialArea:0,actualArea:0,
+  taxAnnual:83574,taxBase:"4/1",overYear:"なし",
+  mgmtMonthly:12000,repairMonthly:8000,mgmtClearMonths:"当月のみ",
+  mgmtOtherLabel:"",mgmtOtherAmt:0,
+  loanBalance:15000000,sBrokerTotal:600000,sBrokerPaid:300000,
+  sProxy1:0,sProxy2:15000,sProxy3:0,sProxy4:0,sProxy5:50000,sProxy6:0,
+  sCashLabel1:"印紙代",sCashAmt1:10000,sCashLabel2:"",sCashAmt2:0,
+  sJuminCount:1,sInkanCount:1,sKenriCount:1,
+  sellerBankName:"北陸銀行 富山駅前支店",sellerBankType:"普通",sellerBankNo:"1234567",sellerBankHolder:"売主 太郎",
+  bBrokerTotal:600000,bBrokerPaid:0,loanUse:"あり",loanAmount:15000000,
+  kinshoDT:"2026-03-10",kinshoTime:"10:00",kinshoPlace:"北陸銀行 〇〇支店",
+  preMove:"あり",bJuminKinsho:2,bInkanKinsho:2,bOtherKinsho:"収入印紙 20,000円",
+  bJuminSettle:1,bInkanSettle:0,bRegFee:250000,reformTotal:0,reformDepositYN:"なし",reformDepositAmt:0,
+  bOtherProxy:0,bLoanFee:300000,bFireInsurance:150000,bMgmtFund:0,bTransferFee:1100,bOtherDraw:0,
+  bCashLabel1:"印紙代",bCashAmt1:10000,bCashLabel2:"",bCashAmt2:0,
+  bJuminTransfer:0,bInkanTransfer:0,
   staff:"ViVi 太郎",
 };
 
-function calcAll(d) {
-  const sDate = new Date(d.settlementDT);
-  let uPrice = num(d.unitPrice);
-  const oArea = num(d.officialArea), aArea = num(d.actualArea);
-  if(uPrice===0 && oArea>0) uPrice = num(d.salePrice)/oArea;
-  let fRem, rText="";
-  if(uPrice>0 && aArea>0 && oArea>0) {
-    const newTotal = Math.floor(uPrice*aArea);
-    fRem = newTotal - num(d.deposit);
-    const diff = Math.round((aArea-oArea)*100)/100;
-    rText = `実測面積は ${aArea.toFixed(2)}㎡（予定より${Math.abs(diff).toFixed(2)}㎡増減）\n新総額 ${fmt(newTotal)}円 － 手付金 ＝ 残代金 ${fmt(fRem)}円`;
-  } else { fRem = Math.round(num(d.salePrice)-num(d.deposit)); }
-  const taxLabel = d.cityTax==="あり" ? "固定資産税及び都市計画税" : "固定資産税";
-  const kMo = d.taxBase==="1/1"?1:4;
-  let stYear = sDate.getFullYear();
-  if(kMo===4 && sDate.getMonth()+1<4) stYear-=1;
-  const startDate = new Date(stYear,kMo-1,1);
-  const endDate = new Date(stYear+1,kMo-1,1);
-  const tAnn = Math.round(num(d.taxAnnual));
-  const totalDays = Math.round((endDate-startDate)/86400000);
-  const sellerDays = Math.round((sDate-startDate)/86400000);
-  const buyerDays = totalDays - sellerDays;
-  const roundFn = d.taxRounding==="四捨五入" ? Math.round : Math.floor;
-  const tSel = roundFn(tAnn*(sellerDays/totalDays));
-  const tBuy_base = tAnn - tSel;
-  let tBuy = tBuy_base, tNextYear=0;
-  if(d.overYear==="あり") { tNextYear=tAnn; tBuy+=tNextYear; }
-  const mBase=Math.round(num(d.mgmtMonthly)), rBase=Math.round(num(d.repairMonthly));
+function calcAll(d){
+  const sDate=new Date(d.settlementDT);
+  let uPrice=num(d.unitPrice);
+  const oArea=num(d.officialArea),aArea=num(d.actualArea);
+  if(uPrice===0&&oArea>0)uPrice=num(d.salePrice)/oArea;
+  let fRem,rText="";
+  if(uPrice>0&&aArea>0&&oArea>0){
+    const newTotal=Math.floor(uPrice*aArea);
+    fRem=newTotal-num(d.deposit);
+    const diff=Math.round((aArea-oArea)*100)/100;
+    rText=`実測面積は ${aArea.toFixed(2)}㎡（予定より${Math.abs(diff).toFixed(2)}㎡増減）\n新総額 ${fmt(newTotal)}円 － 手付金 ＝ 残代金 ${fmt(fRem)}円`;
+  }else{fRem=Math.round(num(d.salePrice)-num(d.deposit));}
+  const taxLabel=d.cityTax==="あり"?"固定資産税及び都市計画税":"固定資産税";
+  const kMo=d.taxBase==="1/1"?1:4;
+  let stYear=sDate.getFullYear();
+  if(kMo===4&&sDate.getMonth()+1<4)stYear-=1;
+  const startDate=new Date(stYear,kMo-1,1);
+  const endDate=new Date(stYear+1,kMo-1,1);
+  const tAnn=Math.round(num(d.taxAnnual));
+  const totalDays=Math.round((endDate-startDate)/86400000);
+  const sellerDays=Math.round((sDate-startDate)/86400000);
+  const buyerDays=totalDays-sellerDays;
+  const roundFn=d.taxRounding==="四捨五入"?Math.round:Math.floor;
+  const tSel=roundFn(tAnn*(sellerDays/totalDays));
+  let tBuy=tAnn-tSel,tNextYear=0;
+  if(d.overYear==="あり"){tNextYear=tAnn;tBuy+=tNextYear;}
+  const mBase=Math.round(num(d.mgmtMonthly)),rBase=Math.round(num(d.repairMonthly));
   const mOther=Math.round(num(d.mgmtOtherAmt));
   const mTot=mBase+rBase+mOther;
-  const mgmtLabel = d.mgmtOtherLabel ? `管理費・修繕積立金・${d.mgmtOtherLabel}` : "管理費等";
-  const daysInMonth = new Date(sDate.getFullYear(),sDate.getMonth()+1,0).getDate();
-  let mBuy=0, bDyM=0, mDly=0, rDly=0, mgmtRows=[];
-  if(d.propType==="マンション"&&mTot>0) {
+  const mgmtLabel=d.mgmtOtherLabel?`管理費・修繕積立金・${d.mgmtOtherLabel}`:"管理費等";
+  const daysInMonth=new Date(sDate.getFullYear(),sDate.getMonth()+1,0).getDate();
+  let mBuy=0,bDyM=0,mDly=0,rDly=0,mgmtRows=[];
+  if(d.propType==="マンション"&&mTot>0){
     bDyM=daysInMonth-sDate.getDate()+1;
-    mDly=Math.floor(mBase*(bDyM/daysInMonth)); rDly=Math.floor(rBase*(bDyM/daysInMonth));
+    mDly=Math.floor(mBase*(bDyM/daysInMonth));rDly=Math.floor(rBase*(bDyM/daysInMonth));
     const curMonthEnd=new Date(sDate.getFullYear(),sDate.getMonth()+1,0);
     const nm1Start=new Date(sDate.getFullYear(),sDate.getMonth()+1,1);
     const nm1End=new Date(sDate.getFullYear(),sDate.getMonth()+2,0);
@@ -128,14 +131,15 @@ function calcAll(d) {
   const overLoan=aToS<loanBal&&loanBal>0;
   const viviBank=d.viviBank==="北陸銀行"?"北陸銀行 富山南中央支店 普通 №5437740\n(名義) ViVi不動産株式会社":"富山第一銀行 富山南センター支店 普通 №054370\n(名義) ViVi不動産株式会社";
   const sellerBank=`${d.sellerBankName} ${d.sellerBankType} ${d.sellerBankNo}\n(名義) ${d.sellerBankHolder} 様`;
-  return {fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,
+  const mgmtSellerLastMonth=d.propType==="マンション"?jYearMonth(d.settlementDT):"";
+  return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,
     incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
-    viviBank,sellerBank,taxLabel};
+    viviBank,sellerBank,taxLabel,stYear};
 }
 
-const DOC = {
+const DOC={
   page:{background:"#fff",padding:"24px 28px",fontFamily:"'Meiryo UI','Meiryo','MS Gothic',sans-serif",fontSize:11,color:"#111",lineHeight:1.55},
   header:{borderBottom:"3px double #1a3a6b",paddingBottom:8,marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"flex-end"},
   logo:{fontSize:18,fontWeight:"bold",color:"#1a3a6b",letterSpacing:2},
@@ -150,13 +154,14 @@ const DOC = {
   tdHead:{border:"1px solid #aaa",padding:"3px 6px",background:"#dce6f1",fontWeight:"bold",textAlign:"center"},
   warningBox:{border:"2px solid #8b0000",padding:"6px 10px",background:"#fff8f8",color:"#8b0000",fontSize:10,marginBottom:8,fontWeight:"bold"},
   noteBox:{border:"1px solid #aaa",padding:"5px 8px",background:"#f9f9f9",fontSize:10,marginTop:6,color:"#333"},
+  infoBox:{border:"1px solid #1a3a6b",padding:"5px 8px",background:"#eef3fb",fontSize:10,marginTop:6,color:"#222"},
   bankBox:{border:"1px solid #1a3a6b",padding:"5px 8px",background:"#eef3fb",fontSize:10,marginTop:2,marginBottom:4},
   footer:{borderTop:"1px solid #aaa",marginTop:16,paddingTop:6,textAlign:"right",fontSize:9,color:"#555"},
   stamp:{display:"inline-block",border:"2px solid #c00",borderRadius:4,padding:"1px 6px",color:"#c00",fontSize:10,fontWeight:"bold",marginLeft:8},
 };
 
-function DocHeader({d}) {
-  return (
+function DocHeader({d}){
+  return(
     <div style={DOC.header}>
       <div>
         <div style={DOC.logo}>ViVi不動産株式会社<span style={DOC.logoSub}>ViVi Real Estate Co., Ltd.</span></div>
@@ -170,10 +175,10 @@ function DocHeader({d}) {
   );
 }
 
-function TRow({label,value,bold,indent,sub,total,warn,colSpan,wrap}) {
+function TRow({label,value,bold,indent,sub,total,warn,colSpan,wrap}){
   const bg=total?"#1a3a6b":warn?"#fff0f0":"transparent";
   const col=total?"#fff":warn?"#8b0000":"#111";
-  return (
+  return(
     <tr style={{background:bg,color:col}}>
       <td style={{...DOC.td,paddingLeft:indent?20:6,fontWeight:bold||total?"bold":"normal",fontSize:total?12:11,color:col,wordBreak:"break-all"}} colSpan={colSpan}>
         {label}{sub&&<span style={{fontSize:9,fontWeight:"normal",marginLeft:4,color:total?"#cce":"#888"}}>{sub}</span>}
@@ -183,9 +188,23 @@ function TRow({label,value,bold,indent,sub,total,warn,colSpan,wrap}) {
   );
 }
 
-function SellerGuide({d,c}) {
-  const shiho = d.shihoShoshi==="その他"?d.shihoShoshiOther:d.shihoShoshi;
-  return (
+function SellerItems({d,c}){
+  return(
+    <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
+      {num(d.sKenriCount)>0&&<div>□　登記識別情報通知（権利証）　{d.sKenriCount}通</div>}
+      <div>□　実印、本人確認書類、通帳</div>
+      {num(d.sJuminCount)>0&&<div>□　住民票　{d.sJuminCount}通</div>}
+      {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず現住所のものをご用意ください</span></div>}
+      {c.sCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{d.sCashLabel1}{d.sCashLabel2?`・${d.sCashLabel2}`:""}）</div>}
+      <div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>
+    </div>
+  );
+}
+
+function SellerGuide({d,c}){
+  const shiho=d.shihoShoshi==="その他"?d.shihoShoshiOther:d.shihoShoshi;
+  const taxYear=`令和${c.stYear-2018}年`;
+  return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>残 金 決 済 の ご 案 内（売 主 様）</div>
@@ -202,16 +221,11 @@ function SellerGuide({d,c}) {
             <TRow label="担当司法書士" value={shiho}/>
           </tbody>
         </table>
-        <div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※ご本人確認のため、司法書士が事前に面談を行う場合がございます。上記日時にご対応をお願いいたします。</div>
+        <div style={{...DOC.noteBox,marginBottom:4,fontSize:10,color:"#555"}}>※ご本人確認のため、司法書士が事前に面談を行う場合がございます。上記日時にご対応をお願いいたします。</div>
         <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
           <div style={{fontWeight:"bold",marginBottom:3,color:"#1a3a6b"}}>【本人面談時のご持参いただくもの】</div>
-          <div style={{fontSize:9,color:"#888",marginBottom:4}}>※残金決済時に必要なものと同じものをお持ちください。</div>
-          {num(d.sKenriCount)>0&&<div>□　登記識別情報通知（権利証）　{d.sKenriCount}通</div>}
-          <div>□　実印、本人確認書類、通帳</div>
-          {num(d.sJuminCount)>0&&<div>□　住民票　{d.sJuminCount}通</div>}
-          {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず現住所のものをご用意ください</span></div>}
-          {c.sCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{d.sCashLabel1}{d.sCashLabel2?`・${d.sCashLabel2}`:""}）</div>}
-          <div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>
+          <div style={{fontSize:9,color:"#888",marginBottom:3}}>※残金決済時に必要なものと同じものをお持ちください。</div>
+          <SellerItems d={d} c={c}/>
         </div>
       </>}
       <div style={DOC.sectionHead}>■ 残金決済について</div>
@@ -227,20 +241,20 @@ function SellerGuide({d,c}) {
         </tbody>
       </table>
       <div style={DOC.sectionHead}>■ 当日ご持参いただくもの</div>
-      {d.gathering==="あり"?(
-        <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
-          {num(d.sKenriCount)>0&&<div>□　登記識別情報通知（権利証）　{d.sKenriCount}通</div>}
-          <div>□　実印、本人確認書類、通帳</div>
-          {num(d.sJuminCount)>0&&<div>□　住民票　{d.sJuminCount}通</div>}
-          {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず現住所のものをご用意ください</span></div>}
-          {c.sCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{d.sCashLabel1}{d.sCashLabel2?`・${d.sCashLabel2}`:""}）</div>}
-          <div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>
-        </div>
-      ):(
+      {d.gathering==="あり"?<SellerItems d={d} c={c}/>:(
         <div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※本取引は振込手続き等にて行いますので、お持ちいただくものはございません。</div>
       )}
       <div style={DOC.sectionHeadRed}>【重要】印鑑証明書に関するご注意</div>
       <div style={DOC.warningBox}>お住み替え等で住所を移転される場合は、必ず【ご移転前（現住所）の印鑑証明書】をご取得ください。<br/>※引越しにより住所が変更になると「住所変更登記」が必要となり、別途費用が発生いたします。</div>
+      <div style={DOC.sectionHead}>▼ {c.taxLabel}・{d.propType==="マンション"?c.mgmtLabel:"管理費等"}の清算について</div>
+      <div style={{...DOC.infoBox,marginBottom:6}}>
+        <div>{c.taxLabel}は、日割り清算させていただきますので、<strong>{taxYear}度分の全額</strong>を、最後まで売主様がお支払いください。</div>
+        {d.propType==="マンション"&&c.mgmtSellerLastMonth&&(
+          <div style={{marginTop:4}}>また、{c.mgmtLabel}についても日割り清算させていただきますので、<strong>{c.mgmtSellerLastMonth}分まで</strong>売主様がお支払いください。</div>
+        )}
+      </div>
+      <div style={DOC.sectionHead}>▼ 火災保険について</div>
+      <div style={DOC.infoBox}>お引渡し日付での火災保険の解約手続きを予めお願い申し上げます。<br/>（長期契約であれば解約返戻金があると思われます。）</div>
       <div style={DOC.sectionHead}>■ お金の流れ（精算内訳）</div>
       <table style={DOC.table}><colgroup><col style={{width:"65%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={DOC.tdHead}>項　目</th><th style={DOC.tdHead}>金　額</th></tr></thead>
@@ -281,16 +295,53 @@ function SellerGuide({d,c}) {
   );
 }
 
-function BuyerGuide({d,c}) {
-  const isLoan=d.loanUse==="あり", isPreMove=d.preMove==="あり";
+function BuyerGuide({d,c}){
+  const isLoan=d.loanUse==="あり",isPreMove=d.preMove==="あり";
   const dPrefix=isPreMove?"新住所の":"";
   const zipDisp=d.addressZip?`〒${d.addressZip.slice(0,3)}-${d.addressZip.slice(3)} `:"";
-  return (
+  const shiho=d.shihoShoshi==="その他"?d.shihoShoshiOther:d.shihoShoshi;
+  const isTochi=d.propType==="土地";
+  const isKinshoTiming=d.gathering==="なし"&&d.loanUse==="あり"&&d.bMendanTiming==="金消契約時に併せて実施";
+  return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>残 金 決 済 の ご 案 内（買 主 様）</div>
       <div><span style={DOC.addressee}>{d.buyerName} 様</span></div>
       <div style={{fontSize:10,color:"#555",margin:"4px 0 8px"}}>平素よりお世話になっております。下記の通り残金決済のご案内をいたします。</div>
+      <div style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
+      <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>担当：</span>{shiho}</div>
+      {d.bMendan==="あり"&&(()=>{
+        return<>
+          <div style={DOC.sectionHead}>■ 司法書士との本人確認{isKinshoTiming?"（金消契約時に併せて実施）":"（別途面談）"}</div>
+          {!isKinshoTiming&&<table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
+            <tbody>
+              <TRow label="日　時" value={`${jDate(d.bMendanDT)} ${d.bMendanTime}`}/>
+              <TRow label="場　所" value={d.bMendanPlace}/>
+              <TRow label="担当司法書士" value={shiho}/>
+            </tbody>
+          </table>}
+          <div style={{...DOC.noteBox,marginBottom:4,fontSize:10,color:"#555"}}>
+            {isKinshoTiming?"※振込決済のためご来場は不要ですが、金消契約時に本人確認書類をご提出ください。":"※ご本人確認のため、司法書士が事前に面談を行います。上記日時にご対応をお願いいたします。"}
+          </div>
+          <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
+            <div style={{fontWeight:"bold",marginBottom:3,color:"#1a3a6b"}}>
+              {isKinshoTiming?"【金消契約時にご持参いただくもの（本人確認分を含む）】":"【本人面談時のご持参いただくもの】"}
+            </div>
+            <div style={{fontSize:9,color:"#888",marginBottom:3}}>
+              {d.gathering==="なし"?"※振込決済のため決済当日のご来場は不要です。下記書類をご用意ください。":"※残金決済時に必要なものと同じものをお持ちください。"}
+            </div>
+            <div>□　実印、本人確認書類、通帳（スマホ）</div>
+            {d.gathering==="あり"?<>
+              {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{d.bJuminSettle}通</div>}
+              {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanSettle}通</div>}
+              {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円（{d.bCashLabel1}{d.bCashLabel2?`・${d.bCashLabel2}`:""}）</div>}
+            </>:<>
+              {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{d.bJuminTransfer}通</div>}
+              {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanTransfer}通</div>}
+            </>}
+          </div>
+        </>;
+      })()}
       {isLoan&&<>
         <div style={DOC.sectionHead}>■ 金銭消費貸借契約（ローン契約）</div>
         {isPreMove&&<div style={DOC.warningBox}>★【重要】金消契約の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.address}</div>}
@@ -311,17 +362,18 @@ function BuyerGuide({d,c}) {
           {d.gathering==="あり"?<><TRow label="日　時" value={`${jDate(d.settlementDT)} ${d.settlementTime} より`}/><TRow label="場　所" value={d.gatheringPlace}/></>:<><TRow label="振込予定日" value={jDate(d.settlementDT)}/><tr><td colSpan={2} style={{...DOC.td,color:"#8b0000",fontSize:10}}>※本取引は振込手続き等にて行いますので、お集まりいただく必要はございません。</td></tr></>}
         </tbody>
       </table>
-      {d.gathering==="あり"?(
-        <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}>
-          <div style={{fontWeight:"bold",marginBottom:2}}>ご持参いただくもの</div>
-          <div>□　実印、本人確認書類、通帳（スマホ）</div>
+      <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}>
+        <div style={{fontWeight:"bold",marginBottom:2}}>{d.gathering==="あり"?"ご持参いただくもの":"ご用意いただくもの（振込手続き用）"}</div>
+        <div>□　実印、本人確認書類、通帳（スマホ）</div>
+        {d.gathering==="あり"?<>
           {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{d.bJuminSettle}通</div>}
           {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanSettle}通</div>}
           {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円（{d.bCashLabel1}{d.bCashLabel2?`・${d.bCashLabel2}`:""}）</div>}
-        </div>
-      ):(
-        <div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※本取引は振込手続き等にて行いますので、お持ちいただくものはございません。</div>
-      )}
+        </>:<>
+          {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{d.bJuminTransfer}通</div>}
+          {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanTransfer}通</div>}
+        </>}
+      </div>
       <div style={DOC.sectionHead}>■ 必要資金の内訳</div>
       <table style={DOC.table}><colgroup><col style={{width:"65%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={DOC.tdHead}>項　目</th><th style={DOC.tdHead}>金　額</th></tr></thead>
@@ -362,6 +414,11 @@ function BuyerGuide({d,c}) {
         <div style={{whiteSpace:"pre-line",marginBottom:4}}>{c.viviBank}</div>
         <div style={{fontSize:10,color:"#555",borderTop:"1px dashed #aaa",paddingTop:4}}>※当社にお振込みいただく場合は振込手数料は差し引いていただいて結構です。</div>
       </div>
+      <div style={DOC.sectionHead}>▼ 不動産取得税について</div>
+      <div style={DOC.infoBox}>
+        ご購入の<strong>４～６ヵ月後</strong>に県税事務所より納税通知が届きますので、納付手続きもしくは、該当する方は軽減措置の申告手続きを実施してください。
+        {isTochi&&<div style={{marginTop:4}}>尚、取得後<strong>3年以内</strong>に一定の居住用建物を建築し居住の用に供すれば、不動産取得税は一定額還付されます。詳細は、県税事務所までお問い合わせください。</div>}
+      </div>
       <div style={DOC.sectionHead}>■ インフラのお手続きについて</div>
       <div style={DOC.noteBox}>
         お引渡し日以降、各事業者へ利用開始のご連絡をお願いいたします。<br/>
@@ -372,19 +429,19 @@ function BuyerGuide({d,c}) {
         <span style={{fontWeight:"bold",color:"#1a3a6b"}}>【マンション管理組合へのご連絡】</span><br/>
         お引っ越し日が決まりましたら、遅くとも<span style={{fontWeight:"bold"}}>1週間前まで</span>に管理会社または管理組合へご連絡ください。
       </div>}
-      <div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #c8860a"}}>
+      {(d.propType==="戸建"||d.propType==="マンション")&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #c8860a"}}>
         <span style={{fontWeight:"bold",color:"#c8860a"}}>【引越し業者のご紹介】</span><br/>
         当社提携の引越し業者（サカイ引越センター）を<span style={{fontWeight:"bold"}}>割引価格</span>でご紹介することも可能です。ご希望の際は担当までお気軽にお申し付けください。
-      </div>
+      </div>}
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
 }
 
-function Receipt({d,c}) {
+function Receipt({d,c}){
   const pWord=d.propType==="マンション"?"マンション":d.propType==="土地"?"土地":"土地建物";
   const zipDisp=d.addressZip?`〒${d.addressZip.slice(0,3)}-${d.addressZip.slice(3)} `:"";
-  return (
+  return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>領　　収　　書</div>
@@ -392,7 +449,7 @@ function Receipt({d,c}) {
       <div style={{textAlign:"center",fontSize:24,fontWeight:"bold",padding:"14px 0",border:"2px solid #1a3a6b",marginBottom:14,background:"#f5f8ff",letterSpacing:2}}>金　{fmt(c.fRem)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
-          <TRow label="但　し" value={`${zipDisp}${d.address} の${pWord}売買代金の残代金として`}/>
+          <TRow label="但　し" value={`${zipDisp}${d.address} の${pWord}売買代金の残代金として`} wrap/>
           <TRow label="領収日" value={jDate(d.settlementDT)}/>
         </tbody>
       </table>
@@ -406,10 +463,10 @@ function Receipt({d,c}) {
   );
 }
 
-function TaxDoc({d,c}) {
+function TaxDoc({d,c}){
   const curYearEnd=new Date(c.endDate.getTime()-86400000);
   const nextYearEnd=new Date(c.endDate.getFullYear()+1,c.endDate.getMonth(),c.endDate.getDate()-1);
-  return (
+  return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>{c.taxLabel}　清算金領収書</div>
@@ -417,7 +474,7 @@ function TaxDoc({d,c}) {
       <div style={{textAlign:"center",fontSize:22,fontWeight:"bold",padding:"12px 0",border:"2px solid #1a3a6b",marginBottom:12,background:"#f5f8ff"}}>金　{fmt(c.tBuy)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
-          <TRow label="但　し" value={`${d.address} にかかる${c.taxLabel}の清算金として`}/>
+          <TRow label="但　し" value={`${d.address} にかかる${c.taxLabel}の清算金として`} wrap/>
           <TRow label="領収日" value={jDate(d.settlementDT)}/>
         </tbody>
       </table>
@@ -438,9 +495,9 @@ function TaxDoc({d,c}) {
   );
 }
 
-function MgmtDoc({d,c}) {
-  if(d.propType!=="マンション") return <div style={{...DOC.page,color:"#888"}}>※戸建・土地のため出力されません。</div>;
-  return (
+function MgmtDoc({d,c}){
+  if(d.propType!=="マンション")return<div style={{...DOC.page,color:"#888"}}>※戸建・土地のため出力されません。</div>;
+  return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>{c.mgmtLabel}　清算金領収書</div>
@@ -455,12 +512,8 @@ function MgmtDoc({d,c}) {
       <div style={{fontSize:10,margin:"5px 0 12px"}}>上記正に領収致しました。</div>
       <div style={DOC.sectionHead}>■ 清算金　計算内訳（清算範囲：{d.mgmtClearMonths}）</div>
       <div style={{fontSize:9,color:"#555",marginBottom:4}}>※引渡日（{jDate(d.settlementDT)}）より買主様のご負担となります。</div>
-      <table style={DOC.table}>
-        <thead>
-          <tr>
-            {["項　目","対象期間","日数/月数","管理費","修繕積立金",...(c.mOther>0?[d.mgmtOtherLabel||"その他"]:[])].map(h=><th key={h} style={DOC.tdHead}>{h}</th>)}
-          </tr>
-        </thead>
+      <table style={{...DOC.table}}><colgroup><col style={{width:"18%"}}/><col style={{width:"18%"}}/><col style={{width:"10%"}}/><col style={{width:"18%"}}/><col style={{width:"18%"}}/>{c.mOther>0&&<col style={{width:"18%"}}/>}</colgroup>
+        <thead><tr>{["項　目","対象期間","日数/月数","管理費","修繕積立金",...(c.mOther>0?[d.mgmtOtherLabel||"その他"]:[])].map(h=><th key={h} style={DOC.tdHead}>{h}</th>)}</tr></thead>
         <tbody>
           {c.mgmtRows.map((row,i)=>(
             <tr key={i} style={{background:i%2===0?"#fff":"#f5f8ff"}}>
@@ -469,19 +522,11 @@ function MgmtDoc({d,c}) {
               <td style={DOC.tdRight}>{row.days}</td>
               <td style={DOC.tdRight}>{fmt(row.mAmt)}円</td>
               <td style={DOC.tdRight}>{fmt(row.rAmt)}円</td>
-              {c.mOther>0&&<td style={DOC.tdRight}>{fmt(row.oAmt)}円</td>}
+              {c.mOther>0&&<td style={DOC.tdRight}>{fmt(row.oAmt||0)}円</td>}
             </tr>
           ))}
-          <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}>
-            <td style={{...DOC.td,color:"#fff"}} colSpan={3}>合　計</td>
-            <td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+r.mAmt,0))}円</td>
-            <td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+r.rAmt,0))}円</td>
-            {c.mOther>0&&<td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+(r.oAmt||0),0))}円</td>}
-          </tr>
-          <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}>
-            <td style={{...DOC.td,color:"#fff"}} colSpan={4}>清算金　総合計</td>
-            <td style={{...DOC.tdRight,color:"#fff",fontSize:13}} colSpan={c.mOther>0?2:2}>{fmt(c.mBuy)}円</td>
-          </tr>
+          <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={3}>合　計</td><td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+r.mAmt,0))}円</td><td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+r.rAmt,0))}円</td>{c.mOther>0&&<td style={{...DOC.tdRight,color:"#fff"}}>{fmt(c.mgmtRows.reduce((s,r)=>s+(r.oAmt||0),0))}円</td>}</tr>
+          <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={c.mOther>0?4:4}>清算金　総合計</td><td style={{...DOC.tdRight,color:"#fff",fontSize:13}} colSpan={2}>{fmt(c.mBuy)}円</td></tr>
         </tbody>
       </table>
       <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>売主氏名　{d.sellerName}　　　<span style={DOC.stamp}>印</span></div>
@@ -497,79 +542,68 @@ const DI=({val,onChange})=><input type="date" value={val} onChange={e=>onChange(
 const SI=({val,onChange,opts})=><select value={val} onChange={e=>onChange(e.target.value)} style={iS}>{opts.map(o=><option key={o}>{o}</option>)}</select>;
 const Sec=({label,color})=><div style={{fontSize:10,fontWeight:"bold",padding:"3px 6px",marginTop:8,marginBottom:2,background:color||"#eee",borderRadius:3,borderLeft:"3px solid #999"}}>{label}</div>;
 const F=({label,children,half})=><div style={{marginBottom:3,width:half?"50%":"100%",display:"inline-block",paddingRight:half?3:0,boxSizing:"border-box"}}><div style={{fontSize:10,color:"#666",marginBottom:1}}>{label}</div>{children}</div>;
+const TB=({val,onChange,opts})=><div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>{opts.map(o=><button key={o} onClick={()=>onChange(o)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:val===o?"#1a3a6b":"#f5f5f5",color:val===o?"#fff":"#333",fontWeight:val===o?"bold":"normal"}}>{o}</button>)}</div>;
 
 const TABS=["案内_売主","案内_買主","領収書","固都税清算書","管理費等清算書"];
 const TAB_COMPS=[SellerGuide,BuyerGuide,Receipt,TaxDoc,MgmtDoc];
+const SK="vivi_saved_cases";
 
-function App() {
+function App(){
   const [d,setD]=useState(INIT);
   const [tab,setTab]=useState(0);
-  const [showHistory,setShowHistory]=useState(false);
-  const [savedCases,setSavedCases]=useState([]);
+  const [showHist,setShowHist]=useState(false);
+  const [saved,setSaved]=useState([]);
   const [saveName,setSaveName]=useState("");
-  const [showSaveDialog,setShowSaveDialog]=useState(false);
-  const [deleteConfirm,setDeleteConfirm]=useState(null);
-  const [currentId,setCurrentId]=useState(null);
-  const [currentName,setCurrentName]=useState("");
+  const [showSaveDlg,setShowSaveDlg]=useState(false);
+  const [delConf,setDelConf]=useState(null);
+  const [curId,setCurId]=useState(null);
+  const [curName,setCurName]=useState("");
   const c=useMemo(()=>calcAll(d),[d]);
-  const set=k=>v=>setD(p=>({...p,[k]:v}));
-
-  useEffect(()=>{
-    try{ const saved=localStorage.getItem(STORAGE_KEY); if(saved) setSavedCases(JSON.parse(saved)); }catch{}
-  },[]);
-
-  const saveCase=()=>{
+  const set=k=>v=>{
+    setD(p=>{
+      const next={...p,[k]:v};
+      if(k==="txType")setTab(v==="売主"?0:1);
+      return next;
+    });
+  };
+  useEffect(()=>{try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{};},[]);
+  const doSave=()=>{
     const name=saveName||`${d.sellerName}→${d.buyerName} (${d.settlementDT})`;
-    const newCase={id:Date.now(),name,savedAt:new Date().toLocaleString("ja-JP"),data:d};
-    const updated=[newCase,...savedCases].slice(0,30);
-    setSavedCases(updated); setCurrentId(newCase.id); setCurrentName(name);
-    try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(updated)); }catch{}
-    setShowSaveDialog(false); setSaveName("");
+    const nc={id:Date.now(),name,savedAt:new Date().toLocaleString("ja-JP"),data:d};
+    const upd=[nc,...saved].slice(0,30);
+    setSaved(upd);setCurId(nc.id);setCurName(name);
+    try{localStorage.setItem(SK,JSON.stringify(upd));}catch{}
+    setShowSaveDlg(false);setSaveName("");
   };
-
-  const overwriteCase=()=>{
-    const updated=savedCases.map(item=>item.id===currentId?{...item,data:d,savedAt:new Date().toLocaleString("ja-JP")}:item);
-    setSavedCases(updated);
-    try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(updated)); }catch{}
+  const doOverwrite=()=>{
+    const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);
+    setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{}
   };
-
-  const loadCase=(item)=>{ setD(item.data); setCurrentId(item.id); setCurrentName(item.name); setShowHistory(false); };
-
-  const deleteCase=(id)=>{
-    const updated=savedCases.filter(c=>c.id!==id);
-    setSavedCases(updated);
-    if(id===currentId){ setCurrentId(null); setCurrentName(""); }
-    try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(updated)); }catch{}
-    setDeleteConfirm(null);
+  const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);};
+  const doDel=id=>{
+    const upd=saved.filter(i=>i.id!==id);setSaved(upd);
+    if(id===curId){setCurId(null);setCurName("");}
+    try{localStorage.setItem(SK,JSON.stringify(upd));}catch{}
+    setDelConf(null);
   };
-
-  const newCase=()=>{ if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){ setD(INIT); setCurrentId(null); setCurrentName(""); } };
-
+  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");}};
   const TabComp=TAB_COMPS[tab];
 
-  return (
+  return(
     <div style={{display:"flex",height:"100vh",background:"#e8e8e8",fontSize:12}}>
       <div style={{width:275,flexShrink:0,overflowY:"auto",background:"#fff",borderRight:"1px solid #ddd",padding:"8px 10px"}}>
-        {currentId&&currentName&&(
-          <div style={{background:"#eef3fb",border:"1px solid #b0c8e8",borderRadius:4,padding:"4px 8px",marginBottom:4,fontSize:10,color:"#1a3a6b"}}>
-            ✏️ 編集中：<strong>{currentName}</strong>
-          </div>
-        )}
+        {curId&&curName&&<div style={{background:"#eef3fb",border:"1px solid #b0c8e8",borderRadius:4,padding:"4px 8px",marginBottom:4,fontSize:10,color:"#1a3a6b"}}>✏️ 編集中：<strong>{curName}</strong></div>}
         <div style={{display:"flex",gap:4,marginBottom:8}}>
-          {currentId?(
-            <>
-              <button onClick={overwriteCase} style={{flex:2,padding:"6px 0",fontSize:11,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 上書き保存</button>
-              <button onClick={()=>setShowSaveDialog(true)} style={{flex:2,padding:"6px 0",fontSize:11,background:"#4a7ab5",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📋 別名保存</button>
-            </>
-          ):(
-            <button onClick={()=>setShowSaveDialog(true)} style={{flex:2,padding:"6px 0",fontSize:11,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 保存</button>
-          )}
-          <button onClick={()=>setShowHistory(true)} style={{flex:2,padding:"6px 0",fontSize:11,background:"#555",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📂 履歴 ({savedCases.length})</button>
-          <button onClick={newCase} style={{flex:1,padding:"6px 0",fontSize:11,background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>＋ 新規</button>
+          {curId?<>
+            <button onClick={doOverwrite} style={{flex:2,padding:"6px 0",fontSize:11,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 上書き保存</button>
+            <button onClick={()=>setShowSaveDlg(true)} style={{flex:2,padding:"6px 0",fontSize:11,background:"#4a7ab5",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📋 別名保存</button>
+          </>:<button onClick={()=>setShowSaveDlg(true)} style={{flex:2,padding:"6px 0",fontSize:11,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 保存</button>}
+          <button onClick={()=>setShowHist(true)} style={{flex:2,padding:"6px 0",fontSize:11,background:"#555",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📂 履歴({saved.length})</button>
+          <button onClick={doNew} style={{flex:1,padding:"6px 0",fontSize:11,background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>＋新規</button>
         </div>
 
         <Sec label="基本情報・物件情報" color="#d0e8ff"/>
-        <F label="取引種別"><SI val={d.txType} onChange={set("txType")} opts={["売主","買主"]}/></F>
+        <F label="取引種別"><TB val={d.txType} onChange={set("txType")} opts={["売主","買主"]}/></F>
         <F label="物件種別"><SI val={d.propType} onChange={set("propType")} opts={["戸建","マンション","土地"]}/></F>
         <F label="物件所在地（買主の新住所）">
           <div style={{display:"flex",gap:3,marginBottom:2,alignItems:"center"}}>
@@ -587,7 +621,7 @@ function App() {
           <F label="決済日" half><DI val={d.settlementDT} onChange={set("settlementDT")}/></F>
           <F label="時間" half><input type="time" value={d.settlementTime} onChange={e=>set("settlementTime")(e.target.value)} style={iS}/></F>
         </div>
-        <F label="決済集合"><SI val={d.gathering} onChange={set("gathering")} opts={["あり","なし"]}/></F>
+        <F label="決済集合"><TB val={d.gathering} onChange={set("gathering")} opts={["あり","なし"]}/></F>
         {d.gathering==="あり"&&<F label="決済場所"><TI val={d.gatheringPlace} onChange={set("gatheringPlace")}/></F>}
         <F label="当社振込先"><SI val={d.viviBank} onChange={set("viviBank")} opts={["北陸銀行","富山第一銀行"]}/></F>
 
@@ -596,17 +630,22 @@ function App() {
           <SI val={d.shihoShoshi} onChange={set("shihoShoshi")} opts={["廣田司法書士事務所　076-423-6826","大島・杉本合同司法書士事務所　076-495-5152","宮本司法書士事務所　076-421-2162","司法書士朝倉遼太郎事務所　076-481-6707","司法書士法人谷道事務所　076-421-7717","その他"]}/>
         </F>
         {d.shihoShoshi==="その他"&&<F label="司法書士名・電話番号"><TI val={d.shihoShoshiOther} onChange={set("shihoShoshiOther")} placeholder="事務所名・電話番号"/></F>}
-        <F label="本人面談">
-          <div style={{display:"flex",gap:0,borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>
-            {["あり","なし"].map(opt=><button key={opt} onClick={()=>set("mendan")(opt)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:d.mendan===opt?"#1a3a6b":"#f5f5f5",color:d.mendan===opt?"#fff":"#333",fontWeight:d.mendan===opt?"bold":"normal"}}>{opt}</button>)}
-          </div>
-        </F>
+        <F label="売主：本人面談"><TB val={d.mendan} onChange={set("mendan")} opts={["あり","なし"]}/></F>
         {d.mendan==="あり"&&<>
-          <div style={{display:"flex",gap:3}}>
-            <F label="面談日" half><DI val={d.mendanDT} onChange={set("mendanDT")}/></F>
-            <F label="時間" half><input type="time" value={d.mendanTime} onChange={e=>set("mendanTime")(e.target.value)} style={iS}/></F>
-          </div>
+          <div style={{display:"flex",gap:3}}><F label="面談日" half><DI val={d.mendanDT} onChange={set("mendanDT")}/></F><F label="時間" half><input type="time" value={d.mendanTime} onChange={e=>set("mendanTime")(e.target.value)} style={iS}/></F></div>
           <F label="面談場所"><TI val={d.mendanPlace} onChange={set("mendanPlace")} placeholder="場所を入力"/></F>
+        </>}
+        <F label="買主：本人面談"><TB val={d.bMendan} onChange={set("bMendan")} opts={["あり","なし"]}/></F>
+        {d.bMendan==="あり"&&<>
+          {d.gathering==="なし"&&d.loanUse==="あり"&&(
+            <F label="本人面談のタイミング">
+              <TB val={d.bMendanTiming} onChange={set("bMendanTiming")} opts={["本人面談を別途実施","金消契約時に併せて実施"]}/>
+            </F>
+          )}
+          {!(d.gathering==="なし"&&d.loanUse==="あり"&&d.bMendanTiming==="金消契約時に併せて実施")&&<>
+            <div style={{display:"flex",gap:3}}><F label="面談日" half><DI val={d.bMendanDT} onChange={set("bMendanDT")}/></F><F label="時間" half><input type="time" value={d.bMendanTime} onChange={e=>set("bMendanTime")(e.target.value)} style={iS}/></F></div>
+            <F label="面談場所"><TI val={d.bMendanPlace} onChange={set("bMendanPlace")} placeholder="場所を入力"/></F>
+          </>}
         </>}
 
         <Sec label="取引金額・清算金" color="#d0e8ff"/>
@@ -617,25 +656,18 @@ function App() {
           <F label="公簿面積(㎡)" half><NI val={d.officialArea} onChange={set("officialArea")} step="0.01"/></F>
           <F label="実測面積(㎡)" half><NI val={d.actualArea} onChange={set("actualArea")} step="0.01"/></F>
         </div>
+        {num(d.unitPrice)>0&&num(d.actualArea)>0&&num(d.officialArea)>0&&<div style={{fontSize:10,padding:"3px 6px",background:"#e8f4ff",borderRadius:3,marginBottom:3}}>実測残代金：{fmt(Math.floor(num(d.unitPrice)*num(d.actualArea))-Math.round(num(d.deposit)))}円</div>}
         <F label="固都税年額(円)"><NI val={d.taxAnnual} onChange={set("taxAnnual")}/></F>
         <F label="都市計画税">
-          <div style={{display:"flex",gap:0,borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>
-            {["あり","なし"].map(opt=>(
-              <button key={opt} onClick={()=>set("cityTax")(opt)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:d.cityTax===opt?"#1a3a6b":"#f5f5f5",color:d.cityTax===opt?"#fff":"#333",fontWeight:d.cityTax===opt?"bold":"normal"}}>
-                {opt==="あり"?"あり（固定資産税及び都市計画税）":"なし（固定資産税のみ）"}
-              </button>
+          <div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>
+            {[["あり","あり（固定資産税及び都市計画税）"],["なし","なし（固定資産税のみ）"]].map(([v,l])=>(
+              <button key={v} onClick={()=>set("cityTax")(v)} style={{flex:1,padding:"5px 4px",fontSize:9,border:"none",cursor:"pointer",background:d.cityTax===v?"#1a3a6b":"#f5f5f5",color:d.cityTax===v?"#fff":"#333",fontWeight:d.cityTax===v?"bold":"normal"}}>{l}</button>
             ))}
           </div>
         </F>
         <F label="固都税起算日"><SI val={d.taxBase} onChange={set("taxBase")} opts={["4/1","1/1"]}/></F>
-        <F label="固都税端数処理">
-          <div style={{display:"flex",gap:0,borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>
-            {["切り捨て","四捨五入"].map(opt=>(
-              <button key={opt} onClick={()=>set("taxRounding")(opt)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:d.taxRounding===opt?"#1a3a6b":"#f5f5f5",color:d.taxRounding===opt?"#fff":"#333",fontWeight:d.taxRounding===opt?"bold":"normal"}}>{opt}</button>
-            ))}
-          </div>
-        </F>
-        <F label="越年精算"><SI val={d.overYear} onChange={set("overYear")} opts={["なし","あり"]}/></F>
+        <F label="固都税端数処理"><TB val={d.taxRounding} onChange={set("taxRounding")} opts={["切り捨て","四捨五入"]}/></F>
+        <F label="越年精算"><TB val={d.overYear} onChange={set("overYear")} opts={["なし","あり"]}/></F>
         {d.propType==="マンション"&&<>
           <F label="管理費等(月額・円)"><NI val={d.mgmtMonthly} onChange={set("mgmtMonthly")}/></F>
           <F label="修繕積立金(月額・円)"><NI val={d.repairMonthly} onChange={set("repairMonthly")}/></F>
@@ -644,7 +676,7 @@ function App() {
             <F label="月額(円)" half><NI val={d.mgmtOtherAmt} onChange={set("mgmtOtherAmt")}/></F>
           </div>
           <F label="管理費等の清算範囲">
-            <div style={{display:"flex",gap:0,borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>
+            <div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>
               {["当月のみ","翌月まで","翌々月まで"].map(opt=><button key={opt} onClick={()=>set("mgmtClearMonths")(opt)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:d.mgmtClearMonths===opt?"#1a3a6b":"#f5f5f5",color:d.mgmtClearMonths===opt?"#fff":"#333",fontWeight:d.mgmtClearMonths===opt?"bold":"normal",borderRight:"1px solid #ccc"}}>{opt}</button>)}
             </div>
           </F>
@@ -672,21 +704,26 @@ function App() {
         <Sec label="買主様の設定" color="#d0fdd0"/>
         <F label="仲介手数料(総額)"><NI val={d.bBrokerTotal} onChange={set("bBrokerTotal")}/></F>
         <F label="受領済仲介手数料"><NI val={d.bBrokerPaid} onChange={set("bBrokerPaid")}/></F>
-        <F label="ローン利用"><SI val={d.loanUse} onChange={set("loanUse")} opts={["あり","なし"]}/></F>
+        <F label="ローン利用"><TB val={d.loanUse} onChange={set("loanUse")} opts={["あり","なし"]}/></F>
         {d.loanUse==="あり"&&<>
           <F label="ローン融資額(円)"><NI val={d.loanAmount} onChange={set("loanAmount")}/></F>
           <div style={{display:"flex",gap:3}}><F label="金消日" half><DI val={d.kinshoDT} onChange={set("kinshoDT")}/></F><F label="時間" half><input type="time" value={d.kinshoTime} onChange={e=>set("kinshoTime")(e.target.value)} style={iS}/></F></div>
           <F label="金消場所"><TI val={d.kinshoPlace} onChange={set("kinshoPlace")}/></F>
         </>}
-        <F label="新住所への事前移転"><SI val={d.preMove} onChange={set("preMove")} opts={["あり","なし"]}/></F>
+        <F label="新住所への事前移転"><TB val={d.preMove} onChange={set("preMove")} opts={["あり","なし"]}/></F>
         <F label="金消用 住民票通数"><SI val={String(d.bJuminKinsho)} onChange={set("bJuminKinsho")} opts={["0","1","2","3"]}/></F>
         <F label="金消用 印鑑証明通数"><SI val={String(d.bInkanKinsho)} onChange={set("bInkanKinsho")} opts={["0","1","2","3"]}/></F>
         <F label="金消用 その他持参物"><TI val={d.bOtherKinsho} onChange={set("bOtherKinsho")}/></F>
-        <F label="決済用 住民票通数"><SI val={String(d.bJuminSettle)} onChange={set("bJuminSettle")} opts={["0","1","2","3"]}/></F>
-        <F label="決済用 印鑑証明通数"><SI val={String(d.bInkanSettle)} onChange={set("bInkanSettle")} opts={["0","1","2","3"]}/></F>
+        {d.gathering==="あり"?<>
+          <F label="決済用 住民票通数"><SI val={String(d.bJuminSettle)} onChange={set("bJuminSettle")} opts={["0","1","2","3"]}/></F>
+          <F label="決済用 印鑑証明通数"><SI val={String(d.bInkanSettle)} onChange={set("bInkanSettle")} opts={["0","1","2","3"]}/></F>
+        </>:<>
+          <F label="振込決済用 住民票通数"><SI val={String(d.bJuminTransfer)} onChange={set("bJuminTransfer")} opts={["0","1","2","3"]}/></F>
+          <F label="振込決済用 印鑑証明通数"><SI val={String(d.bInkanTransfer)} onChange={set("bInkanTransfer")} opts={["0","1","2","3"]}/></F>
+        </>}
         <F label="【代行】登記費用(円)"><NI val={d.bRegFee} onChange={set("bRegFee")}/></F>
         <F label="リフォーム代(総額)"><NI val={d.reformTotal} onChange={set("reformTotal")}/></F>
-        <F label="決済時リフォーム手付"><SI val={d.reformDepositYN} onChange={set("reformDepositYN")} opts={["なし","あり"]}/></F>
+        <F label="決済時リフォーム手付"><TB val={d.reformDepositYN} onChange={set("reformDepositYN")} opts={["なし","あり"]}/></F>
         {d.reformDepositYN==="あり"&&<F label="手付金額(円)"><NI val={d.reformDepositAmt} onChange={set("reformDepositAmt")}/></F>}
         <F label="【代行】その他代行費用"><NI val={d.bOtherProxy} onChange={set("bOtherProxy")}/></F>
         <F label="【引落】ローン諸費用"><NI val={d.bLoanFee} onChange={set("bLoanFee")}/></F>
@@ -706,7 +743,7 @@ function App() {
           {[["残代金",c.fRem,false],["売主受取(C)",c.aToS,c.overLoan],["買主総額(A)",c.tExpB,false],["自己資金",c.selfFunds,false],[d.cityTax==="あり"?"固定資産税等清算":"固定資産税清算",c.tBuy,false]].map(([lbl,val,warn])=>(
             <div key={lbl} style={{flex:"1 1 80px",padding:"3px 8px",minWidth:75,background:warn?"#8b0000":"rgba(255,255,255,0.15)",borderRadius:4,border:"1px solid rgba(255,255,255,0.3)"}}>
               <div style={{fontSize:9,color:"#cce"}}>{lbl}</div>
-              <div style={{fontSize:12,fontWeight:"bold",color:"#fff"}}>{fmt(val)}円</div>
+              <div style={{fontSize:12,fontWeight:"bold",color:"#fff",fontVariantNumeric:"tabular-nums"}}>{fmt(val)}円</div>
             </div>
           ))}
           {c.overLoan&&<div style={{flex:"0 0 100%",fontSize:10,color:"#ffc",background:"#8b0000",padding:"2px 10px",borderRadius:4}}>⚠ オーバーローン：売主様に {fmt(c.shortfall)}円 の持ち出しが発生します</div>}
@@ -716,7 +753,7 @@ function App() {
             <button key={t} onClick={()=>setTab(i)} style={{padding:"6px 12px",fontSize:11,background:i===tab?"#fff":"transparent",border:"none",borderTop:i===tab?"2px solid #1a3a6b":"2px solid transparent",borderRight:"1px solid #ddd",cursor:"pointer",fontWeight:i===tab?"bold":"normal",color:i===tab?"#1a3a6b":"#555"}}>{t}</button>
           ))}
           <div style={{flex:1}}/>
-          <button className="no-print" onClick={()=>window.print()} style={{fontSize:11,margin:"3px 8px",padding:"3px 12px",border:"1px solid #aaa",borderRadius:4,background:"#fff",cursor:"pointer",color:"#333",fontWeight:"bold"}}>🖨 印刷 / PDF</button>
+          <button onClick={()=>window.print()} style={{fontSize:11,margin:"3px 8px",padding:"3px 12px",border:"1px solid #aaa",borderRadius:4,background:"#fff",cursor:"pointer",color:"#333",fontWeight:"bold"}}>🖨 印刷/PDF</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"14px 18px",background:"#d0d0d0"}}>
           <div id="print-area" style={{maxWidth:680,margin:"0 auto",boxShadow:"0 2px 12px rgba(0,0,0,0.25)"}}>
@@ -725,48 +762,44 @@ function App() {
         </div>
       </div>
 
-      {showSaveDialog&&(
+      {showSaveDlg&&(
         <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
           <div style={{background:"#fff",borderRadius:8,padding:"24px",width:360,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
             <div style={{fontSize:14,fontWeight:"bold",marginBottom:12,color:"#1a3a6b"}}>💾 名前をつけて保存</div>
-            <div style={{fontSize:11,color:"#666",marginBottom:6}}>保存名（空欄の場合は自動生成）</div>
             <input value={saveName} onChange={e=>setSaveName(e.target.value)} placeholder={`${d.sellerName}→${d.buyerName} (${d.settlementDT})`} style={{...iS,marginBottom:16,fontSize:12}}/>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={saveCase} style={{flex:1,padding:"8px",background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold",fontSize:12}}>保存する</button>
-              <button onClick={()=>{setShowSaveDialog(false);setSaveName("");}} style={{flex:1,padding:"8px",background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:12}}>キャンセル</button>
+              <button onClick={doSave} style={{flex:1,padding:"8px",background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold",fontSize:12}}>保存する</button>
+              <button onClick={()=>{setShowSaveDlg(false);setSaveName("");}} style={{flex:1,padding:"8px",background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:12}}>キャンセル</button>
             </div>
           </div>
         </div>
       )}
 
-      {showHistory&&(
+      {showHist&&(
         <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
           <div style={{background:"#fff",borderRadius:8,padding:"24px",width:480,maxHeight:"70vh",display:"flex",flexDirection:"column",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
             <div style={{fontSize:14,fontWeight:"bold",marginBottom:12,color:"#1a3a6b"}}>📂 保存済み一覧</div>
-            {savedCases.length===0?(
+            {saved.length===0?(
               <div style={{color:"#888",fontSize:12,textAlign:"center",padding:"20px 0"}}>保存されているデータはありません</div>
             ):(
               <div style={{overflowY:"auto",flex:1}}>
-                {savedCases.map(item=>(
-                  <div key={item.id} style={{border:"1px solid #ddd",borderRadius:6,padding:"10px 12px",marginBottom:8,background:"#fafafa"}}>
+                {saved.map(item=>(
+                  <div key={item.id} style={{border:`1px solid ${item.id===curId?"#1a3a6b":"#ddd"}`,borderRadius:6,padding:"10px 12px",marginBottom:8,background:item.id===curId?"#eef3fb":"#fafafa"}}>
                     <div style={{fontWeight:"bold",fontSize:12,marginBottom:2,color:"#1a3a6b"}}>{item.name}</div>
                     <div style={{fontSize:10,color:"#888",marginBottom:8}}>保存日時：{item.savedAt}</div>
                     <div style={{display:"flex",gap:6}}>
-                      <button onClick={()=>loadCase(item)} style={{flex:1,padding:"5px",background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:11,fontWeight:"bold"}}>📥 読み込む</button>
-                      {deleteConfirm===item.id?(
-                        <>
-                          <button onClick={()=>deleteCase(item.id)} style={{flex:1,padding:"5px",background:"#8b0000",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:11,fontWeight:"bold"}}>本当に削除</button>
-                          <button onClick={()=>setDeleteConfirm(null)} style={{flex:1,padding:"5px",background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:11}}>キャンセル</button>
-                        </>
+                      <button onClick={()=>doLoad(item)} style={{flex:1,padding:"5px",background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:11,fontWeight:"bold"}}>📥 読み込む</button>
+                      {delConf===item.id?(
+                        <><button onClick={()=>doDel(item.id)} style={{flex:1,padding:"5px",background:"#8b0000",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:11,fontWeight:"bold"}}>本当に削除</button><button onClick={()=>setDelConf(null)} style={{flex:1,padding:"5px",background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:11}}>キャンセル</button></>
                       ):(
-                        <button onClick={()=>setDeleteConfirm(item.id)} style={{padding:"5px 12px",background:"#eee",color:"#666",border:"1px solid #ccc",borderRadius:4,cursor:"pointer",fontSize:11}}>🗑 削除</button>
+                        <button onClick={()=>setDelConf(item.id)} style={{padding:"5px 12px",background:"#eee",color:"#666",border:"1px solid #ccc",borderRadius:4,cursor:"pointer",fontSize:11}}>🗑 削除</button>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            <button onClick={()=>{setShowHistory(false);setDeleteConfirm(null);}} style={{marginTop:12,padding:"8px",background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:12}}>閉じる</button>
+            <button onClick={()=>{setShowHist(false);setDelConf(null);}} style={{marginTop:12,padding:"8px",background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:12}}>閉じる</button>
           </div>
         </div>
       )}
@@ -774,7 +807,7 @@ function App() {
   );
 }
 
-ReactDOM.render(<App/>, document.getElementById('root'));
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
