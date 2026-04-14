@@ -271,7 +271,12 @@ function SellerGuide({d,c}){
         )}
       </div>
       <div style={DOC.sectionHead}>▼ 火災保険について</div>
-      <div style={DOC.infoBox}>お引渡し日付での火災保険の解約手続きを予めお願い申し上げます。<br/>（長期契約であれば解約返戻金があると思われます。）</div>
+      <div style={DOC.infoBox}>
+        {d.propType==="土地"
+          ?"（建物を解体した場合）解体が終了した日付での火災保険の解約手続きを予めお願い申し上げます。"
+          :"お引渡し日付での火災保険の解約手続きを予めお願い申し上げます。"
+        }<br/>（長期契約であれば解約返戻金があると思われます。）
+      </div>
       <div style={DOC.sectionHead}>■ お金の流れ（精算内訳）</div>
       <table style={DOC.table}><colgroup><col style={{width:"65%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={DOC.tdHead}>項　目</th><th style={DOC.tdHead}>金　額</th></tr></thead>
