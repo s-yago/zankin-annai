@@ -566,14 +566,25 @@ const SK="vivi_saved_cases";
 function App(){
   const [d,setD]=useState(INIT);
   const [tab,setTab]=useState(0);
+  const [spTab,setSpTab]=useState("input"); // スマホ用タブ: input / preview
   const [showHist,setShowHist]=useState(false);
+  const isSP = window.innerWidth < 768;
   const [saved,setSaved]=useState([]);
   const [saveName,setSaveName]=useState("");
   const [showSaveDlg,setShowSaveDlg]=useState(false);
   const [delConf,setDelConf]=useState(null);
   const [curId,setCurId]=useState(null);
   const [curName,setCurName]=useState("");
+  const [windowWidth,setWindowWidth]=useState(window.innerWidth);
   const c=useMemo(()=>calcAll(d),[d]);
+
+  useEffect(()=>{
+    const handleResize=()=>setWindowWidth(window.innerWidth);
+    window.addEventListener("resize",handleResize);
+    return()=>window.removeEventListener("resize",handleResize);
+  },[]);
+
+  const isSP = windowWidth < 768;
 
   const set=k=>v=>{
     setD(p=>{
