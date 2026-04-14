@@ -566,7 +566,7 @@ function App(){
   const [curName,setCurName]=useState("");
   const [winW,setWinW]=useState(window.innerWidth);
   const c=useMemo(()=>calcAll(d),[d]);
-  const sp=winW<768;
+  const sp=winW<=1024;
 
   useEffect(()=>{
     try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{}
