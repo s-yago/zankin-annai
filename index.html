@@ -39,7 +39,9 @@ const md=(d)=>`${d.getMonth()+1}月${d.getDate()}日`;
 
 const INIT={
   propType:"戸建",txType:"売主",address:"富山市〇〇町1-2-3",addressZip:"",
-  sellerName:"売主 太郎",sellerAddr:"富山市△△町4-5-6",buyerName:"買主 次郎",
+  // 売主・買主を複数対応
+  sellers:[{name:"売主 太郎",addr:"富山市△△町4-5-6"}],
+  buyers:[{name:"買主 次郎",addr:""}],
   contractDate:"2026-02-10",settlementDT:"2026-03-19",settlementTime:"10:00",
   gathering:"あり",gatheringPlace:"北陸銀行 〇〇支店",viviBank:"北陸銀行",
   shihoShoshi:"廣田司法書士事務所　076-423-6826",shihoShoshiOther:"",
@@ -57,8 +59,7 @@ const INIT={
   sJuminCount:"1",sInkanCount:"1",sKenriCount:"1",
   sKosekiHuhyo:"表示",showInkanWarning:"表示",
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
-  sellerBankName:"北陸銀行 富山駅前支店",sellerBankType:"普通",sellerBankNo:"1234567",sellerBankHolder:"売主 太郎",
-  bBrokerTotal:600000,bBrokerPaid:0,loanUse:"あり",loanAmount:15000000,
+  sellerBankName:"北陸銀行 富山駅前支店",sellerBankType:"普通",sellerBankNo:"1234567",sellerBankHolder:"売主 太郎",  bBrokerTotal:600000,bBrokerPaid:0,loanUse:"あり",loanAmount:15000000,
   kinshoDT:"2026-03-10",kinshoTime:"10:00",kinshoPlace:"北陸銀行 〇〇支店",
   preMove:"あり",bJuminKinsho:"2",bInkanKinsho:"2",bOtherKinsho:"収入印紙 20,000円",
   bJuminSettle:"1",bInkanSettle:"0",bRegFee:250000,reformTotal:0,reformDepositYN:"なし",reformDepositAmt:0,
@@ -201,7 +202,13 @@ function TRow({label,value,bold,indent,sub,total,warn,colSpan,wrap}){
   );
 }
 
+// 後方互換：sellers/buyersがない古いデータへの対応
+function getSellerName(d){return d.sellers?d.sellers[0]?.name||"":d.sellerName||"";}
+function getSellerAddr(d){return d.sellers?d.sellers[0]?.addr||"":d.sellerAddr||"";}
+function getBuyerName(d){return d.buyers?d.buyers[0]?.name||"":d.buyerName||"";}
+
 function SellerItems({d,c}){
+  const sellerName=getSellerName(d);
   return(
     <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
       {num(d.sKenriCount)>0&&<div>□　登記識別情報通知（権利証）　{d.sKenriCount}通</div>}
@@ -220,11 +227,12 @@ function SellerItems({d,c}){
 
 function SellerGuide({d,c}){
   const shiho=d.shihoShoshi==="その他"?d.shihoShoshiOther:d.shihoShoshi;
+  const sellerName=getSellerName(d);
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>残 金 決 済 の ご 案 内（売 主 様）</div>
-      <div><span style={DOC.addressee}>{d.sellerName} 様</span></div>
+      <div><span style={DOC.addressee}>{sellerName} 様</span></div>
       <div style={{fontSize:10,color:"#555",margin:"4px 0 8px"}}>平素よりお世話になっております。下記の通り残金決済のご案内をいたします。</div>
       <div style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
       <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>担当：</span>{shiho}</div>
@@ -324,11 +332,12 @@ function BuyerGuide({d,c}){
   const shiho=d.shihoShoshi==="その他"?d.shihoShoshiOther:d.shihoShoshi;
   const isTochi=d.propType==="土地";
   const isKinshoTiming=d.gathering==="なし"&&d.loanUse==="あり"&&d.bMendanTiming==="金消契約時に併せて実施";
+  const buyerName=getBuyerName(d);
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>残 金 決 済 の ご 案 内（買 主 様）</div>
-      <div><span style={DOC.addressee}>{d.buyerName} 様</span></div>
+      <div><span style={DOC.addressee}>{buyerName} 様</span></div>
       <div style={{fontSize:10,color:"#555",margin:"4px 0 8px"}}>平素よりお世話になっております。下記の通り残金決済のご案内をいたします。</div>
       <div style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
       <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>担当：</span>{shiho}</div>
@@ -455,7 +464,7 @@ function Receipt({d,c}){
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>領　　収　　書</div>
-      <div style={{marginBottom:14}}><span style={DOC.addressee}>{d.buyerName} 様</span></div>
+      <div style={{marginBottom:14}}><span style={DOC.addressee}>{buyerName} 様</span></div>
       <div style={{textAlign:"center",fontSize:24,fontWeight:"bold",padding:"14px 0",border:"2px solid #1a3a6b",marginBottom:14,background:"#f5f8ff",letterSpacing:2}}>金　{fmt(c.fRem)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
@@ -465,8 +474,8 @@ function Receipt({d,c}){
       </table>
       <div style={{fontSize:11,margin:"6px 0 18px"}}>上記正に領収致しました。</div>
       <div style={{textAlign:"right",fontSize:11,borderTop:"1px solid #aaa",paddingTop:10}}>
-        <div>住　所　{d.sellerAddr}</div>
-        <div style={{marginTop:4}}>氏　名　{d.sellerName}　　　<span style={DOC.stamp}>印</span></div>
+        <div>住　所　{sellerAddr}</div>
+        <div style={{marginTop:4}}>氏　名　{sellerName}　　　<span style={DOC.stamp}>印</span></div>
       </div>
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
@@ -476,11 +485,13 @@ function Receipt({d,c}){
 function TaxDoc({d,c}){
   const curYearEnd=new Date(c.endDate.getTime()-86400000);
   const nextYearEnd=new Date(c.endDate.getFullYear()+1,c.endDate.getMonth(),c.endDate.getDate()-1);
+  const buyerName=getBuyerName(d);
+  const sellerName=getSellerName(d);
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>{c.taxLabel}　清算金領収書</div>
-      <div style={{marginBottom:10}}><span style={DOC.addressee}>{d.buyerName} 様</span></div>
+      <div style={{marginBottom:10}}><span style={DOC.addressee}>{buyerName} 様</span></div>
       <div style={{textAlign:"center",fontSize:22,fontWeight:"bold",padding:"12px 0",border:"2px solid #1a3a6b",marginBottom:12,background:"#f5f8ff"}}>金　{fmt(c.tBuy)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
@@ -499,19 +510,21 @@ function TaxDoc({d,c}){
           <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={4}>合　計</td><td style={{...DOC.tdRight,color:"#fff",fontWeight:"bold"}}>{fmt(c.tBuy)}円</td></tr>
         </tbody>
       </table>
-      <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>売主氏名　{d.sellerName}　　　<span style={DOC.stamp}>印</span></div>
+      <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>売主氏名　{sellerName}　　　<span style={DOC.stamp}>印</span></div>
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
 }
 
 function MgmtDoc({d,c}){
-  if(d.propType!=="マンション")return<div style={{...DOC.page,color:"#888"}}>※戸建・土地のため出力されません。</div>;
+  const buyerName=getBuyerName(d);
+  const sellerName=getSellerName(d);
+      if(d.propType!=="マンション")return<div style={{...DOC.page,color:"#888"}}>※戸建・土地のため出力されません。</div>;
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>{c.mgmtLabel}　清算金領収書</div>
-      <div style={{marginBottom:10}}><span style={DOC.addressee}>{d.buyerName} 様</span></div>
+      <div style={{marginBottom:10}}><span style={DOC.addressee}>{buyerName} 様</span></div>
       <div style={{textAlign:"center",fontSize:22,fontWeight:"bold",padding:"12px 0",border:"2px solid #1a3a6b",marginBottom:12,background:"#f5f8ff"}}>金　{fmt(c.mBuy)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
@@ -539,7 +552,105 @@ function MgmtDoc({d,c}){
           <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={4}>清算金　総合計</td><td style={{...DOC.tdRight,color:"#fff",fontSize:13}} colSpan={2}>{fmt(c.mBuy)}円</td></tr>
         </tbody>
       </table>
-      <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>売主氏名　{d.sellerName}　　　<span style={DOC.stamp}>印</span></div>
+      <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>売主氏名　{sellerName}　　　<span style={DOC.stamp}>印</span></div>
+      <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
+    </div>
+  );
+}
+
+// ── 実測清算覚書 ──
+function CoverageMemo({d,c}){
+  const sellers=d.sellers||[{name:d.sellerName||"",addr:d.sellerAddr||""}];
+  const buyers=d.buyers||[{name:d.buyerName||"",addr:""}];
+  const hasJissoku=num(d.unitPrice)>0&&num(d.actualArea)>0&&num(d.officialArea)>0;
+  const contractYMD=jDate(d.contractDate);
+  const settlementYMD=jDate(d.settlementDT);
+  const uPrice=num(d.unitPrice);
+  const aArea=num(d.actualArea);
+  const oArea=num(d.officialArea);
+  const diff=Math.round((aArea-oArea)*100)/100;
+  const newTotal=hasJissoku?Math.floor(uPrice*aArea):0;
+  const fRem=newTotal-Math.round(num(d.deposit));
+  // 令和変換
+  const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s);return`令和${d.getFullYear()-2018}年${d.getMonth()+1}月${d.getDate()}日`;};
+  const signLine=(label,name,addr)=>(
+    <div style={{marginBottom:16}}>
+      <div style={{fontWeight:"bold",fontSize:13,marginBottom:8}}>《　{label}　》</div>
+      <table style={{width:"100%",borderCollapse:"collapse"}}>
+        <tbody>
+          <tr><td style={{padding:"6px 0",width:60,fontSize:11,color:"#333"}}>住　所</td><td style={{borderBottom:"1px solid #333",padding:"6px 8px",fontSize:11}}>{addr}</td></tr>
+          <tr><td style={{padding:"6px 0",fontSize:11,color:"#333"}}>氏　名</td><td style={{borderBottom:"1px solid #333",padding:"6px 8px",fontSize:11,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span>{name}</span><span style={DOC.stamp}>印</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  );
+  return(
+    <div style={DOC.page}>
+      <div style={{...DOC.header,marginBottom:16}}>
+        <div style={DOC.logo}>ViVi不動産株式会社<span style={DOC.logoSub}>ViVi Real Estate Co., Ltd.</span></div>
+        <div style={{textAlign:"right",fontSize:9,color:"#555"}}>
+          <div>決済日：{settlementYMD}</div>
+          <div>物件：{d.propType}　{d.address}</div>
+        </div>
+      </div>
+      <div style={{...DOC.docTitle,letterSpacing:6}}>覚　　書</div>
+      {!hasJissoku&&<div style={{...DOC.warningBox,textAlign:"center"}}>⚠ 実測清算の入力（平米単価・公簿面積・実測面積）が必要です</div>}
+      <div style={{fontSize:12,lineHeight:2,marginBottom:16}}>
+        <p>売主<strong>{sellers.map(s=>s.name).join("および")}</strong>および買主<strong>{buyers.map(b=>b.name).join("および")}</strong>は、両者間で締結された<strong>{toReiwa(d.contractDate)}</strong>付不動産売買契約書（以下「本契約書」という。）第３条、第６条規定の事項に関し、本日下記の事項を確認した。</p>
+      </div>
+      <div style={{textAlign:"center",fontSize:14,fontWeight:"bold",letterSpacing:4,marginBottom:16}}>記</div>
+      <div style={{fontSize:12,lineHeight:2.2}}>
+        <p style={{marginBottom:8}}><strong>１．</strong>売買土地の実測面積は、本契約書第３条規定の実測の結果、次のとおり確定した。</p>
+        <div style={{border:"1px solid #aaa",borderRadius:4,padding:"10px 20px",marginBottom:16,background:"#f9f9f9"}}>
+          <div style={{fontSize:16,fontWeight:"bold",textAlign:"center",marginBottom:4}}>
+            {hasJissoku?`${aArea.toFixed(2)} ㎡`:"　　　．　　　㎡"}
+          </div>
+          <div style={{fontSize:11,textAlign:"center",color:"#555"}}>
+            {hasJissoku?`（契約書面積より ${Math.abs(diff).toFixed(2)} ㎡ ${diff>=0?"増":"減"}）`:"（契約書面積より　　　㎡増または減）"}
+          </div>
+        </div>
+        <p style={{marginBottom:8}}><strong>２．</strong>本契約書第１条規定の売買代金は、前項の確定面積に基づき、本契約書第６条の規定により残代金支払時に、次のとおり清算するものとする。</p>
+        <div style={{border:"1px solid #aaa",borderRadius:4,padding:"10px 20px",marginBottom:16,background:"#f9f9f9"}}>
+          {hasJissoku?(
+            <div style={{fontSize:12,textAlign:"center"}}>
+              <span style={{fontWeight:"bold"}}>{aArea.toFixed(2)} ㎡</span>
+              <span style={{margin:"0 8px"}}>×</span>
+              <span>標記単価（{fmt(uPrice)} 円）</span>
+              <span style={{margin:"0 8px"}}>=</span>
+              <span style={{fontWeight:"bold",fontSize:14}}>{fmt(newTotal)} 円</span>
+              <span style={{margin:"0 4px"}}>… ①</span>
+            </div>
+          ):(
+            <div style={{fontSize:12,textAlign:"center",color:"#888"}}>　　　㎡ × 標記単価（　　　円） ＝ 　　　円 … ①</div>
+          )}
+        </div>
+        <p style={{marginBottom:8}}><strong>３．</strong>本契約書第５条および６条に定める残代金の金額は、次の通りとする。</p>
+        <div style={{border:"1px solid #aaa",borderRadius:4,padding:"12px 20px",marginBottom:20,background:"#f9f9f9"}}>
+          {hasJissoku?(
+            <div style={{fontSize:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                <span>確定売買金額①</span><span style={{fontWeight:"bold"}}>{fmt(newTotal)} 円</span>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                <span>手付金</span><span>△ {fmt(Math.round(num(d.deposit)))} 円</span>
+              </div>
+              <div style={{borderTop:"1px solid #aaa",paddingTop:8,display:"flex",justifyContent:"space-between",fontWeight:"bold",fontSize:14}}>
+                <span>残代金</span><span>{fmt(fRem)} 円</span>
+              </div>
+            </div>
+          ):(
+            <div style={{fontSize:12,color:"#888",textAlign:"center"}}>確定売買金額① 　　　円 ー 手付金 　　　円 ＝ 金 　　　円</div>
+          )}
+        </div>
+      </div>
+      <div style={{fontSize:11,lineHeight:2,marginBottom:20}}>
+        上記の確認を証するため本書{sellers.length+buyers.length}通を作成し、売主および買主は、各々１通を保有する。
+      </div>
+      <div style={{textAlign:"right",fontSize:12,marginBottom:24}}>
+        {toReiwa(d.settlementDT)}
+      </div>
+      {sellers.map((s,i)=>signLine(sellers.length>1?`売　主　${i+1}`:"売　主",s.name,s.addr))}
+      {buyers.map((b,i)=>signLine(buyers.length>1?`買　主　${i+1}`:"買　主",b.name,b.addr))}
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
@@ -554,8 +665,8 @@ const Sec=({label,color})=><div style={{fontSize:10,fontWeight:"bold",padding:"3
 const F=({label,children,half})=><div style={{marginBottom:3,width:half?"50%":"100%",display:"inline-block",paddingRight:half?3:0,boxSizing:"border-box"}}><div style={{fontSize:10,color:"#666",marginBottom:1}}>{label}</div>{children}</div>;
 const TB=({val,onChange,opts})=><div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>{opts.map(o=><button key={o} onClick={()=>onChange(o)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:val===o?"#1a3a6b":"#f5f5f5",color:val===o?"#fff":"#333",fontWeight:val===o?"bold":"normal"}}>{o}</button>)}</div>;
 
-const TABS=["案内_売主","案内_買主","領収書","固都税清算書","管理費等清算書"];
-const TAB_COMPS=[SellerGuide,BuyerGuide,Receipt,TaxDoc,MgmtDoc];
+const TABS=["案内_売主","案内_買主","領収書","実測清算覚書","固都税清算書","管理費等清算書"];
+const TAB_COMPS=[SellerGuide,BuyerGuide,Receipt,CoverageMemo,TaxDoc,MgmtDoc];
 const SK="vivi_saved_cases";
 
 function App(){
@@ -634,9 +745,32 @@ function App(){
         </div>
         <TI val={d.address} onChange={set("address")} placeholder="住所を入力"/>
       </F>
-      <F label="売主氏名"><TI val={d.sellerName} onChange={set("sellerName")}/></F>
-      <F label="売主住所"><TI val={d.sellerAddr} onChange={set("sellerAddr")}/></F>
-      <F label="買主氏名"><TI val={d.buyerName} onChange={set("buyerName")}/></F>
+      <F label="売主氏名・住所">
+        {(d.sellers||[{name:d.sellerName||"",addr:d.sellerAddr||""}]).map((s,i)=>(
+          <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"6px",marginBottom:4,background:"#fafafa"}}>
+            <div style={{fontSize:10,color:"#888",marginBottom:3}}>売主{d.sellers&&d.sellers.length>1?` ${i+1}`:""}</div>
+            <TI val={s.name} onChange={v=>{const ns=[...(d.sellers||[{name:d.sellerName||"",addr:d.sellerAddr||""}])];ns[i]={...ns[i],name:v};setD(p=>({...p,sellers:ns}));}} placeholder="氏名"/>
+            <div style={{marginTop:3}}>
+              <TI val={s.addr} onChange={v=>{const ns=[...(d.sellers||[{name:d.sellerName||"",addr:d.sellerAddr||""}])];ns[i]={...ns[i],addr:v};setD(p=>({...p,sellers:ns}));}} placeholder="住所"/>
+            </div>
+            {d.sellers&&d.sellers.length>1&&<button onClick={()=>setD(p=>({...p,sellers:p.sellers.filter((_,j)=>j!==i)}))} style={{fontSize:10,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:3}}>✕ 削除</button>}
+          </div>
+        ))}
+        <button onClick={()=>setD(p=>({...p,sellers:[...(p.sellers||[{name:p.sellerName||"",addr:p.sellerAddr||""}]),{name:"",addr:""}]}))} style={{fontSize:11,padding:"4px 10px",background:"#eef3fb",border:"1px solid #1a3a6b",borderRadius:4,cursor:"pointer",color:"#1a3a6b",width:"100%"}}>＋ 売主を追加</button>
+      </F>
+      <F label="買主氏名・住所">
+        {(d.buyers||[{name:d.buyerName||"",addr:""}]).map((b,i)=>(
+          <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"6px",marginBottom:4,background:"#fafafa"}}>
+            <div style={{fontSize:10,color:"#888",marginBottom:3}}>買主{d.buyers&&d.buyers.length>1?` ${i+1}`:""}</div>
+            <TI val={b.name} onChange={v=>{const nb=[...(d.buyers||[{name:d.buyerName||"",addr:""}])];nb[i]={...nb[i],name:v};setD(p=>({...p,buyers:nb}));}} placeholder="氏名"/>
+            <div style={{marginTop:3}}>
+              <TI val={b.addr} onChange={v=>{const nb=[...(d.buyers||[{name:d.buyerName||"",addr:""}])];nb[i]={...nb[i],addr:v};setD(p=>({...p,buyers:nb}));}} placeholder="住所（覚書用）"/>
+            </div>
+            {d.buyers&&d.buyers.length>1&&<button onClick={()=>setD(p=>({...p,buyers:p.buyers.filter((_,j)=>j!==i)}))} style={{fontSize:10,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:3}}>✕ 削除</button>}
+          </div>
+        ))}
+        <button onClick={()=>setD(p=>({...p,buyers:[...(p.buyers||[{name:p.buyerName||"",addr:""}]),{name:"",addr:""}]}))} style={{fontSize:11,padding:"4px 10px",background:"#dcfde8",border:"1px solid #1a6b3a",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%"}}>＋ 買主を追加</button>
+      </F>
       <F label="ご契約日"><DI val={d.contractDate} onChange={set("contractDate")}/></F>
       <div style={{display:"flex",gap:3}}>
         <F label="決済日" half><DI val={d.settlementDT} onChange={set("settlementDT")}/></F>
