@@ -510,7 +510,13 @@ function TaxDoc({d,c}){
           <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={4}>合　計</td><td style={{...DOC.tdRight,color:"#fff",fontWeight:"bold"}}>{fmt(c.tBuy)}円</td></tr>
         </tbody>
       </table>
-      <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>売主氏名　{sellerName}　　　<span style={DOC.stamp}>印</span></div>
+      <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>
+        {(d.sellers||[{name:d.sellerName||"",addr:""}]).map((s,i)=>(
+          <div key={i} style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:16,marginBottom:4}}>
+            <span>売主氏名　{s.name}</span><span style={DOC.stamp}>印</span>
+          </div>
+        ))}
+      </div>
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
@@ -552,7 +558,13 @@ function MgmtDoc({d,c}){
           <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={4}>清算金　総合計</td><td style={{...DOC.tdRight,color:"#fff",fontSize:13}} colSpan={2}>{fmt(c.mBuy)}円</td></tr>
         </tbody>
       </table>
-      <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>売主氏名　{sellerName}　　　<span style={DOC.stamp}>印</span></div>
+      <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>
+        {(d.sellers||[{name:d.sellerName||"",addr:""}]).map((s,i)=>(
+          <div key={i} style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:16,marginBottom:4}}>
+            <span>売主氏名　{s.name}</span><span style={DOC.stamp}>印</span>
+          </div>
+        ))}
+      </div>
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
@@ -574,14 +586,17 @@ function CoverageMemo({d,c}){
   // 令和変換
   const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s);return`令和${d.getFullYear()-2018}年${d.getMonth()+1}月${d.getDate()}日`;};
   const signLine=(label,name,addr)=>(
-    <div style={{marginBottom:16}}>
-      <div style={{fontWeight:"bold",fontSize:13,marginBottom:8}}>《　{label}　》</div>
-      <table style={{width:"100%",borderCollapse:"collapse"}}>
-        <tbody>
-          <tr><td style={{padding:"6px 0",width:60,fontSize:11,color:"#333"}}>住　所</td><td style={{borderBottom:"1px solid #333",padding:"6px 8px",fontSize:11}}>{addr}</td></tr>
-          <tr><td style={{padding:"6px 0",fontSize:11,color:"#333"}}>氏　名</td><td style={{borderBottom:"1px solid #333",padding:"6px 8px",fontSize:11,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span>{name}</span><span style={DOC.stamp}>印</span></td></tr>
-        </tbody>
-      </table>
+    <div key={label+name} style={{marginBottom:10,pageBreakInside:"avoid"}}>
+      <div style={{fontWeight:"bold",fontSize:12,marginBottom:4,borderLeft:"3px solid #1a3a6b",paddingLeft:6}}>《　{label}　》</div>
+      <div style={{display:"flex",gap:8,alignItems:"baseline",marginBottom:3}}>
+        <span style={{fontSize:11,color:"#333",width:40,flexShrink:0}}>住　所</span>
+        <span style={{flex:1,borderBottom:"1px solid #333",padding:"2px 6px",fontSize:11,minHeight:20}}>{addr}</span>
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <span style={{fontSize:11,color:"#333",width:40,flexShrink:0}}>氏　名</span>
+        <span style={{flex:1,borderBottom:"1px solid #333",padding:"2px 6px",fontSize:11,minHeight:20}}>{name}</span>
+        <span style={DOC.stamp}>印</span>
+      </div>
     </div>
   );
   return(
