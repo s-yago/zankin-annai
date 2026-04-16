@@ -509,6 +509,9 @@ function Receipt({d,c}){
 function TaxDoc({d,c}){
   const curYearEnd=new Date(c.endDate.getTime()-86400000);
   const nextYearEnd=new Date(c.endDate.getFullYear()+1,c.endDate.getMonth(),c.endDate.getDate()-1);
+  // 翌年度日数を正確に計算（起算日4/1→翌年4/1〜翌年3/31、起算日1/1→翌年1/1〜翌年12/31）
+  const nextYearStart=c.endDate;
+  const nextYearDays=Math.round((new Date(nextYearStart.getFullYear()+1,nextYearStart.getMonth(),nextYearStart.getDate())-nextYearStart)/86400000);
   const buyers=getBuyers(d);
   return(
     <div style={DOC.page}>
@@ -529,7 +532,7 @@ function TaxDoc({d,c}){
         <thead><tr>{["項　目","対象期間","負担日数","税額（年額）","清算金額"].map(h=><th key={h} style={DOC.tdHead}>{h}</th>)}</tr></thead>
         <tbody>
           <tr><td style={DOC.td}>当年度　日割分</td><td style={{...DOC.td,textAlign:"center"}}>{md(c.sDate)} ～ {md(curYearEnd)}</td><td style={DOC.tdRight}>{c.buyerDays}日</td><td style={DOC.tdRight}>{fmt(c.tAnn)}円</td><td style={{...DOC.tdRight,fontWeight:"bold"}}>{fmt(c.tAnn-c.tSel)}円</td></tr>
-          {c.tNextYear>0&&<><tr><td style={DOC.td}>翌年度　1年分</td><td style={{...DOC.td,textAlign:"center"}}>{md(c.endDate)} ～ {md(nextYearEnd)}</td><td style={DOC.tdRight}>365日</td><td style={DOC.tdRight}>{fmt(c.tNextYear)}円</td><td style={{...DOC.tdRight,fontWeight:"bold"}}>{fmt(c.tNextYear)}円</td></tr><tr><td colSpan={5} style={{...DOC.td,fontSize:9,color:"#555"}}>※翌年度分(1年分)も事前の取り決めにより併せて清算しております。</td></tr></>}
+          {c.tNextYear>0&&<><tr><td style={DOC.td}>翌年度　1年分</td><td style={{...DOC.td,textAlign:"center"}}>{md(c.endDate)} ～ {md(nextYearEnd)}</td><td style={DOC.tdRight}>{nextYearDays}日</td><td style={DOC.tdRight}>{fmt(c.tNextYear)}円</td><td style={{...DOC.tdRight,fontWeight:"bold"}}>{fmt(c.tNextYear)}円</td></tr><tr><td colSpan={5} style={{...DOC.td,fontSize:9,color:"#555"}}>※翌年度分(1年分)も事前の取り決めにより併せて清算しております。</td></tr></>}
           <tr style={{background:"#1a3a6b",color:"#fff",fontWeight:"bold"}}><td style={{...DOC.td,color:"#fff"}} colSpan={4}>合　計</td><td style={{...DOC.tdRight,color:"#fff",fontWeight:"bold"}}>{fmt(c.tBuy)}円</td></tr>
         </tbody>
       </table>
