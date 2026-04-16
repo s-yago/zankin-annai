@@ -65,6 +65,7 @@ const INIT={
   bOtherProxy:0,bLoanFee:300000,bFireInsurance:150000,bMgmtFund:0,bTransferFee:1100,bOtherDraw:0,
   bCashLabel1:"印紙代",bCashAmt1:10000,bCashLabel2:"",bCashAmt2:0,
   bJuminTransfer:"0",bInkanTransfer:"0",
+  bExtraLabel1:"",bExtraLabel2:"",bExtraLabel3:"",
   staff:"ViVi 太郎",
 };
 
@@ -256,12 +257,12 @@ function SellerSignLine({d}){
 
 function SellerGuide({d,c}){
   const shiho=d.shihoShoshi==="その他"?d.shihoShoshiOther:d.shihoShoshi;
-  const sellerName=getSellerName(d);
+  const sellers=getSellers(d);
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>残 金 決 済 の ご 案 内（売 主 様）</div>
-      <div><span style={DOC.addressee}>{sellerName} 様</span></div>
+      <div>{sellers.map((s,i)=><span key={i} style={{...DOC.addressee,marginRight:12}}>{s.name} 様</span>)}</div>
       <div style={{fontSize:10,color:"#555",margin:"4px 0 8px"}}>平素よりお世話になっております。下記の通り残金決済のご案内をいたします。</div>
       <div style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
       <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>担当：</span>{shiho}</div>
@@ -351,12 +352,12 @@ function BuyerGuide({d,c}){
   const shiho=d.shihoShoshi==="その他"?d.shihoShoshiOther:d.shihoShoshi;
   const isTochi=d.propType==="土地";
   const isKinshoTiming=d.gathering==="なし"&&d.loanUse==="あり"&&d.bMendanTiming==="金消契約時に併せて実施";
-  const buyerName=getBuyerName(d);
+  const buyers=getBuyers(d);
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>残 金 決 済 の ご 案 内（買 主 様）</div>
-      <div><span style={DOC.addressee}>{buyerName} 様</span></div>
+      <div>{buyers.map((b,i)=><span key={i} style={{...DOC.addressee,marginRight:12}}>{b.name} 様</span>)}</div>
       <div style={{fontSize:10,color:"#555",margin:"4px 0 8px"}}>平素よりお世話になっております。下記の通り残金決済のご案内をいたします。</div>
       <div style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
       <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>担当：</span>{shiho}</div>
@@ -411,6 +412,9 @@ function BuyerGuide({d,c}){
           {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{d.bJuminTransfer}通</div>}
           {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanTransfer}通</div>}
         </>}
+        {d.bExtraLabel1&&<div>□　{d.bExtraLabel1}</div>}
+        {d.bExtraLabel2&&<div>□　{d.bExtraLabel2}</div>}
+        {d.bExtraLabel3&&<div>□　{d.bExtraLabel3}</div>}
       </div>
       <div style={DOC.sectionHead}>■ 必要資金の内訳</div>
       <table style={DOC.table}><colgroup><col style={{width:"5%"}}/><col style={{width:"60%"}}/><col style={{width:"35%"}}/></colgroup>
@@ -422,6 +426,7 @@ function BuyerGuide({d,c}){
           {c.bBroker>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={DOC.td}>仲介手数料（残額）</td><td style={DOC.tdRight}>{yen(c.bBroker)}</td></tr>}
           {num(d.bRegFee)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={DOC.td}>登記費用</td><td style={DOC.tdRight}>{yen(d.bRegFee)}</td></tr>}
           {c.reformDeposit>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={DOC.td}>リフォーム代（決済時手付）</td><td style={DOC.tdRight}>{yen(c.reformDeposit)}</td></tr>}
+          {num(d.bOtherProxy)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={DOC.td}>その他代行費用</td><td style={DOC.tdRight}>{yen(d.bOtherProxy)}</td></tr>}
           {c.reformBalance>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>リフォーム代（完成後支払い）</td><td style={DOC.tdRight}>{yen(c.reformBalance)}</td></tr>}
           {num(d.bLoanFee)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>ローン諸費用（引落）</td><td style={DOC.tdRight}>{yen(d.bLoanFee)}</td></tr>}
           {num(d.bFireInsurance)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>火災保険料（引落）</td><td style={DOC.tdRight}>{yen(d.bFireInsurance)}</td></tr>}
@@ -479,12 +484,12 @@ function BuyerGuide({d,c}){
 function Receipt({d,c}){
   const pWord=d.propType==="マンション"?"マンション":d.propType==="土地"?"土地":"土地建物";
   const zipDisp=d.addressZip?`〒${d.addressZip.slice(0,3)}-${d.addressZip.slice(3)} `:"";
-  const buyerName=getBuyerName(d);
+  const buyers=getBuyers(d);
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>領　　収　　書</div>
-      <div style={{marginBottom:14}}><span style={DOC.addressee}>{buyerName} 様</span></div>
+      <div style={{marginBottom:14}}>{buyers.map((b,i)=><span key={i} style={{...DOC.addressee,marginRight:12}}>{b.name} 様</span>)}</div>
       <div style={{textAlign:"center",fontSize:24,fontWeight:"bold",padding:"14px 0",border:"2px solid #1a3a6b",marginBottom:14,background:"#f5f8ff",letterSpacing:2}}>金　{fmt(c.fRem)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
@@ -502,12 +507,12 @@ function Receipt({d,c}){
 function TaxDoc({d,c}){
   const curYearEnd=new Date(c.endDate.getTime()-86400000);
   const nextYearEnd=new Date(c.endDate.getFullYear()+1,c.endDate.getMonth(),c.endDate.getDate()-1);
-  const buyerName=getBuyerName(d);
+  const buyers=getBuyers(d);
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>{c.taxLabel}　清算金領収書</div>
-      <div style={{marginBottom:10}}><span style={DOC.addressee}>{buyerName} 様</span></div>
+      <div style={{marginBottom:10}}>{buyers.map((b,i)=><span key={i} style={{...DOC.addressee,marginRight:12}}>{b.name} 様</span>)}</div>
       <div style={{textAlign:"center",fontSize:22,fontWeight:"bold",padding:"12px 0",border:"2px solid #1a3a6b",marginBottom:12,background:"#f5f8ff"}}>金　{fmt(c.tBuy)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
@@ -533,13 +538,13 @@ function TaxDoc({d,c}){
 }
 
 function MgmtDoc({d,c}){
-  const buyerName=getBuyerName(d);
+  const buyers=getBuyers(d);
   if(d.propType!=="マンション")return<div style={{...DOC.page,color:"#888"}}>※戸建・土地のため出力されません。</div>;
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>{c.mgmtLabel}　清算金領収書</div>
-      <div style={{marginBottom:10}}><span style={DOC.addressee}>{buyerName} 様</span></div>
+      <div style={{marginBottom:10}}>{buyers.map((b,i)=><span key={i} style={{...DOC.addressee,marginRight:12}}>{b.name} 様</span>)}</div>
       <div style={{textAlign:"center",fontSize:22,fontWeight:"bold",padding:"12px 0",border:"2px solid #1a3a6b",marginBottom:12,background:"#f5f8ff"}}>金　{fmt(c.mBuy)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
@@ -848,6 +853,9 @@ function App(){
       <F label="【引落】その他"><NI val={d.bOtherDraw} onChange={set("bOtherDraw")}/></F>
       <div style={{display:"flex",gap:3}}><F label="現金名目①" half><TI val={d.bCashLabel1} onChange={set("bCashLabel1")}/></F><F label="金額①" half><NI val={d.bCashAmt1} onChange={set("bCashAmt1")}/></F></div>
       <div style={{display:"flex",gap:3}}><F label="現金名目②" half><TI val={d.bCashLabel2} onChange={set("bCashLabel2")}/></F><F label="金額②" half><NI val={d.bCashAmt2} onChange={set("bCashAmt2")}/></F></div>
+      <F label="持参物フリー①"><TI val={d.bExtraLabel1} onChange={set("bExtraLabel1")} placeholder="例：通帳・キャッシュカード"/></F>
+      <F label="持参物フリー②"><TI val={d.bExtraLabel2} onChange={set("bExtraLabel2")} placeholder="例：固定資産税納税通知書"/></F>
+      <F label="持参物フリー③"><TI val={d.bExtraLabel3} onChange={set("bExtraLabel3")} placeholder="例：管理規約一式"/></F>
       <Sec label="その他設定"/>
       <F label="当社担当者名"><TI val={d.staff} onChange={set("staff")}/></F>
       <div style={{height:20}}/>
