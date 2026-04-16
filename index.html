@@ -222,31 +222,30 @@ function SellerItems({d,c}){
   );
 }
 
-// 領収書の売主署名欄（住所・氏名・印）
+// 領収書の売主署名欄（住所・氏名・印 複数対応・1行コンパクト版）
 function SellerSignBlock({d}){
   const sellers=getSellers(d);
   return(
-    <div style={{textAlign:"right",fontSize:11,borderTop:"1px solid #aaa",paddingTop:10}}>
+    <div style={{textAlign:"right",fontSize:11,borderTop:"1px solid #aaa",paddingTop:8,marginTop:10}}>
       {sellers.map((s,i)=>(
-        <div key={i} style={{marginBottom:i<sellers.length-1?12:0}}>
-          <div>住　所　{s.addr}</div>
-          <div style={{marginTop:4,display:"flex",justifyContent:"flex-end",alignItems:"center",gap:8}}>
-            <span>氏　名　{s.name}</span>
-            <span style={DOC.stamp}>印</span>
-          </div>
+        <div key={i} style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:10,marginBottom:i<sellers.length-1?6:0,flexWrap:"wrap"}}>
+          {s.addr&&<span style={{color:"#333"}}>住所　{s.addr}</span>}
+          <span>氏名　{s.name}</span>
+          <span style={DOC.stamp}>印</span>
         </div>
       ))}
     </div>
   );
 }
 
-// 清算書の売主署名欄（氏名・印のみ）
+// 清算書の売主署名欄（住所・氏名・印 複数対応）
 function SellerSignLine({d}){
   const sellers=getSellers(d);
   return(
     <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>
       {sellers.map((s,i)=>(
-        <div key={i} style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:8,marginBottom:4}}>
+        <div key={i} style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:10,marginBottom:i<sellers.length-1?6:0,flexWrap:"wrap"}}>
+          {s.addr&&<span style={{color:"#333"}}>住所　{s.addr}</span>}
           <span>売主氏名　{s.name}</span>
           <span style={DOC.stamp}>印</span>
         </div>
@@ -575,17 +574,11 @@ function CoverageMemo({d,c}){
   const newTotal=hasJissoku?Math.floor(uPrice*aArea):0;
   const fRem=newTotal-Math.round(num(d.deposit));
   const signBlock=(label,name,addr,i)=>(
-    <div key={i} style={{marginBottom:12,pageBreakInside:"avoid"}}>
-      <div style={{fontWeight:"bold",fontSize:11,marginBottom:4,borderLeft:"3px solid #1a3a6b",paddingLeft:6}}>《　{label}　》</div>
-      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
-        <span style={{fontSize:11,color:"#333",minWidth:36}}>住　所</span>
-        <span style={{flex:1,borderBottom:"1px solid #333",padding:"2px 6px",fontSize:11,minHeight:22,display:"block"}}>{addr}</span>
-      </div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <span style={{fontSize:11,color:"#333",minWidth:36}}>氏　名</span>
-        <span style={{flex:1,borderBottom:"1px solid #333",padding:"2px 6px",fontSize:11,minHeight:22,display:"block"}}>{name}</span>
-        <span style={DOC.stamp}>印</span>
-      </div>
+    <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,pageBreakInside:"avoid",flexWrap:"wrap"}}>
+      <span style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",minWidth:50,borderLeft:"3px solid #1a3a6b",paddingLeft:4}}>《{label}》</span>
+      {addr&&<span style={{fontSize:10,color:"#333",borderBottom:"1px solid #aaa",padding:"1px 4px",minWidth:120,flex:2}}>住所　{addr}</span>}
+      <span style={{fontSize:10,borderBottom:"1px solid #aaa",padding:"1px 4px",minWidth:80,flex:1}}>氏名　{name}</span>
+      <span style={{...DOC.stamp,fontSize:9,padding:"0px 4px"}}>印</span>
     </div>
   );
   return(
