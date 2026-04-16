@@ -413,36 +413,46 @@ function BuyerGuide({d,c}){
         </>}
       </div>
       <div style={DOC.sectionHead}>■ 必要資金の内訳</div>
-      <table style={DOC.table}><colgroup><col style={{width:"65%"}}/><col style={{width:"35%"}}/></colgroup>
-        <thead><tr><th style={DOC.tdHead}>項　目</th><th style={DOC.tdHead}>金　額</th></tr></thead>
+      <table style={DOC.table}><colgroup><col style={{width:"5%"}}/><col style={{width:"60%"}}/><col style={{width:"35%"}}/></colgroup>
+        <thead><tr><th style={{...DOC.tdHead,fontSize:9}}>区分</th><th style={DOC.tdHead}>項　目</th><th style={DOC.tdHead}>金　額</th></tr></thead>
         <tbody>
-          <TRow label="売買残代金" value={yen(c.fRem)}/>
-          {c.tBuy>0&&<TRow label={`${c.taxLabel}清算金`} value={yen(c.tBuy)}/>}
-          {c.mBuy>0&&<TRow label={`${c.mgmtLabel}清算金`} value={yen(c.mBuy)}/>}
-          {c.bBroker>0&&<TRow label="仲介手数料（残額）" value={yen(c.bBroker)}/>}
-          {num(d.bRegFee)>0&&<TRow label="登記費用" value={yen(d.bRegFee)}/>}
-          {c.reformDeposit>0&&<TRow label="リフォーム代（決済時手付）" value={yen(c.reformDeposit)}/>}
-          {c.reformBalance>0&&<TRow label="リフォーム代（完成後支払い）" value={yen(c.reformBalance)}/>}
-          {num(d.bLoanFee)>0&&<TRow label="ローン諸費用（引落）" value={yen(d.bLoanFee)}/>}
-          {num(d.bFireInsurance)>0&&<TRow label="火災保険料（引落）" value={yen(d.bFireInsurance)}/>}
-          {num(d.bTransferFee)>0&&<TRow label="振込手数料" value={yen(d.bTransferFee)}/>}
-          {num(d.bCashAmt1)>0&&<TRow label={d.bCashLabel1} value={yen(d.bCashAmt1)}/>}
-          {num(d.bCashAmt2)>0&&<TRow label={d.bCashLabel2} value={yen(d.bCashAmt2)}/>}
-          <TRow label="必要資金総額 (A)" value={yen(c.tExpB)} total/>
-          {isLoan&&<TRow label="ローン融資額 (B)" value={yen(d.loanAmount)} bold/>}
-          <TRow label="★ 自己資金ご準備額 (A − B)" value={yen(c.selfFunds)} total/>
-          {c.surplus>0&&<tr style={{background:"#e8fde8"}}><td style={{...DOC.td,fontWeight:"bold",color:"#1a6b1a"}}>☆ お手元に残る金額 (B − A)</td><td style={{...DOC.tdRight,fontWeight:"bold",color:"#1a6b1a"}}>{yen(c.surplus)}</td></tr>}
+          <tr><td style={{...DOC.td,textAlign:"center",background:"#dce6f1",fontWeight:"bold",fontSize:11,color:"#1a3a6b"}}>①</td><td style={DOC.td}>売買残代金</td><td style={DOC.tdRight}>{yen(c.fRem)}</td></tr>
+          {c.tBuy>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#dce6f1",fontWeight:"bold",fontSize:11,color:"#1a3a6b"}}>①</td><td style={DOC.td}>{c.taxLabel}清算金</td><td style={DOC.tdRight}>{yen(c.tBuy)}</td></tr>}
+          {c.mBuy>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#dce6f1",fontWeight:"bold",fontSize:11,color:"#1a3a6b"}}>①</td><td style={DOC.td}>{c.mgmtLabel}清算金</td><td style={DOC.tdRight}>{yen(c.mBuy)}</td></tr>}
+          {c.bBroker>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={DOC.td}>仲介手数料（残額）</td><td style={DOC.tdRight}>{yen(c.bBroker)}</td></tr>}
+          {num(d.bRegFee)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={DOC.td}>登記費用</td><td style={DOC.tdRight}>{yen(d.bRegFee)}</td></tr>}
+          {c.reformDeposit>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={DOC.td}>リフォーム代（決済時手付）</td><td style={DOC.tdRight}>{yen(c.reformDeposit)}</td></tr>}
+          {c.reformBalance>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>リフォーム代（完成後支払い）</td><td style={DOC.tdRight}>{yen(c.reformBalance)}</td></tr>}
+          {num(d.bLoanFee)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>ローン諸費用（引落）</td><td style={DOC.tdRight}>{yen(d.bLoanFee)}</td></tr>}
+          {num(d.bFireInsurance)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>火災保険料（引落）</td><td style={DOC.tdRight}>{yen(d.bFireInsurance)}</td></tr>}
+          {num(d.bMgmtFund)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>管理基金等（引落）</td><td style={DOC.tdRight}>{yen(d.bMgmtFund)}</td></tr>}
+          {num(d.bTransferFee)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>振込手数料</td><td style={DOC.tdRight}>{yen(d.bTransferFee)}</td></tr>}
+          {num(d.bOtherDraw)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>その他（引落・後日払）</td><td style={DOC.tdRight}>{yen(d.bOtherDraw)}</td></tr>}
+          {num(d.bCashAmt1)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#d8f5e0",fontWeight:"bold",fontSize:11,color:"#1a6b3a"}}>③</td><td style={DOC.td}>{d.bCashLabel1}</td><td style={DOC.tdRight}>{yen(d.bCashAmt1)}</td></tr>}
+          {num(d.bCashAmt2)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#d8f5e0",fontWeight:"bold",fontSize:11,color:"#1a6b3a"}}>③</td><td style={DOC.td}>{d.bCashLabel2}</td><td style={DOC.tdRight}>{yen(d.bCashAmt2)}</td></tr>}
+          <tr style={{background:"#1a3a6b",color:"#fff"}}><td style={{...DOC.td,color:"#fff"}} colSpan={2}><span style={{fontWeight:"bold",fontSize:12}}>必要資金総額 (A)</span></td><td style={{...DOC.tdRight,fontWeight:"bold",fontSize:12,color:"#fff"}}>{yen(c.tExpB)}</td></tr>
+          {isLoan&&<tr><td style={{...DOC.td}} colSpan={2}><span style={{fontWeight:"bold"}}>ローン融資額 (B)</span></td><td style={{...DOC.tdRight,fontWeight:"bold"}}>{yen(d.loanAmount)}</td></tr>}
+          <tr style={{background:"#1a3a6b",color:"#fff"}}><td style={{...DOC.td,color:"#fff"}} colSpan={2}><span style={{fontWeight:"bold",fontSize:12}}>★ 自己資金ご準備額 (A − B)</span></td><td style={{...DOC.tdRight,fontWeight:"bold",fontSize:12,color:"#fff"}}>{yen(c.selfFunds)}</td></tr>
+          {c.surplus>0&&<tr style={{background:"#e8fde8"}}><td style={{...DOC.td,fontWeight:"bold",color:"#1a6b1a"}} colSpan={2}>☆ お手元に残る金額 (B − A)</td><td style={{...DOC.tdRight,fontWeight:"bold",color:"#1a6b1a"}}>{yen(c.surplus)}</td></tr>}
         </tbody>
       </table>
-      {c.rText&&<div style={{...DOC.noteBox,marginTop:6}}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
-      <div style={DOC.sectionHead}>■ お振込先の内訳</div>
-      <table style={DOC.table}><colgroup><col style={{width:"65%"}}/><col style={{width:"35%"}}/></colgroup>
-        <thead><tr><th style={DOC.tdHead}>お振込先</th><th style={DOC.tdHead}>金　額</th></tr></thead>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"4px 0 6px",fontSize:10}}>
+        {[["①","#dce6f1","#1a3a6b","売主様へのお振込"],["②","#e8d8f5","#5a1a8b","ViVi不動産へのお振込"],["③","#d8f5e0","#1a6b3a","当日現金ご準備"],["④","#fde8cc","#8b5000","銀行引落・後日支払等"]].map(([no,bg,col,lbl])=>(
+          <span key={no} style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 7px",borderRadius:4,background:bg,border:`1px solid ${col}`}}>
+            <span style={{fontWeight:"bold",color:col,fontSize:12}}>{no}</span>
+            <span style={{color:"#333"}}>{lbl}</span>
+          </span>
+        ))}
+      </div>
+      {c.rText&&<div style={{...DOC.noteBox,marginTop:4}}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
+      <div style={DOC.sectionHead}>■ お振込先・お支払い方法の内訳</div>
+      <table style={DOC.table}><colgroup><col style={{width:"5%"}}/><col style={{width:"60%"}}/><col style={{width:"35%"}}/></colgroup>
+        <thead><tr><th style={{...DOC.tdHead,fontSize:9}}>区分</th><th style={DOC.tdHead}>お振込先・方法</th><th style={DOC.tdHead}>金　額</th></tr></thead>
         <tbody>
-          <TRow label="① 売主様へのお振込" value={yen(c.aToS)} bold/>
-          <TRow label="② ViVi不動産へのお振込" value={yen(c.sViViProxy+c.bViViProxy)} bold/>
-          {c.bCash>0&&<TRow label="③ 当日現金ご準備" value={yen(c.bCash)} bold/>}
-          <TRow label="④ 銀行引落・後日支払等" value={yen(c.bBankDraw)} bold sub="自動引落または後日直接お支払い"/>
+          <tr><td style={{...DOC.td,textAlign:"center",background:"#dce6f1",fontWeight:"bold",fontSize:11,color:"#1a3a6b"}}>①</td><td style={{...DOC.td,fontWeight:"bold"}}>売主様へのお振込</td><td style={{...DOC.tdRight,fontWeight:"bold"}}>{yen(c.aToS)}</td></tr>
+          <tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={{...DOC.td,fontWeight:"bold"}}>ViVi不動産へのお振込</td><td style={{...DOC.tdRight,fontWeight:"bold"}}>{yen(c.sViViProxy+c.bViViProxy)}</td></tr>
+          {c.bCash>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#d8f5e0",fontWeight:"bold",fontSize:11,color:"#1a6b3a"}}>③</td><td style={{...DOC.td,fontWeight:"bold"}}>当日現金ご準備</td><td style={{...DOC.tdRight,fontWeight:"bold"}}>{yen(c.bCash)}</td></tr>}
+          <tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={{...DOC.td,fontWeight:"bold"}}>銀行引落・後日支払等<span style={{fontSize:9,fontWeight:"normal",marginLeft:4,color:"#888"}}>自動引落または後日直接お支払い</span></td><td style={{...DOC.tdRight,fontWeight:"bold"}}>{yen(c.bBankDraw)}</td></tr>
         </tbody>
       </table>
       <div style={DOC.bankBox}>
