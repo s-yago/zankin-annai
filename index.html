@@ -628,7 +628,7 @@ function CoverageMemo({d,c}){
           ):<div style={{fontSize:11,color:"#888",textAlign:"center"}}>確定売買金額① 　　　円 ー 手付金 　　　円 ＝ 金 　　　円</div>}
         </div>
       </div>
-      <div style={{fontSize:10,lineHeight:2,marginBottom:12}}>上記の確認を証するため本書{sellers.length+buyers.length}通を作成し、売主および買主は、各々１通を保有する。</div>
+      <div style={{fontSize:10,lineHeight:2,marginBottom:12}}>上記の確認を証するため本書２通を作成し、売主および買主は、各々１通を保有する。</div>
       <div style={{textAlign:"right",fontSize:11,marginBottom:16}}>{toReiwa(d.settlementDT)}</div>
       {sellers.map((s,i)=>signBlock(sellers.length>1?`売　主　${i+1}`:"売　主",s.name,s.addr,`s${i}`))}
       {buyers.map((b,i)=>signBlock(buyers.length>1?`買　主　${i+1}`:"買　主",b.name,b.addr,`b${i}`))}
