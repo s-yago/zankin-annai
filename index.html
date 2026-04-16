@@ -207,13 +207,14 @@ function TRow({label,value,bold,indent,sub,total,warn,colSpan,wrap}){
 
 // 売主持参物
 function SellerItems({d,c}){
+  const multiSeller=getSellers(d).length>1;
   return(
     <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
       {num(d.sKenriCount)>0&&<div>□　登記識別情報通知（権利証）　{d.sKenriCount}通</div>}
       <div>□　実印、本人確認書類、通帳</div>
-      {num(d.sJuminCount)>0&&<div>□　住民票　{d.sJuminCount}通</div>}
+      {num(d.sJuminCount)>0&&<div>□　住民票　{multiSeller?"各":""}{d.sJuminCount}通{multiSeller&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
       {d.sKosekiHuhyo==="表示"&&<div>□　戸籍の附票の写し</div>}
-      {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず残金決済時より３か月以内のものをご用意ください</span></div>}
+      {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{multiSeller?"各":""}{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず残金決済時より３か月以内のものをご用意ください</span></div>}
       {c.sCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{d.sCashLabel1}{d.sCashLabel2?`・${d.sCashLabel2}`:""}）</div>}
       <div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>
       {d.sExtraLabel1&&<div>□　{d.sExtraLabel1}</div>}
@@ -353,6 +354,7 @@ function BuyerGuide({d,c}){
   const isTochi=d.propType==="土地";
   const isKinshoTiming=d.gathering==="なし"&&d.loanUse==="あり"&&d.bMendanTiming==="金消契約時に併せて実施";
   const buyers=getBuyers(d);
+  const multiBuyer=buyers.length>1;
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
@@ -372,12 +374,12 @@ function BuyerGuide({d,c}){
           <div style={{fontSize:9,color:"#888",marginBottom:3}}>{d.gathering==="なし"?"※振込決済のため決済当日のご来場は不要です。下記書類をご用意ください。":"※残金決済時に必要なものと同じものをお持ちください。"}</div>
           <div>□　実印、本人確認書類、通帳（スマホ）</div>
           {d.gathering==="あり"?<>
-            {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{d.bJuminSettle}通</div>}
-            {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanSettle}通</div>}
+            {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminSettle}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+            {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanSettle}通</div>}
             {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円（{d.bCashLabel1}{d.bCashLabel2?`・${d.bCashLabel2}`:""}）</div>}
           </>:<>
-            {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{d.bJuminTransfer}通</div>}
-            {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanTransfer}通</div>}
+            {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminTransfer}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+            {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanTransfer}通</div>}
           </>}
         </div>
       </>}
@@ -390,8 +392,8 @@ function BuyerGuide({d,c}){
         <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}>
           <div style={{fontWeight:"bold",marginBottom:2}}>ご持参いただくもの</div>
           <div>□　実印、通帳、スマホ、{d.bOtherKinsho}</div>
-          {num(d.bJuminKinsho)>0&&<div>□　{dPrefix}住民票　{d.bJuminKinsho}通</div>}
-          {num(d.bInkanKinsho)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanKinsho}通</div>}
+          {num(d.bJuminKinsho)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminKinsho}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+          {num(d.bInkanKinsho)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanKinsho}通</div>}
         </div>
       </>}
       <div style={DOC.sectionHead}>■ 残金決済</div>
@@ -405,12 +407,12 @@ function BuyerGuide({d,c}){
         <div style={{fontWeight:"bold",marginBottom:2}}>{d.gathering==="あり"?"ご持参いただくもの":"ご用意いただくもの（振込手続き用）"}</div>
         <div>□　実印、本人確認書類、通帳（スマホ）</div>
         {d.gathering==="あり"?<>
-          {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{d.bJuminSettle}通</div>}
-          {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanSettle}通</div>}
+          {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminSettle}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+          {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanSettle}通</div>}
           {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円（{d.bCashLabel1}{d.bCashLabel2?`・${d.bCashLabel2}`:""}）</div>}
         </>:<>
-          {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{d.bJuminTransfer}通</div>}
-          {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{d.bInkanTransfer}通</div>}
+          {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminTransfer}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+          {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanTransfer}通</div>}
         </>}
         {d.bExtraLabel1&&<div>□　{d.bExtraLabel1}</div>}
         {d.bExtraLabel2&&<div>□　{d.bExtraLabel2}</div>}
