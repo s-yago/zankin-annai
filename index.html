@@ -65,6 +65,7 @@ const INIT={
   sKosekiHuhyo:"表示",showInkanWarning:"表示",
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
   sMultiNote:"",
+  moneyNote:"",
   extraTransfers:[],
   bBrokerTotal:600000,bBrokerPaid:0,loanUse:"あり",loanAmount:15000000,
   kinshoDT:"2026-03-10",kinshoTime:"10:00",kinshoPlace:"北陸銀行 〇〇支店",
@@ -375,6 +376,7 @@ function SellerGuide({d,c}){
         {c.overLoan&&<div style={DOC.warningBox}>⚠ ローン残債が受取金額を上回っています。差額 {fmt(c.shortfall)}円 を決済前日までにご自身の口座へご入金ください。</div>}
       </>}
       {c.rText&&<div style={DOC.noteBox}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
+      {d.moneyNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #c8860a",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.moneyNote}</div>}
       <div style={DOC.sectionHead}>■ インフラ（電気・水道・ガス等）について</div>
       <div style={DOC.noteBox}>お引渡しの前日までに、各事業者へ利用停止のご連絡をお願いいたします。<br/>※当社にて代行して停止手続きを行うことも可能です。ご希望の際は担当までお申し付けください。</div>
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
@@ -504,6 +506,7 @@ function BuyerGuide({d,c}){
         ))}
       </div>
       {c.rText&&<div style={{...DOC.noteBox,marginTop:4}}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
+      {d.moneyNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #c8860a",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.moneyNote}</div>}
       <div style={DOC.sectionHead}>■ お振込先・お支払い方法の内訳</div>
       <table style={DOC.table}><colgroup><col style={{width:"5%"}}/><col style={{width:"60%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={{...DOC.tdHead,fontSize:9}}>区分</th><th style={DOC.tdHead}>お振込先・方法</th><th style={DOC.tdHead}>金　額</th></tr></thead>
@@ -874,9 +877,10 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
             </div>
           </F>
         </>}
+        <F label="お金の流れ 備考（売主・買主案内 共通）">
+          <textarea value={d.moneyNote||""} onChange={e=>set("moneyNote")(e.target.value)} placeholder="例：残代金は売主様2名に各半額ずつ振込。一部現金でのお受け渡しあり。" style={{...iS,height:60,resize:"vertical",lineHeight:1.5}}/>
+        </F>
       </Acc>
-
-      {/* ④ 売主設定 */}
       <Acc id="seller" label="④ 売主様の設定" color="#fde0e0" openSec={openSec} toggleSec={toggleSec}>
         <F label="住宅ローン残債(円)"><NI val={d.loanBalance} onChange={set("loanBalance")}/></F>
         <F label="仲介手数料(総額)"><NI val={d.sBrokerTotal} onChange={set("sBrokerTotal")}/></F>
