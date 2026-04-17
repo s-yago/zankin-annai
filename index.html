@@ -39,7 +39,7 @@ const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s
 
 const INIT={
   propType:"戸建",txType:"売主",address:"富山市〇〇町1-2-3",addressZip:"",
-  sellers:[{name:"売主 太郎",addr:"富山市△△町4-5-6",bankName:"北陸銀行 富山駅前支店",bankType:"普通",bankNo:"1234567",bankHolder:"売主 太郎"}],
+  sellers:[{name:"売主 太郎",addr:"富山市△△町4-5-6",bankName:"北陸銀行 富山駅前支店",bankType:"普通",bankNo:"1234567",bankHolder:"売主 太郎",transferAmt:""}],
   buyers:[{name:"買主 次郎",addr:""}],
   contractDate:"2026-02-10",settlementDT:"2026-03-19",settlementTime:"10:00",
   gathering:"あり",gatheringPlace:"北陸銀行 〇〇支店",viviBank:"北陸銀行",
@@ -65,7 +65,7 @@ const INIT={
   sKosekiHuhyo:"表示",showInkanWarning:"表示",
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
   sMultiNote:"",
-  moneyNote:"",
+  sNote:"",
   extraTransfers:[],
   bBrokerTotal:600000,bBrokerPaid:0,loanUse:"あり",loanAmount:15000000,
   kinshoDT:"2026-03-10",kinshoTime:"10:00",kinshoPlace:"北陸銀行 〇〇支店",
@@ -80,6 +80,7 @@ const INIT={
   bJuminTransfer:"0",bInkanTransfer:"0",
   bExtraLabel1:"",bExtraLabel2:"",bExtraLabel3:"",
   bMultiNote:"",
+  bNote:"",
   bExtraItems:[],
   lifeline:"なし",
   staff:"ViVi 太郎",
@@ -363,8 +364,26 @@ function SellerGuide({d,c}){
         </tbody>
       </table>
       <div style={DOC.bankBox}>
-        <div style={{fontWeight:"bold",marginBottom:2,color:"#1a3a6b",fontSize:10}}>【お振込先口座】</div>
-        <div style={{whiteSpace:"pre-line"}}>{c.sellerBank}</div>
+        <div style={{fontWeight:"bold",marginBottom:4,color:"#1a3a6b",fontSize:10}}>【お振込先口座】</div>
+        {getSellers(d).map((s,i)=>{
+          const hasAmt=s.transferAmt&&num(s.transferAmt)>0;
+          const isLast=i===getSellers(d).length-1;
+          const allPrev=getSellers(d).slice(0,i).reduce((sum,x)=>sum+num(x.transferAmt||0),0);
+          const autoAmt=isLast&&getSellers(d).length>1?c.aToS-allPrev:null;
+          const dispAmt=hasAmt?num(s.transferAmt):autoAmt;
+          return(
+            <div key={i} style={{marginBottom:6,paddingBottom:i<getSellers(d).length-1?6:0,borderBottom:i<getSellers(d).length-1?"1px dashed #cce":"none"}}>
+              {getSellers(d).length>1&&(
+                <div style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",marginBottom:2}}>
+                  売主{i+1}：{s.name}　
+                  <span style={{fontWeight:"normal"}}>振込金額：{dispAmt!=null?yen(dispAmt):"残額"}</span>
+                  {i>=1&&<span style={{fontSize:9,color:"#8b0000",marginLeft:6}}>※振込手数料は売主様ご負担</span>}
+                </div>
+              )}
+              <div style={{fontSize:10,whiteSpace:"pre-line"}}>{s.bankName} {s.bankType} {s.bankNo}{"\n"}(名義) {s.bankHolder} 様</div>
+            </div>
+          );
+        })}
       </div>
       {c.loanBal>0&&<>
         <table style={DOC.table}><colgroup><col style={{width:"65%"}}/><col style={{width:"35%"}}/></colgroup>
@@ -378,8 +397,7 @@ function SellerGuide({d,c}){
       {c.rText&&<div style={DOC.noteBox}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
       <div style={DOC.sectionHead}>■ インフラ（電気・水道・ガス等）について</div>
       <div style={DOC.noteBox}>お引渡しの前日までに、各事業者へ利用停止のご連絡をお願いいたします。<br/>※当社にて代行して停止手続きを行うことも可能です。ご希望の際は担当までお申し付けください。</div>
-      {d.moneyNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #c8860a",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.moneyNote}</div>}
-      <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
+      {d.sNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考②】</strong><br/>{d.sNote}</div>}
     </div>
   );
 }
@@ -518,14 +536,27 @@ function BuyerGuide({d,c}){
         </tbody>
       </table>
       <div style={DOC.bankBox}>
-        <div style={{fontWeight:"bold",marginBottom:2,color:"#1a3a6b",fontSize:10}}>【① 売主様へのお振込先】</div>
-        {c.sellerBanks.map((bank,i)=>(
-          <div key={i} style={{whiteSpace:"pre-line",marginBottom:c.sellerBanks.length>1?6:4}}>
-            {c.sellerBanks.length>1&&<span style={{fontSize:9,color:"#888"}}>売主{i+1}（{getSellers(d)[i]?.name}）</span>}
-            {"\n"}{bank}
-          </div>
-        ))}
-        <div style={{fontWeight:"bold",marginBottom:2,color:"#1a3a6b",fontSize:10}}>【② ViVi不動産へのお振込先】</div>
+        <div style={{fontWeight:"bold",marginBottom:4,color:"#1a3a6b",fontSize:10}}>【① 売主様へのお振込先】</div>
+        {getSellers(d).map((s,i)=>{
+          const hasAmt=s.transferAmt&&num(s.transferAmt)>0;
+          const isLast=i===getSellers(d).length-1;
+          const allPrev=getSellers(d).slice(0,i).reduce((sum,x)=>sum+num(x.transferAmt||0),0);
+          const autoAmt=isLast&&getSellers(d).length>1?c.aToS-allPrev:null;
+          const dispAmt=hasAmt?num(s.transferAmt):autoAmt;
+          return(
+            <div key={i} style={{marginBottom:6,paddingBottom:i<getSellers(d).length-1?6:0,borderBottom:i<getSellers(d).length-1?"1px dashed #cce":"none"}}>
+              {getSellers(d).length>1&&(
+                <div style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",marginBottom:2}}>
+                  売主{i+1}：{s.name}　
+                  <span style={{fontWeight:"normal"}}>振込金額：{dispAmt!=null?yen(dispAmt):"残額"}</span>
+                  {i>=1&&<span style={{fontSize:9,color:"#8b0000",marginLeft:6}}>※振込手数料は売主様ご負担</span>}
+                </div>
+              )}
+              <div style={{fontSize:10,whiteSpace:"pre-line"}}>{s.bankName} {s.bankType} {s.bankNo}{"\n"}(名義) {s.bankHolder} 様</div>
+            </div>
+          );
+        })}
+        <div style={{fontWeight:"bold",marginBottom:2,color:"#1a3a6b",fontSize:10,marginTop:4}}>【② ViVi不動産へのお振込先】</div>
         <div style={{whiteSpace:"pre-line",marginBottom:4}}>{c.viviBank}</div>
         {[...c.sProxies.filter(x=>x.method==="別口座"),...c.bProxies.filter(x=>x.method==="別口座")].map((x,i)=>
           x.bankName&&(
@@ -554,8 +585,7 @@ function BuyerGuide({d,c}){
       </div>
       {d.propType==="マンション"&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #1a3a6b"}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>【マンション管理組合へのご連絡】</span><br/>お引っ越し日が決まりましたら、遅くとも<span style={{fontWeight:"bold"}}>1週間前まで</span>に管理会社または管理組合へご連絡ください。</div>}
       {(d.propType==="戸建"||d.propType==="マンション")&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #c8860a"}}><span style={{fontWeight:"bold",color:"#c8860a"}}>【引越し業者のご紹介】</span><br/>当社提携の引越し業者（サカイ引越センター）を<span style={{fontWeight:"bold"}}>割引価格</span>でご紹介することも可能です。ご希望の際は担当までお気軽にお申し付けください。</div>}
-      {d.moneyNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #c8860a",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.moneyNote}</div>}
-      <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
+      {d.bNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考②】</strong><br/>{d.bNote}</div>}
     </div>
   );
 }
@@ -748,7 +778,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
   const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
   const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
   const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
-  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
+  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:""}]}));
   const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
   const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
   const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:""}]}));
@@ -797,6 +827,11 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
                 <input value={s.bankNo||""} onChange={e=>setSeller(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
               </div>
               <div style={{marginTop:2}}><TI val={s.bankHolder||""} onChange={v=>setSeller(i,"bankHolder",v)} placeholder="名義人"/></div>
+              <div style={{marginTop:4,display:"flex",gap:2,alignItems:"center"}}>
+                <div style={{fontSize:9,color:"#555",whiteSpace:"nowrap"}}>振込金額(円)</div>
+                <input type="number" defaultValue={s.transferAmt||""} onBlur={e=>setSeller(i,"transferAmt",e.target.value)} placeholder="空欄=全額" style={{...iS,textAlign:"right",flex:1}}/>
+              </div>
+              {i>=1&&<div style={{fontSize:9,color:"#8b0000",marginTop:2}}>※2件目以降：振込手数料は売主様ご負担</div>}
               {getSellers(d).length>1&&<button onClick={()=>delSeller(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:2}}>✕ 削除</button>}
             </div>
           ))}
@@ -877,9 +912,6 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
             </div>
           </F>
         </>}
-        <F label="備考欄（売主・買主案内 共通）">
-          <textarea value={d.moneyNote||""} onChange={e=>set("moneyNote")(e.target.value)} placeholder="例：残代金は売主様2名に各半額ずつ振込。その他連絡事項など。" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
-        </F>
       </Acc>
       <Acc id="seller" label="④ 売主様の設定" color="#fde0e0" openSec={openSec} toggleSec={toggleSec}>
         <F label="住宅ローン残債(円)"><NI val={d.loanBalance} onChange={set("loanBalance")}/></F>
@@ -918,6 +950,9 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="その他持参物②"><TI val={d.sExtraLabel2} onChange={set("sExtraLabel2")} placeholder="例：建物図面"/></F>
         <F label="その他持参物③"><TI val={d.sExtraLabel3} onChange={set("sExtraLabel3")} placeholder="例：マンション管理費領収書"/></F>
         <F label="複数売主時の注意書き"><TI val={d.sMultiNote} onChange={set("sMultiNote")} placeholder="例：ご夫婦それぞれ実印が必要です"/></F>
+        <F label="備考欄②（売主案内のみ表示）">
+          <textarea value={d.sNote||""} onChange={e=>set("sNote")(e.target.value)} placeholder="売主様のみへの連絡事項など" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
+        </F>
         <div style={{fontSize:9,color:"#888",marginBottom:4}}>※売主の振込口座は「①基本情報」の売主欄で入力してください</div>
       </Acc>
 
@@ -982,6 +1017,9 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="持参物フリー②"><TI val={d.bExtraLabel2} onChange={set("bExtraLabel2")} placeholder="例：固定資産税納税通知書"/></F>
         <F label="持参物フリー③"><TI val={d.bExtraLabel3} onChange={set("bExtraLabel3")} placeholder="例：管理規約一式"/></F>
         <F label="複数買主時の注意書き"><TI val={d.bMultiNote} onChange={set("bMultiNote")} placeholder="例：ご夫婦それぞれ実印が必要です"/></F>
+        <F label="備考欄②（買主案内のみ表示）">
+          <textarea value={d.bNote||""} onChange={e=>set("bNote")(e.target.value)} placeholder="買主様のみへの連絡事項など" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
+        </F>
       </Acc>
 
       {/* ⑥ その他設定 */}
