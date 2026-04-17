@@ -351,7 +351,7 @@ function SellerGuide({d,c}){
           <TRow label="【②当社分及び当社経由 支払分 (B)】" value={yen(c.sViViProxy)} bold sub="買主→ViVi→各業者"/>
           {c.sBroker>0&&<TRow label="仲介手数料（残額）" value={yen(c.sBroker)} indent/>}
           {c.sProxies.filter(x=>x.method==="②ViVi").map((x,i)=><TRow key={i} label={x.label} value={yen(x.amt)} indent/>)}
-          {c.sProxyCash>0&&<TRow label="【③当日現金又は借入口座入金分】" value={yen(c.sProxyCash)} bold sub="現金で直接お支払い"/>}
+          {c.sProxyCash>0&&<TRow label="【③当日現金分】" value={yen(c.sProxyCash)} bold sub="現金で直接お支払い"/>}
           {c.sProxies.filter(x=>x.method==="③現金").map((x,i)=><TRow key={i} label={x.label} value={yen(x.amt)} indent/>)}
           {c.sProxyBetsu>0&&<TRow label="【別口座へのお振込分】" value={yen(c.sProxyBetsu)} bold sub="別途口座へ直接振込"/>}
           {c.sProxies.filter(x=>x.method==="別口座").map((x,i)=>(
