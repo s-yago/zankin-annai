@@ -737,68 +737,11 @@ function Acc({id,label,color,children,openSec,toggleSec}){
   );
 }
 
-function App(){
-  const [d,setD]=useState(INIT);
-  const [tab,setTab]=useState(0);
-  const [spTab,setSpTab]=useState("input");
-  const [showHist,setShowHist]=useState(false);
-  const [saved,setSaved]=useState([]);
-  const [saveName,setSaveName]=useState("");
-  const [showSaveDlg,setShowSaveDlg]=useState(false);
-  const [delConf,setDelConf]=useState(null);
-  const [curId,setCurId]=useState(null);
-  const [curName,setCurName]=useState("");
-  const [winW,setWinW]=useState(window.innerWidth);
-  const [openSec,setOpenSec]=useState({basic:true,shiho:false,money:false,seller:false,buyer:false,other:false});
-  const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
-  const c=useMemo(()=>calcAll(d),[d]);
-  const sp=winW<=1024;
-
-  // 追加振込先ヘルパー
-  const addExtraTransfer=()=>setD(p=>({...p,extraTransfers:[...(p.extraTransfers||[]),{label:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
-  const setExtraTransfer=(i,field,val)=>setD(p=>{const n=[...(p.extraTransfers||[])];n[i]={...n[i],[field]:val};return{...p,extraTransfers:n};});
-  const delExtraTransfer=i=>setD(p=>({...p,extraTransfers:(p.extraTransfers||[]).filter((_,j)=>j!==i)}));
-  // 追加費用項目ヘルパー
-  const addBExtraItem=()=>setD(p=>({...p,bExtraItems:[...(p.bExtraItems||[]),{label:"",amt:0,zone:"④"}]}));
-  const setBExtraItem=(i,field,val)=>setD(p=>{const n=[...(p.bExtraItems||[])];n[i]={...n[i],[field]:val};return{...p,bExtraItems:n};});
-  const delBExtraItem=i=>setD(p=>({...p,bExtraItems:(p.bExtraItems||[]).filter((_,j)=>j!==i)}));
-
-  useEffect(()=>{try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{};},[]);
-  useEffect(()=>{const fn=()=>setWinW(window.innerWidth);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
-
-  const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
-
-  // 売主・買主の更新ヘルパー
-  const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
-  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
-  const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
-  const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
-  const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:""}]}));
-  const delBuyer=(i)=>setD(p=>({...p,buyers:getBuyers(p).filter((_,j)=>j!==i)}));
-  // 売主・買主代行費用ヘルパー
-  const setSProxy=(i,field,val)=>setD(p=>{const n=(p.sProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,sProxies:n};});
-  const setBProxy=(i,field,val)=>setD(p=>{const n=(p.bProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,bProxies:n};});
-  const addBProxy=()=>setD(p=>({...p,bProxies:[...(p.bProxies||[]),{label:"",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
-  const delBProxy=(i)=>setD(p=>({...p,bProxies:(p.bProxies||[]).filter((_,j)=>j!==i)}));
-
-  const doSave=()=>{
-    const name=saveName||`${getSellerName(d)}→${getBuyerName(d)} (${d.settlementDT})`;
-    const nc={id:Date.now(),name,savedAt:new Date().toLocaleString("ja-JP"),data:d};
-    const upd=[nc,...saved].slice(0,30);
-    setSaved(upd);setCurId(nc.id);setCurName(name);
-    try{localStorage.setItem(SK,JSON.stringify(upd));}catch{}
-    setShowSaveDlg(false);setSaveName("");
-  };
-  const doOverwrite=()=>{const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
-  const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);};
-  const doDel=id=>{const upd=saved.filter(i=>i.id!==id);setSaved(upd);if(id===curId){setCurId(null);setCurName("");}try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};setDelConf(null);};
-  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");}};
-  const TabComp=TAB_COMPS[tab];
-
-  const InputPanel=(
+function InputPanelComp({d,sp,openSec,toggleSec,set,setD,saved,curId,curName,doOverwrite,setShowSaveDlg,setShowHist,doNew,setSeller,addSeller,delSeller,setBuyer,addBuyer,delBuyer,setSProxy,setBProxy,addBProxy,delBProxy,addBExtraItem,setBExtraItem,delBExtraItem,c}){
+  return(
     <div style={{width:sp?"100%":280,flexShrink:0,overflowY:"auto",background:"#fff",borderRight:sp?"none":"1px solid #ddd",padding:"6px 8px",height:"100%",boxSizing:"border-box"}}>
-      {curId&&curName&&<div style={{background:"#eef3fb",border:"1px solid #b0c8e8",borderRadius:4,padding:"4px 8px",marginBottom:4,fontSize:10,color:"#1a3a6b"}}>✏️ 編集中：<strong>{curName}</strong></div>}
       <div style={{display:"flex",gap:4,marginBottom:6}}>
+        {curId&&curName&&<div style={{background:"#eef3fb",border:"1px solid #b0c8e8",borderRadius:4,padding:"4px 8px",marginBottom:4,fontSize:10,color:"#1a3a6b",width:"100%"}}>✏️ 編集中：<strong>{curName}</strong></div>}
         {curId?<><button onClick={doOverwrite} style={{flex:2,padding:"5px 0",fontSize:10,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 上書き</button><button onClick={()=>setShowSaveDlg(true)} style={{flex:2,padding:"5px 0",fontSize:10,background:"#4a7ab5",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📋 別名</button></>:<button onClick={()=>setShowSaveDlg(true)} style={{flex:3,padding:"5px 0",fontSize:10,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 保存</button>}
         <button onClick={()=>setShowHist(true)} style={{flex:2,padding:"5px 0",fontSize:10,background:"#555",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📂 履歴({saved.length})</button>
         <button onClick={doNew} style={{flex:1,padding:"5px 0",fontSize:10,background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>＋新規</button>
@@ -1041,6 +984,71 @@ function App(){
       <div style={{height:16}}/>
     </div>
   );
+
+}
+
+function App(){
+  const [d,setD]=useState(INIT);
+  const [tab,setTab]=useState(0);
+  const [spTab,setSpTab]=useState("input");
+  const [showHist,setShowHist]=useState(false);
+  const [saved,setSaved]=useState([]);
+  const [saveName,setSaveName]=useState("");
+  const [showSaveDlg,setShowSaveDlg]=useState(false);
+  const [delConf,setDelConf]=useState(null);
+  const [curId,setCurId]=useState(null);
+  const [curName,setCurName]=useState("");
+  const [winW,setWinW]=useState(window.innerWidth);
+  const [openSec,setOpenSec]=useState({basic:true,shiho:false,money:false,seller:false,buyer:false,other:false});
+  const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
+  const c=useMemo(()=>calcAll(d),[d]);
+  const sp=winW<=1024;
+
+  // 追加振込先ヘルパー
+  const addExtraTransfer=()=>setD(p=>({...p,extraTransfers:[...(p.extraTransfers||[]),{label:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
+  const setExtraTransfer=(i,field,val)=>setD(p=>{const n=[...(p.extraTransfers||[])];n[i]={...n[i],[field]:val};return{...p,extraTransfers:n};});
+  const delExtraTransfer=i=>setD(p=>({...p,extraTransfers:(p.extraTransfers||[]).filter((_,j)=>j!==i)}));
+  // 追加費用項目ヘルパー
+  const addBExtraItem=()=>setD(p=>({...p,bExtraItems:[...(p.bExtraItems||[]),{label:"",amt:0,zone:"④"}]}));
+  const setBExtraItem=(i,field,val)=>setD(p=>{const n=[...(p.bExtraItems||[])];n[i]={...n[i],[field]:val};return{...p,bExtraItems:n};});
+  const delBExtraItem=i=>setD(p=>({...p,bExtraItems:(p.bExtraItems||[]).filter((_,j)=>j!==i)}));
+
+  useEffect(()=>{try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{};},[]);
+  useEffect(()=>{const fn=()=>setWinW(window.innerWidth);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
+
+  const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
+
+  // 売主・買主の更新ヘルパー
+  const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
+  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
+  const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
+  const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
+  const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:""}]}));
+  const delBuyer=(i)=>setD(p=>({...p,buyers:getBuyers(p).filter((_,j)=>j!==i)}));
+  // 売主・買主代行費用ヘルパー
+  const setSProxy=(i,field,val)=>setD(p=>{const n=(p.sProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,sProxies:n};});
+  const setBProxy=(i,field,val)=>setD(p=>{const n=(p.bProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,bProxies:n};});
+  const addBProxy=()=>setD(p=>({...p,bProxies:[...(p.bProxies||[]),{label:"",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
+  const delBProxy=(i)=>setD(p=>({...p,bProxies:(p.bProxies||[]).filter((_,j)=>j!==i)}));
+
+  const doSave=()=>{
+    const name=saveName||`${getSellerName(d)}→${getBuyerName(d)} (${d.settlementDT})`;
+    const nc={id:Date.now(),name,savedAt:new Date().toLocaleString("ja-JP"),data:d};
+    const upd=[nc,...saved].slice(0,30);
+    setSaved(upd);setCurId(nc.id);setCurName(name);
+    try{localStorage.setItem(SK,JSON.stringify(upd));}catch{}
+    setShowSaveDlg(false);setSaveName("");
+  };
+  const doOverwrite=()=>{const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
+  const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);};
+  const doDel=id=>{const upd=saved.filter(i=>i.id!==id);setSaved(upd);if(id===curId){setCurId(null);setCurName("");}try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};setDelConf(null);};
+  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");}};
+  const TabComp=TAB_COMPS[tab];
+
+  const ipProps={d,sp,openSec,toggleSec,set,setD,saved,curId,curName,doOverwrite,setShowSaveDlg,setShowHist,doNew,setSeller,addSeller,delSeller,setBuyer,addBuyer,delBuyer,setSProxy,setBProxy,addBProxy,delBProxy,addBExtraItem,setBExtraItem,delBExtraItem,c};
+
+  const InputPanel=<InputPanelComp {...ipProps}/>;
+
 
   const PreviewPanel=(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",height:"100%"}}>
