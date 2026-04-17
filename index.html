@@ -711,8 +711,8 @@ function CoverageMemo({d,c}){
 }
 
 const iS={width:"100%",padding:"4px 6px",fontSize:11,border:"0.5px solid #ccc",borderRadius:4,background:"#fff",color:"#222",boxSizing:"border-box"};
-const NI=({val,onChange,step})=><input type="number" value={val} onChange={e=>onChange(e.target.value)} step={step||1} style={{...iS,textAlign:"right"}}/>;
-const TI=({val,onChange,placeholder})=><input type="text" value={val} onChange={e=>onChange(e.target.value)} placeholder={placeholder||""} style={iS}/>;
+const NI=({val,onChange,step})=><input type="number" key={val} defaultValue={val} onBlur={e=>onChange(e.target.value)} step={step||1} style={{...iS,textAlign:"right"}}/>;
+const TI=({val,onChange,placeholder})=><input type="text" key={val} defaultValue={val} onBlur={e=>onChange(e.target.value)} placeholder={placeholder||""} style={iS}/>;
 const DI=({val,onChange})=><input type="date" value={val} onChange={e=>onChange(e.target.value)} style={iS}/>;
 const SI=({val,onChange,opts})=><select value={val} onChange={e=>onChange(e.target.value)} style={iS}>{opts.map(o=><option key={o}>{o}</option>)}</select>;
 const Sec=({label,color})=><div style={{fontSize:10,fontWeight:"bold",padding:"3px 6px",marginTop:8,marginBottom:2,background:color||"#eee",borderRadius:3,borderLeft:"3px solid #999"}}>{label}</div>;
