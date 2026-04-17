@@ -715,8 +715,8 @@ function CoverageMemo({d,c}){
 }
 
 const iS={width:"100%",padding:"4px 6px",fontSize:11,border:"0.5px solid #ccc",borderRadius:4,background:"#fff",color:"#222",boxSizing:"border-box"};
-const NI=({val,onChange,step})=><input type="number" value={val} onChange={e=>onChange(e.target.value)} step={step||1} style={{...iS,textAlign:"right"}}/>;
-const TI=({val,onChange,placeholder})=><input type="text" value={val} onChange={e=>onChange(e.target.value)} placeholder={placeholder||""} style={iS}/>;
+const NI=({val,onChange,step})=><input type="number" defaultValue={val} onBlur={e=>{if(String(e.target.value)!==String(val))onChange(e.target.value);}} step={step||1} style={{...iS,textAlign:"right"}}/>;
+const TI=({val,onChange,placeholder})=><input type="text" defaultValue={val} onBlur={e=>{if(e.target.value!==val)onChange(e.target.value);}} placeholder={placeholder||""} style={iS}/>;
 const DI=({val,onChange})=><input type="date" value={val} onChange={e=>onChange(e.target.value)} style={iS}/>;
 const SI=({val,onChange,opts})=><select value={val} onChange={e=>onChange(e.target.value)} style={iS}>{opts.map(o=><option key={o}>{o}</option>)}</select>;
 const Sec=({label,color})=><div style={{fontSize:10,fontWeight:"bold",padding:"3px 6px",marginTop:8,marginBottom:2,background:color||"#eee",borderRadius:3,borderLeft:"3px solid #999"}}>{label}</div>;
@@ -992,21 +992,11 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
 
 }
 // openSecとcurId/curNameが変わった時だけ再レンダリング。dの変化では再レンダリングしない。
-const InputPanelComp=React.memo(InputPanelCompInner,(prev,next)=>{
-  // openSecが変わったら再レンダリング
-  if(JSON.stringify(prev.openSec)!==JSON.stringify(next.openSec))return false;
-  // saved.lengthが変わったら再レンダリング
-  if(prev.saved.length!==next.saved.length)return false;
-  // curId/curNameが変わったら再レンダリング
-  if(prev.curId!==next.curId||prev.curName!==next.curName)return false;
-  // spが変わったら再レンダリング
-  if(prev.sp!==next.sp)return false;
-  // それ以外(d変化など)では再レンダリングしない
-  return true;
-});
+const InputPanelComp=InputPanelCompInner;
 
 function App(){
   const [d,setD]=useState(INIT);
+  const [loadKey,setLoadKey]=useState(0);
   const [tab,setTab]=useState(0);
   const [spTab,setSpTab]=useState("input");
   const [showHist,setShowHist]=useState(false);
@@ -1034,9 +1024,9 @@ function App(){
     setShowSaveDlg(false);setSaveName("");
   };
   const doOverwrite=()=>{const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
-  const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);};
+  const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);setLoadKey(k=>k+1);};
   const doDel=id=>{const upd=saved.filter(i=>i.id!==id);setSaved(upd);if(id===curId){setCurId(null);setCurName("");}try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};setDelConf(null);};
-  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");}};
+  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");setLoadKey(k=>k+1);}};
   const TabComp=TAB_COMPS[tab];
 
   const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist};
@@ -1072,7 +1062,7 @@ function App(){
       {sp?(
         <>
           <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-            {spTab==="input"&&<InputPanelComp {...ipProps}/>}
+            {spTab==="input"&&<InputPanelComp key={loadKey} {...ipProps}/>}
             {spTab==="preview"&&PreviewPanel}
           </div>
           <div style={{display:"flex",background:"#1a3a6b",borderTop:"2px solid #0d2a52",height:52,flexShrink:0}}>
@@ -1082,7 +1072,7 @@ function App(){
         </>
       ):(
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-          <InputPanelComp {...ipProps}/>
+          <InputPanelComp key={loadKey} {...ipProps}/>
           {PreviewPanel}
         </div>
       )}
