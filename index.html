@@ -737,7 +737,25 @@ function Acc({id,label,color,children,openSec,toggleSec}){
   );
 }
 
-function InputPanelComp({d,sp,openSec,toggleSec,set,setD,saved,curId,curName,doOverwrite,setShowSaveDlg,setShowHist,doNew,setSeller,addSeller,delSeller,setBuyer,addBuyer,delBuyer,setSProxy,setBProxy,addBProxy,delBProxy,addBExtraItem,setBExtraItem,delBExtraItem,c}){
+function InputPanelComp({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist}){
+  const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
+  const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
+  const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
+  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
+  const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
+  const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
+  const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:""}]}));
+  const delBuyer=(i)=>setD(p=>({...p,buyers:getBuyers(p).filter((_,j)=>j!==i)}));
+  const setSProxy=(i,field,val)=>setD(p=>{const n=(p.sProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,sProxies:n};});
+  const setBProxy=(i,field,val)=>setD(p=>{const n=(p.bProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,bProxies:n};});
+  const addBProxy=()=>setD(p=>({...p,bProxies:[...(p.bProxies||[]),{label:"",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
+  const delBProxy=(i)=>setD(p=>({...p,bProxies:(p.bProxies||[]).filter((_,j)=>j!==i)}));
+  const addBExtraItem=()=>setD(p=>({...p,bExtraItems:[...(p.bExtraItems||[]),{label:"",amt:0,zone:"④"}]}));
+  const setBExtraItem=(i,field,val)=>setD(p=>{const n=[...(p.bExtraItems||[])];n[i]={...n[i],[field]:val};return{...p,bExtraItems:n};});
+  const delBExtraItem=i=>setD(p=>({...p,bExtraItems:(p.bExtraItems||[]).filter((_,j)=>j!==i)}));
+  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");}};
+  const doOverwrite=()=>{const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
+  const c=calcAll(d);
   return(
     <div style={{width:sp?"100%":280,flexShrink:0,overflowY:"auto",background:"#fff",borderRight:sp?"none":"1px solid #ddd",padding:"6px 8px",height:"100%",boxSizing:"border-box"}}>
       <div style={{display:"flex",gap:4,marginBottom:6}}>
@@ -1004,32 +1022,8 @@ function App(){
   const c=useMemo(()=>calcAll(d),[d]);
   const sp=winW<=1024;
 
-  // 追加振込先ヘルパー
-  const addExtraTransfer=()=>setD(p=>({...p,extraTransfers:[...(p.extraTransfers||[]),{label:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
-  const setExtraTransfer=(i,field,val)=>setD(p=>{const n=[...(p.extraTransfers||[])];n[i]={...n[i],[field]:val};return{...p,extraTransfers:n};});
-  const delExtraTransfer=i=>setD(p=>({...p,extraTransfers:(p.extraTransfers||[]).filter((_,j)=>j!==i)}));
-  // 追加費用項目ヘルパー
-  const addBExtraItem=()=>setD(p=>({...p,bExtraItems:[...(p.bExtraItems||[]),{label:"",amt:0,zone:"④"}]}));
-  const setBExtraItem=(i,field,val)=>setD(p=>{const n=[...(p.bExtraItems||[])];n[i]={...n[i],[field]:val};return{...p,bExtraItems:n};});
-  const delBExtraItem=i=>setD(p=>({...p,bExtraItems:(p.bExtraItems||[]).filter((_,j)=>j!==i)}));
-
   useEffect(()=>{try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{};},[]);
   useEffect(()=>{const fn=()=>setWinW(window.innerWidth);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
-
-  const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
-
-  // 売主・買主の更新ヘルパー
-  const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
-  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
-  const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
-  const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
-  const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:""}]}));
-  const delBuyer=(i)=>setD(p=>({...p,buyers:getBuyers(p).filter((_,j)=>j!==i)}));
-  // 売主・買主代行費用ヘルパー
-  const setSProxy=(i,field,val)=>setD(p=>{const n=(p.sProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,sProxies:n};});
-  const setBProxy=(i,field,val)=>setD(p=>{const n=(p.bProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,bProxies:n};});
-  const addBProxy=()=>setD(p=>({...p,bProxies:[...(p.bProxies||[]),{label:"",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
-  const delBProxy=(i)=>setD(p=>({...p,bProxies:(p.bProxies||[]).filter((_,j)=>j!==i)}));
 
   const doSave=()=>{
     const name=saveName||`${getSellerName(d)}→${getBuyerName(d)} (${d.settlementDT})`;
@@ -1045,10 +1039,7 @@ function App(){
   const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");}};
   const TabComp=TAB_COMPS[tab];
 
-  const ipProps={d,sp,openSec,toggleSec,set,setD,saved,curId,curName,doOverwrite,setShowSaveDlg,setShowHist,doNew,setSeller,addSeller,delSeller,setBuyer,addBuyer,delBuyer,setSProxy,setBProxy,addBProxy,delBProxy,addBExtraItem,setBExtraItem,delBExtraItem,c};
-
-  const InputPanel=<InputPanelComp {...ipProps}/>;
-
+  const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist};
 
   const PreviewPanel=(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",height:"100%"}}>
@@ -1081,7 +1072,7 @@ function App(){
       {sp?(
         <>
           <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-            {spTab==="input"&&InputPanel}
+            {spTab==="input"&&<InputPanelComp {...ipProps}/>}
             {spTab==="preview"&&PreviewPanel}
           </div>
           <div style={{display:"flex",background:"#1a3a6b",borderTop:"2px solid #0d2a52",height:52,flexShrink:0}}>
@@ -1091,7 +1082,7 @@ function App(){
         </>
       ):(
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-          {InputPanel}
+          <InputPanelComp {...ipProps}/>
           {PreviewPanel}
         </div>
       )}
