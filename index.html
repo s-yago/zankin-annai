@@ -38,52 +38,52 @@ const md=(d)=>`${d.getMonth()+1}月${d.getDate()}日`;
 const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s);return`令和${d.getFullYear()-2018}年${d.getMonth()+1}月${d.getDate()}日`};
 
 const INIT={
-  propType:"戸建",txType:"売主",address:"富山市〇〇町1-2-3",addressZip:"",
-  sellers:[{name:"売主 太郎",addr:"富山市△△町4-5-6",bankName:"北陸銀行 富山駅前支店",bankType:"普通",bankNo:"1234567",bankHolder:"売主 太郎",transferAmt:""}],
-  buyers:[{name:"買主 次郎",addr:""}],
-  contractDate:"2026-02-10",settlementDT:"2026-03-19",settlementTime:"10:00",
-  gathering:"あり",gatheringPlace:"北陸銀行 〇〇支店",viviBank:"北陸銀行",
+  propType:"戸建",txType:"売主",address:"",addressZip:"",
+  sellers:[{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:""}],
+  buyers:[{name:"",addr:""}],
+  contractDate:"",settlementDT:"",settlementTime:"",
+  gathering:"あり",gatheringPlace:"",viviBank:"北陸銀行",
   shihoShoshi:"廣田司法書士事務所　076-423-6826",shihoShoshiOther:"",shihoShoshiPerson:"",
-  mendan:"なし",mendanDT:"2026-03-18",mendanTime:"10:00",mendanPlace:"",
-  bMendan:"なし",bMendanDT:"2026-03-18",bMendanTime:"10:00",bMendanPlace:"",
+  mendan:"なし",mendanDT:"",mendanTime:"",mendanPlace:"",
+  bMendan:"なし",bMendanDT:"",bMendanTime:"",bMendanPlace:"",
   bMendanTiming:"本人面談を別途実施",
   taxRounding:"切り捨て",cityTax:"あり",
-  salePrice:19000000,deposit:1000000,unitPrice:0,officialArea:0,actualArea:0,
-  taxAnnual:83574,taxBase:"4/1",overYear:"なし",
-  mgmtMonthly:12000,repairMonthly:8000,mgmtClearMonths:"当月のみ",mgmtOtherLabel:"",mgmtOtherAmt:0,
-  loanBalance:15000000,sBrokerTotal:600000,sBrokerPaid:300000,
+  salePrice:0,deposit:0,unitPrice:0,officialArea:0,actualArea:0,
+  taxAnnual:0,taxBase:"4/1",overYear:"なし",
+  mgmtMonthly:0,repairMonthly:0,mgmtClearMonths:"当月のみ",mgmtOtherLabel:"",mgmtOtherAmt:0,
+  loanBalance:0,sBrokerTotal:0,sBrokerPaid:0,
   sProxies:[
     {label:"建物滅失・表示変更",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
-    {label:"抵当権抹消（司法書士）",amt:15000,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
+    {label:"抵当権抹消（司法書士）",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
     {label:"測量費用",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
     {label:"建物解体費",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
-    {label:"荷物片づけ",amt:50000,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
+    {label:"荷物片づけ",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
     {label:"その他経費",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
   ],
-  sCashLabel1:"印紙代",sCashAmt1:10000,sCashLabel2:"",sCashAmt2:0,
+  sCashLabel1:"",sCashAmt1:0,sCashLabel2:"",sCashAmt2:0,
   sJuminCount:"1",sInkanCount:"1",sKenriCount:"1",
   sKosekiHuhyo:"表示",showInkanWarning:"表示",
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
   sMultiNote:"",
   sNote:"",
   extraTransfers:[],
-  bBrokerTotal:600000,bBrokerPaid:0,loanUse:"あり",loanAmount:15000000,
-  kinshoDT:"2026-03-10",kinshoTime:"10:00",kinshoPlace:"北陸銀行 〇〇支店",
-  preMove:"あり",bJuminKinsho:"2",bInkanKinsho:"2",bOtherKinsho:"収入印紙 20,000円",
+  bBrokerTotal:0,bBrokerPaid:0,loanUse:"あり",loanAmount:0,
+  kinshoDT:"",kinshoTime:"",kinshoPlace:"",
+  preMove:"あり",bJuminKinsho:"2",bInkanKinsho:"2",bOtherKinsho:"",
   bJuminSettle:"1",bInkanSettle:"0",
   bProxies:[
-    {label:"登記費用",amt:250000,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
+    {label:"登記費用",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
   ],
   reformTotal:0,reformDepositYN:"なし",reformDepositAmt:0,
-  bLoanFee:300000,bFireInsurance:150000,bMgmtFund:0,bTransferFee:1100,bOtherDraw:0,
-  bCashLabel1:"印紙代",bCashAmt1:10000,bCashLabel2:"",bCashAmt2:0,
+  bLoanFee:0,bFireInsurance:0,bMgmtFund:0,bTransferFee:0,bOtherDraw:0,
+  bCashLabel1:"",bCashAmt1:0,bCashLabel2:"",bCashAmt2:0,
   bJuminTransfer:"0",bInkanTransfer:"0",
   bExtraLabel1:"",bExtraLabel2:"",bExtraLabel3:"",
   bMultiNote:"",
   bNote:"",
   bExtraItems:[],
   lifeline:"なし",
-  staff:"ViVi 太郎",
+  staff:"",
 };
 
 // 後方互換ヘルパー
@@ -748,7 +748,7 @@ function CoverageMemo({d,c}){
 }
 
 const iS={width:"100%",padding:"4px 6px",fontSize:11,border:"0.5px solid #ccc",borderRadius:4,background:"#fff",color:"#222",boxSizing:"border-box"};
-const NI=({val,onChange,step})=><input type="number" defaultValue={val} onBlur={e=>{if(String(e.target.value)!==String(val))onChange(e.target.value);}} step={step||1} style={{...iS,textAlign:"right"}}/>;
+const NI=({val,onChange,step})=><input type="number" defaultValue={!val||val==0?"":val} onBlur={e=>{if(String(e.target.value)!==String(val))onChange(e.target.value||0);}} step={step||1} placeholder="0" style={{...iS,textAlign:"right"}}/>;
 const TI=({val,onChange,placeholder})=><input type="text" defaultValue={val} onBlur={e=>{if(e.target.value!==val)onChange(e.target.value);}} placeholder={placeholder||""} style={iS}/>;
 const DI=({val,onChange})=><input type="date" value={val} onChange={e=>onChange(e.target.value)} style={iS}/>;
 const SI=({val,onChange,opts})=><select value={val} onChange={e=>onChange(e.target.value)} style={iS}>{opts.map(o=><option key={o}>{o}</option>)}</select>;
@@ -818,7 +818,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
           {getSellers(d).map((s,i)=>(
             <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"5px",marginBottom:3,background:"#fff8f8"}}>
               <div style={{fontSize:9,color:"#888",marginBottom:2}}>売主{getSellers(d).length>1?` ${i+1}`:""}</div>
-              <TI val={s.name} onChange={v=>setSeller(i,"name",v)} placeholder="氏名"/>
+              <TI val={s.name} onChange={v=>setSeller(i,"name",v)} placeholder="例：売主 太郎"/>
               <div style={{marginTop:2}}><TI val={s.addr} onChange={v=>setSeller(i,"addr",v)} placeholder="住所"/></div>
               <div style={{marginTop:2,fontSize:9,color:"#888"}}>振込口座</div>
               <TI val={s.bankName||""} onChange={v=>setSeller(i,"bankName",v)} placeholder="銀行・支店名"/>
@@ -841,7 +841,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
           {getBuyers(d).map((b,i)=>(
             <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"5px",marginBottom:3,background:"#f0fff4"}}>
               <div style={{fontSize:9,color:"#888",marginBottom:2}}>買主{getBuyers(d).length>1?` ${i+1}`:""}</div>
-              <TI val={b.name} onChange={v=>setBuyer(i,"name",v)} placeholder="氏名"/>
+              <TI val={b.name} onChange={v=>setBuyer(i,"name",v)} placeholder="例：買主 花子"/>
               <div style={{marginTop:2}}><TI val={b.addr} onChange={v=>setBuyer(i,"addr",v)} placeholder="住所（覚書用）"/></div>
               {getBuyers(d).length>1&&<button onClick={()=>delBuyer(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:2}}>✕ 削除</button>}
             </div>
