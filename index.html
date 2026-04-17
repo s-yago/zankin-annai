@@ -376,9 +376,9 @@ function SellerGuide({d,c}){
         {c.overLoan&&<div style={DOC.warningBox}>⚠ ローン残債が受取金額を上回っています。差額 {fmt(c.shortfall)}円 を決済前日までにご自身の口座へご入金ください。</div>}
       </>}
       {c.rText&&<div style={DOC.noteBox}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
-      {d.moneyNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #c8860a",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.moneyNote}</div>}
       <div style={DOC.sectionHead}>■ インフラ（電気・水道・ガス等）について</div>
       <div style={DOC.noteBox}>お引渡しの前日までに、各事業者へ利用停止のご連絡をお願いいたします。<br/>※当社にて代行して停止手続きを行うことも可能です。ご希望の際は担当までお申し付けください。</div>
+      {d.moneyNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #c8860a",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.moneyNote}</div>}
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
@@ -506,7 +506,6 @@ function BuyerGuide({d,c}){
         ))}
       </div>
       {c.rText&&<div style={{...DOC.noteBox,marginTop:4}}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
-      {d.moneyNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #c8860a",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.moneyNote}</div>}
       <div style={DOC.sectionHead}>■ お振込先・お支払い方法の内訳</div>
       <table style={DOC.table}><colgroup><col style={{width:"5%"}}/><col style={{width:"60%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={{...DOC.tdHead,fontSize:9}}>区分</th><th style={DOC.tdHead}>お振込先・方法</th><th style={DOC.tdHead}>金　額</th></tr></thead>
@@ -555,6 +554,7 @@ function BuyerGuide({d,c}){
       </div>
       {d.propType==="マンション"&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #1a3a6b"}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>【マンション管理組合へのご連絡】</span><br/>お引っ越し日が決まりましたら、遅くとも<span style={{fontWeight:"bold"}}>1週間前まで</span>に管理会社または管理組合へご連絡ください。</div>}
       {(d.propType==="戸建"||d.propType==="マンション")&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #c8860a"}}><span style={{fontWeight:"bold",color:"#c8860a"}}>【引越し業者のご紹介】</span><br/>当社提携の引越し業者（サカイ引越センター）を<span style={{fontWeight:"bold"}}>割引価格</span>でご紹介することも可能です。ご希望の際は担当までお気軽にお申し付けください。</div>}
+      {d.moneyNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #c8860a",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.moneyNote}</div>}
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
@@ -877,8 +877,8 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
             </div>
           </F>
         </>}
-        <F label="お金の流れ 備考（売主・買主案内 共通）">
-          <textarea value={d.moneyNote||""} onChange={e=>set("moneyNote")(e.target.value)} placeholder="例：残代金は売主様2名に各半額ずつ振込。一部現金でのお受け渡しあり。" style={{...iS,height:60,resize:"vertical",lineHeight:1.5}}/>
+        <F label="備考欄（売主・買主案内 共通）">
+          <textarea value={d.moneyNote||""} onChange={e=>set("moneyNote")(e.target.value)} placeholder="例：残代金は売主様2名に各半額ずつ振込。その他連絡事項など。" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
         </F>
       </Acc>
       <Acc id="seller" label="④ 売主様の設定" color="#fde0e0" openSec={openSec} toggleSec={toggleSec}>
