@@ -72,7 +72,6 @@ const INIT={
   bJuminSettle:"1",bInkanSettle:"0",
   bProxies:[
     {label:"登記費用",amt:250000,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
-    {label:"その他代行費用",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
   ],
   reformTotal:0,reformDepositYN:"なし",reformDepositAmt:0,
   bLoanFee:300000,bFireInsurance:150000,bMgmtFund:0,bTransferFee:1100,bOtherDraw:0,
@@ -469,7 +468,7 @@ function BuyerGuide({d,c}){
           {c.bBroker>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#e8d8f5",fontWeight:"bold",fontSize:11,color:"#5a1a8b"}}>②</td><td style={DOC.td}>仲介手数料（残額）</td><td style={DOC.tdRight}>{yen(c.bBroker)}</td></tr>}
           {c.bProxies.map((x,i)=>{
             const isViVi=x.method==="②ViVi",isCash=x.method==="③現金",isBetsu=x.method==="別口座";
-            const [bg,col,zone]=isViVi?["#e8d8f5","#5a1a8b","②"]:isCash?["#d8f5e0","#1a6b3a","③"]:["#e0f0e8","#1a6b3a","別"];
+            const [bg,col,zone]=isViVi?["#e8d8f5","#5a1a8b","②"]:isCash?["#d8f5e0","#1a6b3a","③"]:["#cce4f7","#1a4a6b","別"];
             const suffix=isCash?"（現金出金）":isBetsu?"（別口座振込）":"";
             return <React.Fragment key={i}>
               <tr><td style={{...DOC.td,textAlign:"center",background:bg,fontWeight:"bold",fontSize:10,color:col}}>{zone}</td><td style={DOC.td}>{x.label}{suffix}</td><td style={DOC.tdRight}>{yen(x.amt)}</td></tr>
@@ -529,12 +528,17 @@ function BuyerGuide({d,c}){
         {[...c.sProxies.filter(x=>x.method==="別口座"),...c.bProxies.filter(x=>x.method==="別口座")].map((x,i)=>
           x.bankName&&(
             <div key={i} style={{paddingTop:4,borderTop:"1px dashed #aaa",marginTop:4}}>
-              <div style={{fontWeight:"bold",marginBottom:2,color:"#1a6b3a",fontSize:10}}>【別口座】{x.label}</div>
+              <div style={{fontWeight:"bold",marginBottom:2,color:"#1a4a6b",fontSize:10}}>【別口座振込】{x.label}</div>
               <div style={{fontSize:10}}>{x.bankName} {x.bankType} {x.bankNo}</div>
               <div style={{fontSize:10}}>(名義) {x.bankHolder}　振込金額：{yen(x.amt)}</div>
             </div>
           )
         )}
+        {[...c.sProxies.filter(x=>x.method==="③現金"),...c.bProxies.filter(x=>x.method==="③現金")].map((x,i)=>(
+          <div key={i} style={{paddingTop:4,borderTop:"1px dashed #aaa",marginTop:4,background:"#f0fff4",borderRadius:3,padding:"4px 6px"}}>
+            <div style={{fontWeight:"bold",marginBottom:1,color:"#1a6b3a",fontSize:10}}>【③現金出金】{x.label}：{yen(x.amt)}</div>
+          </div>
+        ))}
         <div style={{fontSize:10,color:"#555",borderTop:"1px dashed #aaa",paddingTop:4,marginTop:4}}>※当社にお振込みいただく場合は振込手数料は差し引いていただいて結構です。</div>
       </div>
       <div style={DOC.sectionHead}>▼ 不動産取得税について</div>
@@ -934,34 +938,34 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
           <F label="振込決済用 住民票通数"><SI val={String(d.bJuminTransfer)} onChange={set("bJuminTransfer")} opts={["0","1","2","3"]}/></F>
           <F label="振込決済用 印鑑証明通数"><SI val={String(d.bInkanTransfer)} onChange={set("bInkanTransfer")} opts={["0","1","2","3"]}/></F>
         </>}
-        <div style={{fontSize:10,fontWeight:"bold",color:"#1a6b3a",marginBottom:3,marginTop:2}}>代行費用</div>
+        <div style={{fontSize:10,fontWeight:"bold",color:"#1a6b3a",marginBottom:3,marginTop:2}}>その他諸費用</div>
         {(d.bProxies||[]).map((x,i)=>(
           <div key={`bp${i}`} style={{marginBottom:4,border:"1px solid #c0e0c0",borderRadius:4,padding:"5px"}}>
             <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:2}}>
-              <div style={{fontSize:9,color:"#666",flex:1}}>{i<2?x.label:`代行費用${i+1}`}</div>
-              {i>=2&&<button onClick={()=>delBProxy(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>}
+              <div style={{fontSize:9,color:"#666",flex:1}}>{x.label||`費用${i+1}`}</div>
+              <button onClick={()=>delBProxy(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>
             </div>
-            {i>=2&&<input defaultValue={x.label||""} onBlur={e=>setBProxy(i,"label",e.target.value)} placeholder="費用名（例：解体費用）" style={{...iS,marginBottom:2}}/>}
-            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:x.method==="別口座"?4:0}}>
+            <input defaultValue={x.label||""} onBlur={e=>setBProxy(i,"label",e.target.value)} placeholder="費用名（例：登記費用）" style={{...iS,marginBottom:2}}/>
+            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:4}}>
               <input type="number" defaultValue={x.amt} onBlur={e=>setBProxy(i,"amt",e.target.value)} style={{...iS,textAlign:"right",flex:1}}/>
               <div style={{display:"flex",flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
                 {["②ViVi","③現金","別口座"].map(opt=>(
-                  <button key={opt} onClick={()=>setBProxy(i,"method",opt)} style={{padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:x.method===opt?"#1a3a6b":"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
+                  <button key={opt} onClick={()=>setBProxy(i,"method",opt)} style={{padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:x.method===opt?(opt==="②ViVi"?"#5a1a8b":opt==="③現金"?"#1a6b3a":"#1a4a6b"):"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
                 ))}
               </div>
             </div>
-            {x.method==="別口座"&&<div style={{background:"#f0fff8",borderRadius:3,padding:"4px",marginTop:2}}>
-              <div style={{fontSize:9,color:"#1a6b3a",marginBottom:2}}>振込先口座</div>
+            <div style={{background:"#f0f8ff",borderRadius:3,padding:"4px"}}>
+              <div style={{fontSize:9,color:"#555",marginBottom:2}}>振込先口座（②ViVi以外の場合）</div>
               <input defaultValue={x.bankName||""} onBlur={e=>setBProxy(i,"bankName",e.target.value)} placeholder="銀行・支店名" style={iS}/>
               <div style={{display:"flex",gap:2,marginTop:2}}>
                 <select value={x.bankType||"普通"} onChange={e=>setBProxy(i,"bankType",e.target.value)} style={{...iS,width:"40%",fontSize:10}}><option>普通</option><option>当座</option></select>
                 <input defaultValue={x.bankNo||""} onBlur={e=>setBProxy(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
               </div>
               <input defaultValue={x.bankHolder||""} onBlur={e=>setBProxy(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:2}}/>
-            </div>}
+            </div>
           </div>
         ))}
-        <button onClick={addBProxy} style={{fontSize:10,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%",marginBottom:4}}>＋ 代行費用を追加</button>
+        <button onClick={addBProxy} style={{fontSize:10,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%",marginBottom:4}}>＋ 費用を追加</button>
         <F label="リフォーム代(総額)"><NI val={d.reformTotal} onChange={set("reformTotal")}/></F>
         <F label="決済時リフォーム手付"><TB val={d.reformDepositYN} onChange={set("reformDepositYN")} opts={["なし","あり"]}/></F>
         {d.reformDepositYN==="あり"&&<F label="手付金額(円)"><NI val={d.reformDepositAmt} onChange={set("reformDepositAmt")}/></F>}
@@ -970,23 +974,6 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="【引落】管理基金等"><NI val={d.bMgmtFund} onChange={set("bMgmtFund")}/></F>
         <F label="【引落】振込手数料"><NI val={d.bTransferFee} onChange={set("bTransferFee")}/></F>
         <F label="【引落】その他"><NI val={d.bOtherDraw} onChange={set("bOtherDraw")}/></F>
-        <div style={{display:"flex",gap:3}}><F label="現金名目①" half><TI val={d.bCashLabel1} onChange={set("bCashLabel1")}/></F><F label="金額①" half><NI val={d.bCashAmt1} onChange={set("bCashAmt1")}/></F></div>
-        <div style={{display:"flex",gap:3}}><F label="現金名目②" half><TI val={d.bCashLabel2} onChange={set("bCashLabel2")}/></F><F label="金額②" half><NI val={d.bCashAmt2} onChange={set("bCashAmt2")}/></F></div>
-        <div style={{fontSize:10,fontWeight:"bold",color:"#1a6b3a",marginBottom:3,marginTop:2}}>追加費用項目（任意）</div>
-        {(d.bExtraItems||[]).map((e,i)=>(
-          <div key={i} style={{border:"1px solid #b8ddb8",borderRadius:4,padding:"5px",marginBottom:3,background:"#f5fff5"}}>
-            <div style={{display:"flex",gap:2,marginBottom:2}}>
-              <input value={e.label} onChange={ev=>setBExtraItem(i,"label",ev.target.value)} placeholder="項目名" style={{...iS,flex:3}}/>
-              <input type="number" value={e.amt} onChange={ev=>setBExtraItem(i,"amt",ev.target.value)} placeholder="金額" style={{...iS,flex:2,textAlign:"right"}}/>
-            </div>
-            <div style={{display:"flex",gap:3,alignItems:"center"}}>
-              <span style={{fontSize:9,color:"#555"}}>区分：</span>
-              {["①","②","③","④"].map(z=><button key={z} onClick={()=>setBExtraItem(i,"zone",z)} style={{padding:"2px 6px",fontSize:10,border:"1px solid #aaa",borderRadius:3,cursor:"pointer",background:e.zone===z?"#1a3a6b":"#f5f5f5",color:e.zone===z?"#fff":"#333",fontWeight:e.zone===z?"bold":"normal"}}>{z}</button>)}
-              <button onClick={()=>delBExtraItem(i)} style={{marginLeft:"auto",fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>
-            </div>
-          </div>
-        ))}
-        <button onClick={addBExtraItem} style={{fontSize:10,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%",marginBottom:4}}>＋ 費用項目を追加</button>
         <F label="持参物フリー①"><TI val={d.bExtraLabel1} onChange={set("bExtraLabel1")} placeholder="例：通帳・キャッシュカード"/></F>
         <F label="持参物フリー②"><TI val={d.bExtraLabel2} onChange={set("bExtraLabel2")} placeholder="例：固定資産税納税通知書"/></F>
         <F label="持参物フリー③"><TI val={d.bExtraLabel3} onChange={set("bExtraLabel3")} placeholder="例：管理規約一式"/></F>
