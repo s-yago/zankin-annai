@@ -762,8 +762,8 @@ function App(){
   const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:""}]}));
   const delBuyer=(i)=>setD(p=>({...p,buyers:getBuyers(p).filter((_,j)=>j!==i)}));
   // 売主・買主代行費用ヘルパー
-  const setSProxy=(i,field,val)=>setD(p=>{const n=[...(p.sProxies||[])];n[i]={...n[i],[field]:val};return{...p,sProxies:n};});
-  const setBProxy=(i,field,val)=>setD(p=>{const n=[...(p.bProxies||[])];n[i]={...n[i],[field]:val};return{...p,bProxies:n};});
+  const setSProxy=(i,field,val)=>setD(p=>{const n=(p.sProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,sProxies:n};});
+  const setBProxy=(i,field,val)=>setD(p=>{const n=(p.bProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,bProxies:n};});
   const addBProxy=()=>setD(p=>({...p,bProxies:[...(p.bProxies||[]),{label:"",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
   const delBProxy=(i)=>setD(p=>({...p,bProxies:(p.bProxies||[]).filter((_,j)=>j!==i)}));
 
@@ -916,10 +916,10 @@ function App(){
         <F label="仲介手数料(総額)"><NI val={d.sBrokerTotal} onChange={set("sBrokerTotal")}/></F>
         <F label="受領済仲介手数料"><NI val={d.sBrokerPaid} onChange={set("sBrokerPaid")}/></F>
         {(d.sProxies||[]).map((x,i)=>(
-          <div key={i} style={{marginBottom:4,border:"1px solid #f0d0d0",borderRadius:4,padding:"5px"}}>
+          <div key={`sp${i}`} style={{marginBottom:4,border:"1px solid #f0d0d0",borderRadius:4,padding:"5px"}}>
             <div style={{fontSize:9,color:"#666",marginBottom:2}}>{x.label}</div>
             <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:x.method==="別口座"?4:0}}>
-              <NI val={x.amt} onChange={v=>setSProxy(i,"amt",v)}/>
+              <input type="number" defaultValue={x.amt} onBlur={e=>setSProxy(i,"amt",e.target.value)} style={{...iS,textAlign:"right",flex:1}}/>
               <div style={{display:"flex",flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
                 {["②ViVi","③現金","別口座"].map(opt=>(
                   <button key={opt} onClick={()=>setSProxy(i,"method",opt)} style={{padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:x.method===opt?"#1a3a6b":"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
@@ -928,12 +928,12 @@ function App(){
             </div>
             {x.method==="別口座"&&<div style={{background:"#f0fff8",borderRadius:3,padding:"4px",marginTop:2}}>
               <div style={{fontSize:9,color:"#1a6b3a",marginBottom:2}}>振込先口座</div>
-              <TI val={x.bankName||""} onChange={v=>setSProxy(i,"bankName",v)} placeholder="銀行・支店名"/>
+              <input defaultValue={x.bankName||""} onBlur={e=>setSProxy(i,"bankName",e.target.value)} placeholder="銀行・支店名" style={iS}/>
               <div style={{display:"flex",gap:2,marginTop:2}}>
                 <select value={x.bankType||"普通"} onChange={e=>setSProxy(i,"bankType",e.target.value)} style={{...iS,width:"40%",fontSize:10}}><option>普通</option><option>当座</option></select>
-                <input value={x.bankNo||""} onChange={e=>setSProxy(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
+                <input defaultValue={x.bankNo||""} onBlur={e=>setSProxy(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
               </div>
-              <div style={{marginTop:2}}><TI val={x.bankHolder||""} onChange={v=>setSProxy(i,"bankHolder",v)} placeholder="名義人"/></div>
+              <input defaultValue={x.bankHolder||""} onBlur={e=>setSProxy(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:2}}/>
             </div>}
           </div>
         ))}
@@ -974,14 +974,14 @@ function App(){
         </>}
         <div style={{fontSize:10,fontWeight:"bold",color:"#1a6b3a",marginBottom:3,marginTop:2}}>代行費用</div>
         {(d.bProxies||[]).map((x,i)=>(
-          <div key={i} style={{marginBottom:4,border:"1px solid #c0e0c0",borderRadius:4,padding:"5px"}}>
+          <div key={`bp${i}`} style={{marginBottom:4,border:"1px solid #c0e0c0",borderRadius:4,padding:"5px"}}>
             <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:2}}>
-              <div style={{fontSize:9,color:"#666",flex:1}}>{x.label||`代行費用${i+1}`}</div>
+              <div style={{fontSize:9,color:"#666",flex:1}}>{i<2?x.label:`代行費用${i+1}`}</div>
               {i>=2&&<button onClick={()=>delBProxy(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>}
             </div>
-            {i>=2&&<div style={{marginBottom:2}}><TI val={x.label||""} onChange={v=>setBProxy(i,"label",v)} placeholder="費用名（例：解体費用）"/></div>}
+            {i>=2&&<input defaultValue={x.label||""} onBlur={e=>setBProxy(i,"label",e.target.value)} placeholder="費用名（例：解体費用）" style={{...iS,marginBottom:2}}/>}
             <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:x.method==="別口座"?4:0}}>
-              <NI val={x.amt} onChange={v=>setBProxy(i,"amt",v)}/>
+              <input type="number" defaultValue={x.amt} onBlur={e=>setBProxy(i,"amt",e.target.value)} style={{...iS,textAlign:"right",flex:1}}/>
               <div style={{display:"flex",flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
                 {["②ViVi","③現金","別口座"].map(opt=>(
                   <button key={opt} onClick={()=>setBProxy(i,"method",opt)} style={{padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:x.method===opt?"#1a3a6b":"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
@@ -990,12 +990,12 @@ function App(){
             </div>
             {x.method==="別口座"&&<div style={{background:"#f0fff8",borderRadius:3,padding:"4px",marginTop:2}}>
               <div style={{fontSize:9,color:"#1a6b3a",marginBottom:2}}>振込先口座</div>
-              <TI val={x.bankName||""} onChange={v=>setBProxy(i,"bankName",v)} placeholder="銀行・支店名"/>
+              <input defaultValue={x.bankName||""} onBlur={e=>setBProxy(i,"bankName",e.target.value)} placeholder="銀行・支店名" style={iS}/>
               <div style={{display:"flex",gap:2,marginTop:2}}>
                 <select value={x.bankType||"普通"} onChange={e=>setBProxy(i,"bankType",e.target.value)} style={{...iS,width:"40%",fontSize:10}}><option>普通</option><option>当座</option></select>
-                <input value={x.bankNo||""} onChange={e=>setBProxy(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
+                <input defaultValue={x.bankNo||""} onBlur={e=>setBProxy(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
               </div>
-              <div style={{marginTop:2}}><TI val={x.bankHolder||""} onChange={v=>setBProxy(i,"bankHolder",v)} placeholder="名義人"/></div>
+              <input defaultValue={x.bankHolder||""} onBlur={e=>setBProxy(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:2}}/>
             </div>}
           </div>
         ))}
