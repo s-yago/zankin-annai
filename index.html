@@ -397,7 +397,7 @@ function SellerGuide({d,c}){
       {c.rText&&<div style={DOC.noteBox}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
       <div style={DOC.sectionHead}>■ インフラ（電気・水道・ガス等）について</div>
       <div style={DOC.noteBox}>お引渡しの前日までに、各事業者へ利用停止のご連絡をお願いいたします。<br/>※当社にて代行して停止手続きを行うことも可能です。ご希望の際は担当までお申し付けください。</div>
-      {d.sNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考②】</strong><br/>{d.sNote}</div>}
+      {d.sNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.sNote}</div>}
     </div>
   );
 }
@@ -585,7 +585,7 @@ function BuyerGuide({d,c}){
       </div>
       {d.propType==="マンション"&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #1a3a6b"}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>【マンション管理組合へのご連絡】</span><br/>お引っ越し日が決まりましたら、遅くとも<span style={{fontWeight:"bold"}}>1週間前まで</span>に管理会社または管理組合へご連絡ください。</div>}
       {(d.propType==="戸建"||d.propType==="マンション")&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #c8860a"}}><span style={{fontWeight:"bold",color:"#c8860a"}}>【引越し業者のご紹介】</span><br/>当社提携の引越し業者（サカイ引越センター）を<span style={{fontWeight:"bold"}}>割引価格</span>でご紹介することも可能です。ご希望の際は担当までお気軽にお申し付けください。</div>}
-      {d.bNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考②】</strong><br/>{d.bNote}</div>}
+      {d.bNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.bNote}</div>}
     </div>
   );
 }
@@ -950,7 +950,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="その他持参物②"><TI val={d.sExtraLabel2} onChange={set("sExtraLabel2")} placeholder="例：建物図面"/></F>
         <F label="その他持参物③"><TI val={d.sExtraLabel3} onChange={set("sExtraLabel3")} placeholder="例：マンション管理費領収書"/></F>
         <F label="複数売主時の注意書き"><TI val={d.sMultiNote} onChange={set("sMultiNote")} placeholder="例：ご夫婦それぞれ実印が必要です"/></F>
-        <F label="備考欄②（売主案内のみ表示）">
+        <F label="備考欄（売主案内のみ表示）">
           <textarea value={d.sNote||""} onChange={e=>set("sNote")(e.target.value)} placeholder="売主様のみへの連絡事項など" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
         </F>
         <div style={{fontSize:9,color:"#888",marginBottom:4}}>※売主の振込口座は「①基本情報」の売主欄で入力してください</div>
@@ -1017,7 +1017,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="持参物フリー②"><TI val={d.bExtraLabel2} onChange={set("bExtraLabel2")} placeholder="例：固定資産税納税通知書"/></F>
         <F label="持参物フリー③"><TI val={d.bExtraLabel3} onChange={set("bExtraLabel3")} placeholder="例：管理規約一式"/></F>
         <F label="複数買主時の注意書き"><TI val={d.bMultiNote} onChange={set("bMultiNote")} placeholder="例：ご夫婦それぞれ実印が必要です"/></F>
-        <F label="備考欄②（買主案内のみ表示）">
+        <F label="備考欄（買主案内のみ表示）">
           <textarea value={d.bNote||""} onChange={e=>set("bNote")(e.target.value)} placeholder="買主様のみへの連絡事項など" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
         </F>
       </Acc>
