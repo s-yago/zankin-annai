@@ -40,7 +40,7 @@ const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s
 const INIT={
   propType:"戸建",txType:"売主",address:"",addressZip:"",
   sellers:[{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る"}],
-  buyers:[{name:"",addr:""}],
+  buyers:[{name:"",addr:"",kinshoAttend:"来る",mendanAttend:"来る",settlementAttend:"来る"}],
   contractDate:"",settlementDT:"",settlementTime:"",
   gathering:"あり",gatheringPlace:"",viviBank:"北陸銀行",
   shihoShoshi:"廣田司法書士事務所　076-423-6826",shihoShoshiOther:"",shihoShoshiPerson:"",
@@ -462,20 +462,27 @@ function BuyerGuide({d,c}){
           <tbody><TRow label="日　時" value={`${jDate(d.bMendanDT)} ${d.bMendanTime}`}/><TRow label="場　所" value={d.bMendanPlace}/><TRow label="担当司法書士" value={shiho}/></tbody>
         </table>}
         <div style={{...DOC.noteBox,marginBottom:4,fontSize:10,color:"#555"}}>{isKinshoTiming?"※振込決済のためご来場は不要ですが、金消契約時に本人確認書類をご提出ください。":"※ご本人確認のため、司法書士が事前に面談を行います。上記日時にご対応をお願いいたします。"}</div>
-        <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
-          <div style={{fontWeight:"bold",marginBottom:3,color:"#1a3a6b"}}>{isKinshoTiming?"【金消契約時にご持参いただくもの（本人確認分を含む）】":"【本人面談時のご持参いただくもの】"}</div>
-          <div style={{fontSize:9,color:"#888",marginBottom:3}}>{d.gathering==="なし"?"※振込決済のため決済当日のご来場は不要です。下記書類をご用意ください。":"※残金決済時に必要なものと同じものをお持ちください。"}</div>
-          {multiBuyer&&d.bMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:3}}>⚠ {d.bMultiNote}</div>}
-          <div>□　実印、本人確認書類、通帳（スマホ）{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>
-          {d.gathering==="あり"?<>
-            {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminSettle}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
-            {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanSettle}通</div>}
-            {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円（{d.bCashLabel1}{d.bCashLabel2?`・${d.bCashLabel2}`:""}）</div>}
-          </>:<>
-            {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminTransfer}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
-            {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanTransfer}通</div>}
-          </>}
-        </div>
+        {(()=>{
+          // ローン利用時は全員出席必須
+          const mendanBuyers=isLoan?buyers:buyers.filter(b=>(b.mendanAttend||"来る")==="来る");
+          const noMendanBuyers=isLoan?[]:buyers.filter(b=>(b.mendanAttend||"来る")==="来ない");
+          return(<div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
+            <div style={{fontWeight:"bold",marginBottom:3,color:"#1a3a6b"}}>
+              {isKinshoTiming?"【金消契約時にご持参いただくもの（本人確認分を含む）】":"【本人面談時のご持参いただくもの】"}
+              {multiBuyer&&mendanBuyers.length<buyers.length&&<span style={{fontSize:9,fontWeight:"normal",color:"#555",marginLeft:6}}>（{mendanBuyers.map(b=>b.name||"買主").join("・")}様）</span>}
+            </div>
+            {multiBuyer&&d.bMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:3}}>⚠ {d.bMultiNote}</div>}
+            <div>□　実印、本人確認書類、通帳（スマホ）{multiBuyer&&mendanBuyers.length<buyers.length&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>
+            {d.gathering==="あり"?<>
+              {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminSettle}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+              {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanSettle}通</div>}
+            </>:<>
+              {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminTransfer}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+              {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanTransfer}通</div>}
+            </>}
+            {noMendanBuyers.length>0&&<div style={{color:"#8b0000",marginTop:4,fontSize:9}}>⚠ {noMendanBuyers.map(b=>b.name||"買主").join("・")}様は本人面談不参加のため、残金決済時にご持参ください。</div>}
+          </div>);
+        })()}
       </>}
       {isLoan&&<>
         <div style={DOC.sectionHead}>■ 金銭消費貸借契約（ローン契約）</div>
@@ -483,13 +490,22 @@ function BuyerGuide({d,c}){
         <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
           <tbody><TRow label="日　時" value={`${jDate(d.kinshoDT)} ${d.kinshoTime}`}/><TRow label="場　所" value={d.kinshoPlace}/></tbody>
         </table>
-        <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}>
-          <div style={{fontWeight:"bold",marginBottom:2}}>ご持参いただくもの</div>
-          {multiBuyer&&d.bMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:3}}>⚠ {d.bMultiNote}</div>}
-          <div>□　実印、通帳、スマホ、{d.bOtherKinsho}{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>
-          {num(d.bJuminKinsho)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminKinsho}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
-          {num(d.bInkanKinsho)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanKinsho}通</div>}
-        </div>
+        {(()=>{
+          // ローン利用時は全員出席必須
+          const kinshoBuyers=buyers; // 金消は全員
+          const noKinshoBuyers=[];
+          return(<div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}>
+            <div style={{fontWeight:"bold",marginBottom:2}}>
+              ご持参いただくもの
+              {multiBuyer&&kinshoBuyers.length<buyers.length&&<span style={{fontSize:9,fontWeight:"normal",color:"#555",marginLeft:6}}>（{kinshoBuyers.map(b=>b.name||"買主").join("・")}様）</span>}
+            </div>
+            {multiBuyer&&d.bMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:3}}>⚠ {d.bMultiNote}</div>}
+            <div>□　実印、通帳、スマホ、{d.bOtherKinsho}{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>
+            {num(d.bJuminKinsho)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminKinsho}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+            {num(d.bInkanKinsho)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanKinsho}通</div>}
+            {noKinshoBuyers.length>0&&<div style={{color:"#8b0000",marginTop:4,fontSize:9}}>⚠ {noKinshoBuyers.map(b=>b.name||"買主").join("・")}様は金消契約不参加です。</div>}
+          </div>);
+        })()}
       </>}
       <div style={DOC.sectionHead}>■ 残金決済</div>
       {!isLoan&&isPreMove&&<div style={DOC.warningBox}>★【重要】決済日の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.address}</div>}
@@ -498,22 +514,41 @@ function BuyerGuide({d,c}){
           {d.gathering==="あり"?<><TRow label="日　時" value={`${jDate(d.settlementDT)} ${d.settlementTime} より`}/><TRow label="場　所" value={d.gatheringPlace}/></>:<><TRow label="振込予定日" value={jDate(d.settlementDT)}/><tr><td colSpan={2} style={{...DOC.td,color:"#8b0000",fontSize:10}}>※本取引は振込手続き等にて行いますので、お集まりいただく必要はございません。</td></tr></>}
         </tbody>
       </table>
-      <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}>
-        <div style={{fontWeight:"bold",marginBottom:2}}>{d.gathering==="あり"?"ご持参いただくもの":"ご用意いただくもの（振込手続き用）"}</div>
-        {multiBuyer&&d.bMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:3}}>⚠ {d.bMultiNote}</div>}
-        <div>□　実印、本人確認書類、通帳（スマホ）{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>
-        {d.gathering==="あり"?<>
+      {(()=>{
+        const settleBuyers=isLoan?buyers:buyers.filter(b=>(b.settlementAttend||"来る")==="来る");
+        const noSettleBuyers=isLoan?[]:buyers.filter(b=>(b.settlementAttend||"来る")==="来ない");
+        const allPreparedAtMendan=d.bMendan==="あり"&&d.gathering==="あり"&&noSettleBuyers.length===buyers.length;
+        if(d.gathering!=="あり")return(
+          <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}>
+            <div style={{fontWeight:"bold",marginBottom:2}}>ご用意いただくもの（振込手続き用）</div>
+            {multiBuyer&&d.bMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:3}}>⚠ {d.bMultiNote}</div>}
+            <div>□　実印、本人確認書類、通帳（スマホ）</div>
+            {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminTransfer}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+            {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanTransfer}通</div>}
+            {d.bExtraLabel1&&<div>□　{d.bExtraLabel1}</div>}
+            {d.bExtraLabel2&&<div>□　{d.bExtraLabel2}</div>}
+            {d.bExtraLabel3&&<div>□　{d.bExtraLabel3}</div>}
+          </div>
+        );
+        if(allPreparedAtMendan)return(
+          <div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※必要書類は本人面談時にご持参いただいております。当日のお持ちものはございません。</div>
+        );
+        return(<div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}>
+          <div style={{fontWeight:"bold",marginBottom:2}}>
+            ご持参いただくもの
+            {multiBuyer&&settleBuyers.length<buyers.length&&<span style={{fontSize:9,fontWeight:"normal",color:"#555",marginLeft:6}}>（{settleBuyers.map(b=>b.name||"買主").join("・")}様）</span>}
+          </div>
+          {multiBuyer&&d.bMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:3}}>⚠ {d.bMultiNote}</div>}
+          <div>□　実印、本人確認書類、通帳（スマホ）{multiBuyer&&settleBuyers.length<buyers.length&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>
           {num(d.bJuminSettle)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminSettle}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
           {num(d.bInkanSettle)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanSettle}通</div>}
-          {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円（{d.bCashLabel1}{d.bCashLabel2?`・${d.bCashLabel2}`:""}）</div>}
-        </>:<>
-          {num(d.bJuminTransfer)>0&&<div>□　{dPrefix}住民票　{multiBuyer?"各":""}{d.bJuminTransfer}通{multiBuyer&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
-          {num(d.bInkanTransfer)>0&&<div>□　{dPrefix}印鑑証明書　{multiBuyer?"各":""}{d.bInkanTransfer}通</div>}
-        </>}
-        {d.bExtraLabel1&&<div>□　{d.bExtraLabel1}</div>}
-        {d.bExtraLabel2&&<div>□　{d.bExtraLabel2}</div>}
-        {d.bExtraLabel3&&<div>□　{d.bExtraLabel3}</div>}
-      </div>
+          {c.bCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.bCash)}円</div>}
+          {d.bExtraLabel1&&<div>□　{d.bExtraLabel1}</div>}
+          {d.bExtraLabel2&&<div>□　{d.bExtraLabel2}</div>}
+          {d.bExtraLabel3&&<div>□　{d.bExtraLabel3}</div>}
+          {noSettleBuyers.length>0&&<div style={{color:"#8b0000",marginTop:4,fontSize:9}}>⚠ {noSettleBuyers.map(b=>b.name||"買主").join("・")}様は残金決済不参加のため、本人面談時にご持参済みです。</div>}
+        </div>);
+      })()}
       <div style={DOC.sectionHead}>■ 必要資金の内訳</div>
       <table style={DOC.table}><colgroup><col style={{width:"5%"}}/><col style={{width:"60%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={{...DOC.tdHead,fontSize:9}}>区分</th><th style={DOC.tdHead}>項　目</th><th style={DOC.tdHead}>金　額</th></tr></thead>
@@ -817,7 +852,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
   const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る"}]}));
   const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
   const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
-  const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:""}]}));
+  const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:"",kinshoAttend:"来る",mendanAttend:"来る",settlementAttend:"来る"}]}));
   const delBuyer=(i)=>setD(p=>({...p,buyers:getBuyers(p).filter((_,j)=>j!==i)}));
   const setSProxy=(i,field,val)=>setD(p=>{const n=(p.sProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,sProxies:n};});
   const setBProxy=(i,field,val)=>setD(p=>{const n=(p.bProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,bProxies:n};});
@@ -885,14 +920,27 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
           <button onClick={addSeller} style={{fontSize:10,padding:"3px 0",background:"#fde8e8",border:"1px solid #c66",borderRadius:4,cursor:"pointer",color:"#8b0000",width:"100%"}}>＋ 売主を追加</button>
         </F>
         <F label="買主">
-          {getBuyers(d).map((b,i)=>(
+          {(()=>{const isLoan=d.loanUse==="あり";return getBuyers(d).map((b,i)=>(
             <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"5px",marginBottom:3,background:"#f0fff4"}}>
               <div style={{fontSize:9,color:"#888",marginBottom:2}}>買主{getBuyers(d).length>1?` ${i+1}`:""}</div>
               <TI val={b.name} onChange={v=>setBuyer(i,"name",v)} placeholder="例：買主 花子"/>
               <div style={{marginTop:2}}><TI val={b.addr} onChange={v=>setBuyer(i,"addr",v)} placeholder="住所（覚書用）"/></div>
+              {d.bMendan==="あり"&&!isLoan&&<div style={{marginTop:4}}>
+                <div style={{fontSize:9,color:"#555",marginBottom:2}}>本人面談への出席</div>
+                <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
+                  {["来る","来ない"].map(opt=><button key={opt} onClick={()=>setBuyer(i,"mendanAttend",opt)} style={{flex:1,padding:"3px 0",fontSize:9,border:"none",cursor:"pointer",background:(b.mendanAttend||"来る")===opt?"#1a3a6b":"#f5f5f5",color:(b.mendanAttend||"来る")===opt?"#fff":"#333",fontWeight:(b.mendanAttend||"来る")===opt?"bold":"normal"}}>{opt}</button>)}
+                </div>
+              </div>}
+              {d.gathering==="あり"&&!isLoan&&<div style={{marginTop:4}}>
+                <div style={{fontSize:9,color:"#555",marginBottom:2}}>残金決済への出席</div>
+                <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
+                  {["来る","来ない"].map(opt=><button key={opt} onClick={()=>setBuyer(i,"settlementAttend",opt)} style={{flex:1,padding:"3px 0",fontSize:9,border:"none",cursor:"pointer",background:(b.settlementAttend||"来る")===opt?"#1a3a6b":"#f5f5f5",color:(b.settlementAttend||"来る")===opt?"#fff":"#333",fontWeight:(b.settlementAttend||"来る")===opt?"bold":"normal"}}>{opt}</button>)}
+                </div>
+              </div>}
+              {isLoan&&<div style={{marginTop:4,fontSize:9,color:"#1a3a6b",background:"#eef3fb",borderRadius:3,padding:"3px 6px"}}>※ローン利用のため全員出席必須</div>}
               {getBuyers(d).length>1&&<button onClick={()=>delBuyer(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:2}}>✕ 削除</button>}
             </div>
-          ))}
+          ))})()}
           <button onClick={addBuyer} style={{fontSize:10,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%"}}>＋ 買主を追加</button>
         </F>
         <F label="ご契約日"><DI val={d.contractDate} onChange={set("contractDate")}/></F>
