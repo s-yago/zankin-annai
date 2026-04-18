@@ -39,7 +39,7 @@ const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s
 
 const INIT={
   propType:"戸建",txType:"売主",address:"",addressZip:"",
-  sellers:[{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:""}],
+  sellers:[{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る"}],
   buyers:[{name:"",addr:""}],
   contractDate:"",settlementDT:"",settlementTime:"",
   gathering:"あり",gatheringPlace:"",viviBank:"北陸銀行",
@@ -66,6 +66,7 @@ const INIT={
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
   sMultiNote:"",
   sNote:"",
+  sExtraItems:[],
   extraTransfers:[],
   bBrokerTotal:0,bBrokerPaid:0,loanUse:"あり",loanAmount:0,
   kinshoDT:"",kinshoTime:"",kinshoPlace:"",
@@ -156,8 +157,11 @@ function calcAll(d){
   const sViViProxy=sBroker+sProxies.filter(x=>x.method==="②ViVi").reduce((s,x)=>s+Math.round(num(x.amt)),0);
   const sProxyCash=sProxies.filter(x=>x.method==="③現金").reduce((s,x)=>s+Math.round(num(x.amt)),0);
   const sProxyBetsu=sProxies.filter(x=>x.method==="別口座").reduce((s,x)=>s+Math.round(num(x.amt)),0);
+  // 売主側その他諸費用（売主が直接支払う費用）
+  const sExtraItems=(d.sExtraItems||[]).filter(x=>num(x.amt)>0);
+  const sExtraTotal=sExtraItems.reduce((s,x)=>s+Math.round(num(x.amt)),0);
   const sCash=Math.round(num(d.sCashAmt1))+Math.round(num(d.sCashAmt2))+sProxyCash;
-  const aToS=incomeTot-sViViProxy-sProxyBetsu;
+  const aToS=incomeTot-sViViProxy-sProxyBetsu-sExtraTotal;
   // 買主側代行費用（新構造）
   const bBroker=Math.round(num(d.bBrokerTotal))-Math.round(num(d.bBrokerPaid));
   const bProxies=(d.bProxies||[]).filter(x=>num(x.amt)>0);
@@ -184,7 +188,7 @@ function calcAll(d){
     incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
-    sProxies,sProxyCash,sProxyBetsu,bProxies,bProxyCash,bProxyBetsu,extraItems,
+    sProxies,sProxyCash,sProxyBetsu,sExtraItems,sExtraTotal,bProxies,bProxyCash,bProxyBetsu,extraItems,
     viviBank,sellerBank,sellerBanks,taxLabel,stYear};
 }
 
@@ -311,9 +315,20 @@ function SellerGuide({d,c}){
           </tbody>
         </table>
         <div style={{...DOC.noteBox,marginBottom:4,fontSize:10,color:"#555"}}>※ご本人確認のため、司法書士が事前に面談を行う場合がございます。上記日時にご対応をお願いいたします。</div>
-        <div style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",marginBottom:3,marginTop:4}}>【本人面談時のご持参いただくもの】</div>
-        <div style={{fontSize:9,color:"#888",marginBottom:3}}>※残金決済時に必要なものと同じものをお持ちください。</div>
-        <SellerItems d={d} c={c}/>
+        {(()=>{
+          const mendanSellers=sellers.filter(s=>(s.mendanAttend||"来る")==="来る");
+          const noMendanSellers=sellers.filter(s=>(s.mendanAttend||"来る")==="来ない");
+          return(<>
+            <div style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",marginBottom:3,marginTop:4}}>
+              【本人面談時のご持参いただくもの】
+              {mendanSellers.length<sellers.length&&<span style={{fontSize:9,fontWeight:"normal",color:"#555",marginLeft:6}}>（{mendanSellers.map(s=>s.name||"売主").join("・")}様）</span>}
+            </div>
+            <SellerItems d={d} c={c}/>
+            {noMendanSellers.length>0&&<div style={{...DOC.noteBox,fontSize:10,color:"#8b0000",marginTop:4}}>
+              ⚠ {noMendanSellers.map(s=>s.name||"売主").join("・")}様は本人面談にご参加されないため、残金決済時にご持参ください。
+            </div>}
+          </>);
+        })()}
       </>}
       <div style={DOC.sectionHead}>■ 残金決済について</div>
       <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
@@ -327,8 +342,21 @@ function SellerGuide({d,c}){
           </>}
         </tbody>
       </table>
-      <div style={DOC.sectionHead}>■ 当日ご持参いただくもの</div>
-      {d.gathering==="あり"?<SellerItems d={d} c={c}/>:<div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※本取引は振込手続き等にて行いますので、お持ちいただくものはございません。</div>}
+      {(()=>{
+        const noMendanSellers=sellers.filter(s=>(s.mendanAttend||"来る")==="来ない");
+        const allMendan=d.mendan==="あり"&&noMendanSellers.length===0;
+        if(d.gathering!=="あり")return(
+          <div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※本取引は振込手続き等にて行いますので、お持ちいただくものはございません。</div>
+        );
+        if(allMendan)return(
+          <div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※必要書類は本人面談時にご持参いただいております。</div>
+        );
+        return(<>
+          <div style={DOC.sectionHead}>■ 当日ご持参いただくもの</div>
+          {noMendanSellers.length>0&&sellers.length>1&&<div style={{fontSize:10,color:"#555",marginBottom:3}}>（{noMendanSellers.map(s=>s.name||"売主").join("・")}様 ― 本人面談不参加のためこちらでご持参ください）</div>}
+          <SellerItems d={d} c={c}/>
+        </>);
+      })()}
       {d.showInkanWarning==="表示"&&<>
         <div style={DOC.sectionHeadRed}>【重要】印鑑証明書に関するご注意</div>
         <div style={DOC.warningBox}>お住み替え等で住所を移転される場合は、必ず【ご移転前（現住所）の印鑑証明書】をご取得ください。<br/>※引越しにより住所が変更になると「住所変更登記」が必要となり、別途費用が発生いたします。</div>
@@ -358,6 +386,14 @@ function SellerGuide({d,c}){
             <React.Fragment key={i}>
               <TRow label={x.label} value={yen(x.amt)} indent/>
               {x.bankName&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>→ {x.bankName} {x.bankType} {x.bankNo}（{x.bankHolder}）</td></tr>}
+            </React.Fragment>
+          ))}
+          {c.sExtraTotal>0&&<TRow label="【売主様ご負担 諸費用】" value={yen(c.sExtraTotal)} bold sub="残金受取後、売主様より直接お支払い"/>}
+          {c.sExtraItems.map((x,i)=>(
+            <React.Fragment key={i}>
+              <TRow label={x.label} value={yen(x.amt)} indent/>
+              {x.method==="別口座"&&x.bankName&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>→ {x.bankName} {x.bankType} {x.bankNo}（{x.bankHolder}）</td></tr>}
+              {x.method==="③現金"&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>（現金でお支払い）</td></tr>}
             </React.Fragment>
           ))}
           <TRow label="★ お客様口座へのお振込額 (C = A − B)" value={yen(c.aToS)} total warn={c.overLoan}/>
@@ -778,7 +814,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
   const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
   const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
   const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
-  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:""}]}));
+  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る"}]}));
   const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
   const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
   const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:""}]}));
@@ -787,6 +823,9 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
   const setBProxy=(i,field,val)=>setD(p=>{const n=(p.bProxies||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,bProxies:n};});
   const addBProxy=()=>setD(p=>({...p,bProxies:[...(p.bProxies||[]),{label:"",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
   const delBProxy=(i)=>setD(p=>({...p,bProxies:(p.bProxies||[]).filter((_,j)=>j!==i)}));
+  const setSExtraItem=(i,field,val)=>setD(p=>{const n=(p.sExtraItems||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,sExtraItems:n};});
+  const addSExtraItem=()=>setD(p=>({...p,sExtraItems:[...(p.sExtraItems||[]),{label:"",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
+  const delSExtraItem=(i)=>setD(p=>({...p,sExtraItems:(p.sExtraItems||[]).filter((_,j)=>j!==i)}));
   const addBExtraItem=()=>setD(p=>({...p,bExtraItems:[...(p.bExtraItems||[]),{label:"",amt:0,zone:"④"}]}));
   const setBExtraItem=(i,field,val)=>setD(p=>{const n=[...(p.bExtraItems||[])];n[i]={...n[i],[field]:val};return{...p,bExtraItems:n};});
   const delBExtraItem=i=>setD(p=>({...p,bExtraItems:(p.bExtraItems||[]).filter((_,j)=>j!==i)}));
@@ -832,6 +871,14 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
                 <input type="number" defaultValue={s.transferAmt||""} onBlur={e=>setSeller(i,"transferAmt",e.target.value)} placeholder="空欄=全額" style={{...iS,textAlign:"right",flex:1}}/>
               </div>
               {i>=1&&<div style={{fontSize:9,color:"#8b0000",marginTop:2}}>※2件目以降：振込手数料は売主様ご負担</div>}
+              {d.mendan==="あり"&&<div style={{marginTop:4}}>
+                <div style={{fontSize:9,color:"#555",marginBottom:2}}>本人面談への出席</div>
+                <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
+                  {["来る","来ない"].map(opt=>(
+                    <button key={opt} onClick={()=>setSeller(i,"mendanAttend",opt)} style={{flex:1,padding:"3px 0",fontSize:9,border:"none",cursor:"pointer",background:(s.mendanAttend||"来る")===opt?"#1a3a6b":"#f5f5f5",color:(s.mendanAttend||"来る")===opt?"#fff":"#333",fontWeight:(s.mendanAttend||"来る")===opt?"bold":"normal"}}>{opt}</button>
+                  ))}
+                </div>
+              </div>}
               {getSellers(d).length>1&&<button onClick={()=>delSeller(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:2}}>✕ 削除</button>}
             </div>
           ))}
@@ -950,6 +997,35 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="その他持参物②"><TI val={d.sExtraLabel2} onChange={set("sExtraLabel2")} placeholder="例：建物図面"/></F>
         <F label="その他持参物③"><TI val={d.sExtraLabel3} onChange={set("sExtraLabel3")} placeholder="例：マンション管理費領収書"/></F>
         <F label="複数売主時の注意書き"><TI val={d.sMultiNote} onChange={set("sMultiNote")} placeholder="例：ご夫婦それぞれ実印が必要です"/></F>
+        <div style={{fontSize:10,fontWeight:"bold",color:"#8b0000",marginBottom:3,marginTop:4}}>その他諸費用（売主様ご負担・直接支払分）</div>
+        <div style={{fontSize:9,color:"#888",marginBottom:4}}>残金受取後に売主様が直接支払う費用（住所変更登記・解体・ハウスクリーニング等）</div>
+        {(d.sExtraItems||[]).map((x,i)=>(
+          <div key={`se${i}`} style={{marginBottom:4,border:"1px solid #f0d0d0",borderRadius:4,padding:"5px"}}>
+            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:2}}>
+              <div style={{fontSize:9,color:"#666",flex:1}}>{x.label||`費用${i+1}`}</div>
+              <button onClick={()=>delSExtraItem(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>
+            </div>
+            <input defaultValue={x.label||""} onBlur={e=>setSExtraItem(i,"label",e.target.value)} placeholder="費用名（例：住所変更登記費用）" style={{...iS,marginBottom:2}}/>
+            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:4}}>
+              <input type="number" defaultValue={x.amt||""} onBlur={e=>setSExtraItem(i,"amt",e.target.value)} placeholder="0" style={{...iS,textAlign:"right",flex:1}}/>
+              <div style={{display:"flex",flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
+                {["②ViVi","③現金","別口座"].map(opt=>(
+                  <button key={opt} onClick={()=>setSExtraItem(i,"method",opt)} style={{padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:x.method===opt?(opt==="②ViVi"?"#5a1a8b":opt==="③現金"?"#1a6b3a":"#1a4a6b"):"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{background:"#f0f8ff",borderRadius:3,padding:"4px"}}>
+              <div style={{fontSize:9,color:"#555",marginBottom:2}}>振込先・支払先口座</div>
+              <input defaultValue={x.bankName||""} onBlur={e=>setSExtraItem(i,"bankName",e.target.value)} placeholder="銀行・支店名" style={iS}/>
+              <div style={{display:"flex",gap:2,marginTop:2}}>
+                <select value={x.bankType||"普通"} onChange={e=>setSExtraItem(i,"bankType",e.target.value)} style={{...iS,width:"40%",fontSize:10}}><option>普通</option><option>当座</option></select>
+                <input defaultValue={x.bankNo||""} onBlur={e=>setSExtraItem(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
+              </div>
+              <input defaultValue={x.bankHolder||""} onBlur={e=>setSExtraItem(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:2}}/>
+            </div>
+          </div>
+        ))}
+        <button onClick={addSExtraItem} style={{fontSize:10,padding:"3px 0",background:"#fde8e8",border:"1px solid #c66",borderRadius:4,cursor:"pointer",color:"#8b0000",width:"100%",marginBottom:4}}>＋ 費用を追加</button>
         <F label="備考欄（売主案内のみ表示）">
           <textarea value={d.sNote||""} onChange={e=>set("sNote")(e.target.value)} placeholder="売主様のみへの連絡事項など" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
         </F>
