@@ -54,7 +54,7 @@ const INIT={
   loanBalance:0,sBrokerTotal:0,sBrokerPaid:0,
   sProxies:[
     {label:"建物滅失・表示変更",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
-    {label:"抵当権抹消（司法書士）",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
+    {label:"抵当権抹消・住所登記変更",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
     {label:"測量費用",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
     {label:"建物解体費",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
     {label:"荷物片づけ",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
@@ -252,7 +252,11 @@ function SellerItems({d,c}){
       {num(d.sJuminCount)>0&&<div>□　住民票　{multiSeller?"各":""}{d.sJuminCount}通{multiSeller&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
       {d.sKosekiHuhyo==="表示"&&<div>□　戸籍の附票の写し</div>}
       {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{multiSeller?"各":""}{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず残金決済時より３か月以内のものをご用意ください</span></div>}
-      {c.sCash>0&&<div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{d.sCashLabel1}{d.sCashLabel2?`・${d.sCashLabel2}`:""}）</div>}
+      {c.sCash>0&&(()=>{
+        const cashItems=[...(d.sProxies||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0),...(d.sExtraItems||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0)];
+        const cashLabel=cashItems.length>0?cashItems.map(x=>x.label).join("・"):(d.sCashLabel1||"");
+        return <div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{cashLabel}）</div>;
+      })()}
       <div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>
       {d.sExtraLabel1&&<div>□　{d.sExtraLabel1}</div>}
       {d.sExtraLabel2&&<div>□　{d.sExtraLabel2}</div>}
@@ -396,7 +400,7 @@ function SellerGuide({d,c}){
               {x.method==="③現金"&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>（現金でお支払い）</td></tr>}
             </React.Fragment>
           ))}
-          <TRow label="★ お客様口座へのお振込額 (C = A − B)" value={yen(c.aToS)} total warn={c.overLoan}/>
+          <TRow label="★ 売主様口座へのご入金額（収入 − 当社経由分 − 別口座振込分）" value={yen(c.aToS)} total warn={c.overLoan}/>
         </tbody>
       </table>
       <div style={DOC.bankBox}>
@@ -433,6 +437,25 @@ function SellerGuide({d,c}){
       {c.rText&&<div style={DOC.noteBox}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
       <div style={DOC.sectionHead}>■ インフラ（電気・水道・ガス等）について</div>
       <div style={DOC.noteBox}>お引渡しの前日までに、各事業者へ利用停止のご連絡をお願いいたします。<br/>※当社にて代行して停止手続きを行うことも可能です。ご希望の際は担当までお申し付けください。</div>
+      {(()=>{
+        const cashItems=[...c.sProxies.filter(x=>x.method==="③現金"),...c.sExtraItems.filter(x=>x.method==="③現金")];
+        if(cashItems.length===0)return null;
+        return(
+          <div style={{border:"2px solid #c8860a",borderRadius:4,padding:"8px 10px",background:"#fffbf0",marginTop:6}}>
+            <div style={{fontWeight:"bold",color:"#c8860a",fontSize:10,marginBottom:4}}>⚠【当日現金でのお支払いが必要な項目】</div>
+            {cashItems.map((x,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:2}}>
+                <span>・{x.label}</span>
+                <span style={{fontWeight:"bold"}}>{yen(x.amt)}</span>
+              </div>
+            ))}
+            <div style={{borderTop:"1px dashed #c8860a",marginTop:6,paddingTop:6,fontSize:9,color:"#8b5000"}}>
+              ※現金のご準備方法（事前にご自身でご用意 / 残代金受取後に引出し）については担当者にご確認ください。
+            </div>
+            {!d.sNote&&<div style={{marginTop:4,fontSize:9,color:"#c00",fontWeight:"bold"}}>⚠ 担当者へ：下記備考欄に現金の取り扱い方法を記載してください。</div>}
+          </div>
+        );
+      })()}
       {d.sNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.sNote}</div>}
     </div>
   );
@@ -1074,8 +1097,17 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
           </div>
         ))}
         <button onClick={addSExtraItem} style={{fontSize:10,padding:"3px 0",background:"#fde8e8",border:"1px solid #c66",borderRadius:4,cursor:"pointer",color:"#8b0000",width:"100%",marginBottom:4}}>＋ 費用を追加</button>
+        {(()=>{
+          const cashItems=[...(d.sProxies||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0),...(d.sExtraItems||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0)];
+          return cashItems.length>0&&(
+            <div style={{background:"#fff3cd",border:"1px solid #c8860a",borderRadius:4,padding:"6px 8px",marginBottom:4,fontSize:9}}>
+              <div style={{fontWeight:"bold",color:"#c8860a",marginBottom:3}}>⚠ 現金払い項目があります。備考欄に取り扱い方法を記載してください。</div>
+              {cashItems.map((x,i)=><div key={i} style={{color:"#555"}}>・{x.label}　{yen(x.amt)}</div>)}
+            </div>
+          );
+        })()}
         <F label="備考欄（売主案内のみ表示）">
-          <textarea value={d.sNote||""} onChange={e=>set("sNote")(e.target.value)} placeholder="売主様のみへの連絡事項など" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
+          <textarea value={d.sNote||""} onChange={e=>set("sNote")(e.target.value)} placeholder="例：抵当権抹消費用は残代金受取後に引き出してその場で司法書士へお支払いください。" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
         </F>
         <div style={{fontSize:9,color:"#888",marginBottom:4}}>※売主の振込口座は「①基本情報」の売主欄で入力してください</div>
       </Acc>
