@@ -184,12 +184,23 @@ function calcAll(d){
   const sellers=getSellers(d);
   const sellerBanks=sellers.map(s=>`${s.bankName||""} ${s.bankType||"普通"} ${s.bankNo||""}\n(名義) ${s.bankHolder||s.name} 様`);
   const sellerBank=sellerBanks[0]||"";
+  // 売主ごとの振込金額を計算（入力あり→その金額、なし→残額）
+  const sellerAmts=(()=>{
+    let remaining=aToS;
+    return sellers.map((s,i)=>{
+      const hasAmt=s.transferAmt&&num(s.transferAmt)>0;
+      const amt=hasAmt?Math.round(num(s.transferAmt)):remaining;
+      if(hasAmt)remaining-=Math.round(num(s.transferAmt));
+      else remaining=0;
+      return{amt,isAuto:!hasAmt};
+    });
+  })();
   return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,taxSellerYearFull,
     incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
     sProxies,sProxyCash,sProxyBetsu,sExtraItems,sExtraTotal,bProxies,bProxyCash,bProxyBetsu,extraItems,
-    viviBank,sellerBank,sellerBanks,taxLabel,stYear};
+    viviBank,sellerBank,sellerBanks,sellerAmts,taxLabel,stYear};
 }
 
 const DOC={
@@ -401,22 +412,21 @@ function SellerGuide({d,c}){
             </React.Fragment>
           ))}
           <TRow label="★ 売主様口座へのご入金額（収入 − 当社経由分 − 別口座振込分）" value={yen(c.aToS)} total warn={c.overLoan}/>
+          {sellers.length>1&&c.sellerAmts.map((sa,i)=>(
+            <TRow key={i} label={`　└ 売主${i+1}（${sellers[i].name}）へのお振込${sa.isAuto?"（残額）":""}`} value={yen(sa.amt)} indent/>
+          ))}
         </tbody>
       </table>
       <div style={DOC.bankBox}>
         <div style={{fontWeight:"bold",marginBottom:4,color:"#1a3a6b",fontSize:10}}>【お振込先口座】</div>
-        {getSellers(d).map((s,i)=>{
-          const hasAmt=s.transferAmt&&num(s.transferAmt)>0;
-          const isLast=i===getSellers(d).length-1;
-          const allPrev=getSellers(d).slice(0,i).reduce((sum,x)=>sum+num(x.transferAmt||0),0);
-          const autoAmt=isLast&&getSellers(d).length>1?c.aToS-allPrev:null;
-          const dispAmt=hasAmt?num(s.transferAmt):autoAmt;
+        {sellers.map((s,i)=>{
+          const sa=c.sellerAmts[i];
           return(
-            <div key={i} style={{marginBottom:6,paddingBottom:i<getSellers(d).length-1?6:0,borderBottom:i<getSellers(d).length-1?"1px dashed #cce":"none"}}>
-              {getSellers(d).length>1&&(
+            <div key={i} style={{marginBottom:6,paddingBottom:i<sellers.length-1?6:0,borderBottom:i<sellers.length-1?"1px dashed #cce":"none"}}>
+              {sellers.length>1&&(
                 <div style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",marginBottom:2}}>
                   売主{i+1}：{s.name}　
-                  <span style={{fontWeight:"normal"}}>振込金額：{dispAmt!=null?yen(dispAmt):"残額"}</span>
+                  <span style={{fontWeight:"normal"}}>振込金額：{yen(sa.amt)}{sa.isAuto&&<span style={{fontSize:9,color:"#888"}}>（残額）</span>}</span>
                   {i>=1&&<span style={{fontSize:9,color:"#8b0000",marginLeft:6}}>※振込手数料は売主様ご負担</span>}
                 </div>
               )}
@@ -632,17 +642,13 @@ function BuyerGuide({d,c}){
       <div style={DOC.bankBox}>
         <div style={{fontWeight:"bold",marginBottom:4,color:"#1a3a6b",fontSize:10}}>【① 売主様へのお振込先】</div>
         {getSellers(d).map((s,i)=>{
-          const hasAmt=s.transferAmt&&num(s.transferAmt)>0;
-          const isLast=i===getSellers(d).length-1;
-          const allPrev=getSellers(d).slice(0,i).reduce((sum,x)=>sum+num(x.transferAmt||0),0);
-          const autoAmt=isLast&&getSellers(d).length>1?c.aToS-allPrev:null;
-          const dispAmt=hasAmt?num(s.transferAmt):autoAmt;
+          const sa=c.sellerAmts[i];
           return(
             <div key={i} style={{marginBottom:6,paddingBottom:i<getSellers(d).length-1?6:0,borderBottom:i<getSellers(d).length-1?"1px dashed #cce":"none"}}>
               {getSellers(d).length>1&&(
                 <div style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",marginBottom:2}}>
                   売主{i+1}：{s.name}　
-                  <span style={{fontWeight:"normal"}}>振込金額：{dispAmt!=null?yen(dispAmt):"残額"}</span>
+                  <span style={{fontWeight:"normal"}}>振込金額：{yen(sa.amt)}{sa.isAuto&&<span style={{fontSize:9,color:"#888"}}>（残額）</span>}</span>
                   {i>=1&&<span style={{fontSize:9,color:"#8b0000",marginLeft:6}}>※振込手数料は売主様ご負担</span>}
                 </div>
               )}
