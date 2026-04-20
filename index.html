@@ -22,6 +22,8 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
   #print-area>div{padding:10mm 12mm!important;font-size:9.5pt!important;line-height:1.5!important}
   table{page-break-inside:avoid;border-collapse:collapse}
   tr{page-break-inside:avoid}
+  .sec-head{page-break-before:auto!important;page-break-after:avoid!important;break-after:avoid!important}
+  .sec-head+*{page-break-before:avoid!important;break-before:avoid!important}
   @page{margin:0}
 }
 </style>
@@ -210,8 +212,8 @@ const DOC={
   logoSub:{fontSize:9,color:"#555",display:"block",letterSpacing:1},
   docTitle:{fontSize:16,fontWeight:"bold",textAlign:"center",padding:"8px 0",borderTop:"2px solid #1a3a6b",borderBottom:"2px solid #1a3a6b",marginBottom:12,color:"#1a3a6b",letterSpacing:3},
   addressee:{fontSize:14,fontWeight:"bold",borderBottom:"1px solid #333",paddingBottom:2,marginBottom:10,display:"inline-block"},
-  sectionHead:{background:"#1a3a6b",color:"#fff",padding:"3px 8px",fontSize:10,fontWeight:"bold",marginTop:10,marginBottom:3,letterSpacing:1},
-  sectionHeadRed:{background:"#8b0000",color:"#fff",padding:"3px 8px",fontSize:10,fontWeight:"bold",marginTop:10,marginBottom:3},
+  sectionHead:{background:"#1a3a6b",color:"#fff",padding:"3px 8px",fontSize:10,fontWeight:"bold",marginTop:10,marginBottom:3,letterSpacing:1,pageBreakAfter:"avoid",breakAfter:"avoid"},
+  sectionHeadRed:{background:"#8b0000",color:"#fff",padding:"3px 8px",fontSize:10,fontWeight:"bold",marginTop:10,marginBottom:3,pageBreakAfter:"avoid",breakAfter:"avoid"},
   table:{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:4,tableLayout:"fixed"},
   td:{border:"1px solid #aaa",padding:"3px 6px",wordBreak:"break-all"},
   tdRight:{border:"1px solid #aaa",padding:"3px 6px",textAlign:"right",fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"},
@@ -318,10 +320,10 @@ function SellerGuide({d,c}){
       <div style={DOC.docTitle}>残 金 決 済 の ご 案 内（売 主 様）</div>
       <div>{sellers.map((s,i)=><span key={i} style={{...DOC.addressee,marginRight:12}}>{s.name} 様</span>)}</div>
       <div style={{fontSize:10,color:"#555",margin:"4px 0 8px"}}>平素よりお世話になっております。下記の通り残金決済のご案内をいたします。</div>
-      <div style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
       <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>担当：</span>{shiho}</div>
       {d.mendan==="あり"&&<>
-        <div style={DOC.sectionHead}>■ 司法書士との本人面談</div>
+        <div className="sec-head" style={DOC.sectionHead}>■ 司法書士との本人面談</div>
         <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
           <tbody>
             <TRow label="日　時" value={`${jDate(d.mendanDT)} ${d.mendanTime}`}/>
@@ -345,7 +347,7 @@ function SellerGuide({d,c}){
           </>);
         })()}
       </>}
-      <div style={DOC.sectionHead}>■ 残金決済について</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ 残金決済について</div>
       <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
         <tbody>
           {d.gathering==="あり"?<>
@@ -367,23 +369,23 @@ function SellerGuide({d,c}){
           <div style={{...DOC.noteBox,marginBottom:6,fontSize:10,color:"#555"}}>※必要書類は本人面談時にご持参いただいております。</div>
         );
         return(<>
-          <div style={DOC.sectionHead}>■ 当日ご持参いただくもの</div>
+          <div className="sec-head" style={DOC.sectionHead}>■ 当日ご持参いただくもの</div>
           {noMendanSellers.length>0&&sellers.length>1&&<div style={{fontSize:10,color:"#555",marginBottom:3}}>（{noMendanSellers.map(s=>s.name||"売主").join("・")}様 ― 本人面談不参加のためこちらでご持参ください）</div>}
           <SellerItems d={d} c={c}/>
         </>);
       })()}
       {d.showInkanWarning==="表示"&&<>
-        <div style={DOC.sectionHeadRed}>【重要】印鑑証明書に関するご注意</div>
+        <div className="sec-head" style={DOC.sectionHeadRed}>【重要】印鑑証明書に関するご注意</div>
         <div style={DOC.warningBox}>お住み替え等で住所を移転される場合は、必ず【ご移転前（現住所）の印鑑証明書】をご取得ください。<br/>※引越しにより住所が変更になると「住所変更登記」が必要となり、別途費用が発生いたします。</div>
       </>}
-      <div style={DOC.sectionHead}>▼ {c.taxLabel}の清算について</div>
+      <div className="sec-head" style={DOC.sectionHead}>▼ {c.taxLabel}の清算について</div>
       <div style={{...DOC.infoBox,marginBottom:6}}>
         <div>{c.taxLabel}は、日割り清算させていただきますので、<strong>{c.taxSellerYearFull}の全額</strong>を、最後まで売主様がお支払いください。</div>
         {d.propType==="マンション"&&c.mgmtSellerLastMonth&&<div style={{marginTop:4}}>また、{c.mgmtLabel}についても日割り清算させていただきますので、<strong>{c.mgmtSellerLastMonth}分まで</strong>売主様がお支払いください。</div>}
       </div>
-      <div style={DOC.sectionHead}>▼ 火災保険について</div>
+      <div className="sec-head" style={DOC.sectionHead}>▼ 火災保険について</div>
       <div style={DOC.infoBox}>{d.propType==="土地"?"（建物を解体した場合）解体が終了した日付での火災保険の解約手続きを予めお願い申し上げます。":"お引渡し日付での火災保険の解約手続きを予めお願い申し上げます。"}<br/>（長期契約であれば解約返戻金があると思われます。）</div>
-      <div style={DOC.sectionHead}>■ お金の流れ（精算内訳）</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ お金の流れ（精算内訳）</div>
       <table style={DOC.table}><colgroup><col style={{width:"65%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={DOC.tdHead}>項　目</th><th style={DOC.tdHead}>金　額</th></tr></thead>
         <tbody>
@@ -445,7 +447,7 @@ function SellerGuide({d,c}){
         {c.overLoan&&<div style={DOC.warningBox}>⚠ ローン残債が受取金額を上回っています。差額 {fmt(c.shortfall)}円 を決済前日までにご自身の口座へご入金ください。</div>}
       </>}
       {c.rText&&<div style={DOC.noteBox}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
-      <div style={DOC.sectionHead}>■ インフラ（電気・水道・ガス等）について</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ インフラ（電気・水道・ガス等）について</div>
       <div style={DOC.noteBox}>お引渡しの前日までに、各事業者へ利用停止のご連絡をお願いいたします。<br/>※当社にて代行して停止手続きを行うことも可能です。ご希望の際は担当までお申し付けください。</div>
       {(()=>{
         const cashItems=[...c.sProxies.filter(x=>x.method==="③現金"),...c.sExtraItems.filter(x=>x.method==="③現金")];
@@ -487,10 +489,10 @@ function BuyerGuide({d,c}){
       <div style={DOC.docTitle}>残 金 決 済 の ご 案 内（買 主 様）</div>
       <div>{buyers.map((b,i)=><span key={i} style={{...DOC.addressee,marginRight:12}}>{b.name} 様</span>)}</div>
       <div style={{fontSize:10,color:"#555",margin:"4px 0 8px"}}>平素よりお世話になっております。下記の通り残金決済のご案内をいたします。</div>
-      <div style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ 登記手続き担当司法書士</div>
       <div style={{...DOC.noteBox,marginBottom:6,fontSize:10}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>担当：</span>{shiho}</div>
       {d.bMendan==="あり"&&<>
-        <div style={DOC.sectionHead}>■ 司法書士との本人確認{isKinshoTiming?"（金消契約時に併せて実施）":"（別途面談）"}</div>
+        <div className="sec-head" style={DOC.sectionHead}>■ 司法書士との本人確認{isKinshoTiming?"（金消契約時に併せて実施）":"（別途面談）"}</div>
         {!isKinshoTiming&&<table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
           <tbody><TRow label="日　時" value={`${jDate(d.bMendanDT)} ${d.bMendanTime}`}/><TRow label="場　所" value={d.bMendanPlace}/><TRow label="担当司法書士" value={shiho}/></tbody>
         </table>}
@@ -518,7 +520,7 @@ function BuyerGuide({d,c}){
         })()}
       </>}
       {isLoan&&<>
-        <div style={DOC.sectionHead}>■ 金銭消費貸借契約（ローン契約）</div>
+        <div className="sec-head" style={DOC.sectionHead}>■ 金銭消費貸借契約（ローン契約）</div>
         {isPreMove&&<div style={DOC.warningBox}>★【重要】金消契約の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.address}</div>}
         <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
           <tbody><TRow label="日　時" value={`${jDate(d.kinshoDT)} ${d.kinshoTime}`}/><TRow label="場　所" value={d.kinshoPlace}/></tbody>
@@ -540,7 +542,7 @@ function BuyerGuide({d,c}){
           </div>);
         })()}
       </>}
-      <div style={DOC.sectionHead}>■ 残金決済</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ 残金決済</div>
       {!isLoan&&isPreMove&&<div style={DOC.warningBox}>★【重要】決済日の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.address}</div>}
       <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
         <tbody>
@@ -582,7 +584,7 @@ function BuyerGuide({d,c}){
           {noSettleBuyers.length>0&&<div style={{color:"#8b0000",marginTop:4,fontSize:9}}>⚠ {noSettleBuyers.map(b=>b.name||"買主").join("・")}様は残金決済不参加のため、本人面談時にご持参済みです。</div>}
         </div>);
       })()}
-      <div style={DOC.sectionHead}>■ 必要資金の内訳</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ 必要資金の内訳</div>
       <table style={DOC.table}><colgroup><col style={{width:"5%"}}/><col style={{width:"60%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={{...DOC.tdHead,fontSize:9}}>区分</th><th style={DOC.tdHead}>項　目</th><th style={DOC.tdHead}>金　額</th></tr></thead>
         <tbody>
@@ -628,7 +630,7 @@ function BuyerGuide({d,c}){
         ))}
       </div>
       {c.rText&&<div style={{...DOC.noteBox,marginTop:4}}><strong>【実測清算 備考】</strong><br/>{c.rText}</div>}
-      <div style={DOC.sectionHead}>■ お振込先・お支払い方法の内訳</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ お振込先・お支払い方法の内訳</div>
       <table style={DOC.table}><colgroup><col style={{width:"5%"}}/><col style={{width:"60%"}}/><col style={{width:"35%"}}/></colgroup>
         <thead><tr><th style={{...DOC.tdHead,fontSize:9}}>区分</th><th style={DOC.tdHead}>お振込先・方法</th><th style={DOC.tdHead}>金　額</th></tr></thead>
         <tbody>
@@ -674,12 +676,12 @@ function BuyerGuide({d,c}){
         ))}
         <div style={{fontSize:10,color:"#555",borderTop:"1px dashed #aaa",paddingTop:4,marginTop:4}}>※当社にお振込みいただく場合は振込手数料は差し引いていただいて結構です。</div>
       </div>
-      <div style={DOC.sectionHead}>▼ 不動産取得税について</div>
+      <div className="sec-head" style={DOC.sectionHead}>▼ 不動産取得税について</div>
       <div style={DOC.infoBox}>
         ご購入の<strong>４～６ヵ月後</strong>に県税事務所より納税通知が届きますので、納付手続きもしくは、該当する方は軽減措置の申告手続きを実施してください。
         {isTochi&&<div style={{marginTop:4}}>尚、取得後<strong>3年以内</strong>に一定の居住用建物を建築し居住の用に供すれば、不動産取得税は一定額還付されます。詳細は、県税事務所までお問い合わせください。</div>}
       </div>
-      <div style={DOC.sectionHead}>■ インフラのお手続きについて</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ インフラのお手続きについて</div>
       <div style={DOC.noteBox}>お引渡し日以降、各事業者へ利用開始のご連絡をお願いいたします。<br/>・電　気：北陸電力 (0120-776-453)　・水　道：水道局 (0120-310-0599)<br/>・ガ　ス：日本海ガス (0570-024-077) ※都市ガスの場合　・電　話：各通信会社へご連絡ください
         {d.lifeline==="あり"&&<div style={{marginTop:4,color:"#1a3a6b",fontWeight:"bold"}}>※ライフラインの切り替えをご希望の方は当社でも代行対応が可能です。担当までお気軽にご相談ください。</div>}
       </div>
@@ -733,7 +735,7 @@ function TaxDoc({d,c}){
         </tbody>
       </table>
       <div style={{fontSize:10,margin:"5px 0 12px"}}>上記正に領収致しました。</div>
-      <div style={DOC.sectionHead}>■ 清算金　計算内訳</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ 清算金　計算内訳</div>
       <div style={{fontSize:9,color:"#555",marginBottom:4}}>※引渡日（{jDate(d.settlementDT)}）より買主様のご負担となります。起算日：{d.taxBase}　年間日数：{c.totalDays}日（{c.totalDays===366?"うるう年":"平年"}）　端数処理：{d.taxRounding}</div>
       <table style={DOC.table}><colgroup><col style={{width:"28%"}}/><col style={{width:"24%"}}/><col style={{width:"16%"}}/><col style={{width:"16%"}}/><col style={{width:"16%"}}/></colgroup>
         <thead><tr>{["項　目","対象期間","負担日数","税額（年額）","清算金額"].map(h=><th key={h} style={DOC.tdHead}>{h}</th>)}</tr></thead>
@@ -765,7 +767,7 @@ function MgmtDoc({d,c}){
         </tbody>
       </table>
       <div style={{fontSize:10,margin:"5px 0 12px"}}>上記正に領収致しました。</div>
-      <div style={DOC.sectionHead}>■ 清算金　計算内訳（清算範囲：{d.mgmtClearMonths}）</div>
+      <div className="sec-head" style={DOC.sectionHead}>■ 清算金　計算内訳（清算範囲：{d.mgmtClearMonths}）</div>
       <div style={{fontSize:9,color:"#555",marginBottom:4}}>※引渡日（{jDate(d.settlementDT)}）より買主様のご負担となります。</div>
       <table style={{...DOC.table}}><colgroup><col style={{width:"18%"}}/><col style={{width:"18%"}}/><col style={{width:"10%"}}/><col style={{width:"18%"}}/><col style={{width:"18%"}}/>{c.mOther>0&&<col style={{width:"18%"}}/>}</colgroup>
         <thead><tr>{["項　目","対象期間","日数/月数","管理費","修繕積立金",...(c.mOther>0?[d.mgmtOtherLabel||"その他"]:[])].map(h=><th key={h} style={DOC.tdHead}>{h}</th>)}</tr></thead>
@@ -930,9 +932,22 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
                 <input value={s.bankNo||""} onChange={e=>setSeller(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
               </div>
               <div style={{marginTop:2}}><TI val={s.bankHolder||""} onChange={v=>setSeller(i,"bankHolder",v)} placeholder="名義人"/></div>
-              <div style={{marginTop:4,display:"flex",gap:2,alignItems:"center"}}>
-                <div style={{fontSize:9,color:"#555",whiteSpace:"nowrap"}}>振込金額(円)</div>
-                <input type="number" defaultValue={s.transferAmt||""} onBlur={e=>setSeller(i,"transferAmt",e.target.value)} placeholder="空欄=全額" style={{...iS,textAlign:"right",flex:1}}/>
+              <div style={{marginTop:4}}>
+                <div style={{fontSize:9,color:"#555",marginBottom:1}}>振込金額(円)</div>
+                {(()=>{
+                  const prevTotal=getSellers(d).slice(0,i).reduce((sum,x)=>sum+num(x.transferAmt||0),0);
+                  const remaining=Math.round(c.aToS)-prevTotal;
+                  return(
+                    <div>
+                      <div style={{display:"flex",gap:2,alignItems:"center"}}>
+                        <input type="number" defaultValue={s.transferAmt||""} onBlur={e=>setSeller(i,"transferAmt",e.target.value)} placeholder={getSellers(d).length>1?`空欄＝残額（${fmt(remaining)}円）`:"空欄=全額"} style={{...iS,textAlign:"right",flex:1}}/>
+                      </div>
+                      {getSellers(d).length>1&&<div style={{fontSize:9,color:"#1a3a6b",marginTop:1}}>
+                        残額：{fmt(remaining)}円{s.transferAmt&&num(s.transferAmt)>0?`　→ 次の売主へ：${fmt(remaining-Math.round(num(s.transferAmt)))}円`:"（空欄の場合この金額が振込額）"}
+                      </div>}
+                    </div>
+                  );
+                })()}
               </div>
               {i>=1&&<div style={{fontSize:9,color:"#8b0000",marginTop:2}}>※2件目以降：振込手数料は売主様ご負担</div>}
               {d.mendan==="あり"&&<div style={{marginTop:4}}>
