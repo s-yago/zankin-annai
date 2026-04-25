@@ -1035,7 +1035,7 @@ function WaterDoc({d,c}){
             <td style={labelSt}>所有者変更<br/>年　月　日</td>
             <td style={cellSt}>{toReiwa(d.settlementDT)}</td>
             <td style={labelSt}>お客さま番号<br/>流末未完番号</td>
-            <td style={cellSt}>第　　　　　　号<br/>第　　　　　　号</td>
+            <td style={{...cellSt,width:"22%"}}><div style={{display:"flex",justifyContent:"space-between"}}>第<span>号</span></div><div style={{display:"flex",justifyContent:"space-between"}}>第<span>号</span></div></td>
           </tr>
           <tr>
             <td rowSpan={2} style={{...labelSt,textAlign:"center"}}>給水装置の<br/>前所有者</td>
@@ -1096,6 +1096,117 @@ function WaterDoc({d,c}){
       </div>
     </div>
   );
+}
+
+// =================== マニュアル ===================
+function ManualContent(){
+  const h2={fontSize:13,fontWeight:"bold",color:"#fff",background:"#1a3a6b",padding:"5px 10px",borderRadius:4,marginTop:18,marginBottom:8};
+  const h3={fontSize:12,fontWeight:"bold",color:"#1a3a6b",borderLeft:"3px solid #1a3a6b",paddingLeft:8,marginTop:12,marginBottom:4};
+  const box={background:"#f0f4ff",border:"1px solid #c0cce8",borderRadius:4,padding:"8px 12px",marginBottom:8,fontSize:10};
+  const warn={background:"#fff8e0",border:"1px solid #c8860a",borderRadius:4,padding:"8px 12px",marginBottom:8,fontSize:10};
+  const tbl={width:"100%",borderCollapse:"collapse",marginBottom:8,fontSize:10};
+  const th={background:"#1a3a6b",color:"#fff",padding:"4px 8px",border:"1px solid #aaa"};
+  const td={padding:"4px 8px",border:"1px solid #ccc",verticalAlign:"top"};
+  const td2={...td,background:"#f8f8f8"};
+  return(<div>
+    <div style={{...box,borderColor:"#1a3a6b",background:"#eef3fb"}}>
+      このツールは、ViVi不動産の残金決済に必要な各種書類（売主・買主案内、領収書、清算書、確認書等）を自動作成するシステムです。左側の入力パネルに情報を入力すると、右側にリアルタイムでプレビューが表示されます。
+    </div>
+
+    <div style={h2}>① 基本的な使い方の流れ</div>
+    <div style={{...box}}>
+      <div style={{fontWeight:"bold",marginBottom:4}}>【STEP 1】新規案件を入力する</div>
+      入力パネル上部の「＋新規」ボタンをクリック → 各セクションを開いて情報を入力 → 右側のプレビューでリアルタイム確認
+    </div>
+    <div style={{...box}}>
+      <div style={{fontWeight:"bold",marginBottom:4}}>【STEP 2】保存する</div>
+      「💾 保存」ボタン → 案件名を入力してOK。上書き保存は「💾 上書き」、別名保存は「📋 別名」ボタン。
+    </div>
+    <div style={{...box}}>
+      <div style={{fontWeight:"bold",marginBottom:4}}>【STEP 3】印刷・PDF化する</div>
+      右側プレビューのタブで印刷したい書類を選択 → ブラウザの印刷機能（Ctrl+P / ⌘+P）を使用。PDFとして保存する場合は、プリンターで「PDFに保存」を選択。
+    </div>
+
+    <div style={h2}>② 入力パネルの構成</div>
+    <table style={tbl}>
+      <thead><tr><th style={th}>セクション</th><th style={th}>主な入力内容</th></tr></thead>
+      <tbody>
+        <tr><td style={td2}>① 基本情報・物件・当事者</td><td style={td}>取引種別、物件種別・所在地・面積、売主・買主の氏名・住所・口座情報、決済日時・場所</td></tr>
+        <tr><td style={td2}>② 司法書士・本人面談</td><td style={td}>担当事務所・担当者名、売主・買主それぞれの面談日時・場所</td></tr>
+        <tr><td style={td2}>③ 取引金額・清算金</td><td style={td}>売買代金・手付金、固都税・管理費清算、実測清算の設定</td></tr>
+        <tr><td style={td2}>④ 売主様の設定</td><td style={td}>ローン残債・仲介手数料、代行費用（支払方法選択）、その他諸費用、備考欄</td></tr>
+        <tr><td style={td2}>⑤ 買主様の設定</td><td style={td}>仲介手数料・ローン情報・金消日時、その他諸費用、持参物フリー欄、備考欄</td></tr>
+        <tr><td style={td2}>⑥ その他設定</td><td style={td}>ライフライン代行対応、担当者名</td></tr>
+      </tbody>
+    </table>
+
+    <div style={h2}>③ 売主・買主が複数の場合</div>
+    <div style={h3}>売主の追加</div>
+    <div style={box}>①基本情報の「売主」欄で「＋売主を追加」ボタンをクリック。売主ごとに氏名・住所・振込口座・振込金額を設定できます。<br/>
+    ・振込金額を入力すると残額が自動計算されて次の売主欄に表示されます。<br/>
+    ・2件目以降は「振込手数料は売主様ご負担」が自動表示されます。<br/>
+    ・本人面談への出席（来る/来ない）も売主ごとに設定できます。</div>
+    <div style={h3}>買主の追加</div>
+    <div style={box}>①基本情報の「買主」欄で「＋買主を追加」ボタンをクリック。<br/>
+    ・住宅ローン利用時：全員出席必須のため出席設定は不要です。<br/>
+    ・ローン非利用時：本人面談・残金決済への出席（来る/来ない）を買主ごとに設定できます。</div>
+
+    <div style={h2}>④ 代行費用・諸費用の支払方法</div>
+    <table style={tbl}>
+      <thead><tr><th style={th}>選択肢</th><th style={th}>内容</th><th style={th}>案内書への反映</th></tr></thead>
+      <tbody>
+        <tr><td style={td2}>②ViVi</td><td style={td}>当社経由でお支払い</td><td style={td}>②ViVi不動産へのお振込に含まれる</td></tr>
+        <tr><td style={td2}>③現金</td><td style={td}>当日現金でお支払い</td><td style={td}>持参物欄に自動表示。備考欄への記載が促される</td></tr>
+        <tr><td style={td2}>別口座</td><td style={td}>別途指定口座へ振込</td><td style={td}>振込先一覧に別口座として自動表示</td></tr>
+      </tbody>
+    </table>
+    <div style={warn}>⚠ ③現金を選んだ項目がある場合、入力パネルに警告ボックスが表示されます。備考欄に現金の取り扱い方法（事前に自分でご用意 / 残代金受取後に引き出し等）を必ず記載してください。</div>
+
+    <div style={h2}>⑤ 出力できる書類一覧</div>
+    <table style={tbl}>
+      <thead><tr><th style={th}>タブ名</th><th style={th}>書類の内容</th><th style={th}>備考</th></tr></thead>
+      <tbody>
+        <tr><td style={td2}>案内_売主</td><td style={td}>売主様向け残金決済案内</td><td style={td}>面談・決済日時、お金の流れ、持参物</td></tr>
+        <tr><td style={td2}>案内_買主</td><td style={td}>買主様向け残金決済案内</td><td style={td}>金消・面談・決済日時、必要資金、振込先</td></tr>
+        <tr><td style={td2}>領収書</td><td style={td}>売買残代金の領収書</td><td style={td}>売主全員の署名欄あり</td></tr>
+        <tr><td style={td2}>実測清算覚書</td><td style={td}>実測面積の清算確認書</td><td style={td}>実測清算設定時のみ有効</td></tr>
+        <tr><td style={td2}>固都税清算書</td><td style={td}>固定資産税・都市計画税の清算金領収書</td><td style={td}>清算金がある場合</td></tr>
+        <tr><td style={td2}>管理費等清算書</td><td style={td}>管理費・修繕積立金の清算金領収書</td><td style={td}>マンションのみ</td></tr>
+        <tr><td style={td2}>引渡確認書</td><td style={td}>売買物件引渡確認書</td><td style={td}>鍵等の本数は手書き</td></tr>
+        <tr><td style={td2}>給水装置変更届</td><td style={td}>給水装置所有者変更届</td><td style={td}>戸建・土地のみ（マンション非対応）</td></tr>
+      </tbody>
+    </table>
+
+    <div style={h2}>⑥ 保存・履歴機能</div>
+    <div style={box}>
+      ・「💾 保存」：現在の入力内容に名前をつけて保存（最大30件）<br/>
+      ・「💾 上書き」：現在編集中の案件を上書き保存<br/>
+      ・「📋 別名」：現在の案件を別の名前でコピー保存<br/>
+      ・「📂 履歴」：保存済みの案件一覧を表示。クリックで読み込み、削除も可能<br/>
+      ※ データはブラウザのローカルストレージに保存されます。ブラウザのデータを削除すると消えますのでご注意ください。
+    </div>
+
+    <div style={h2}>⑦ よくある設定パターン</div>
+    <div style={h3}>ローンなし・集合決済</div>
+    <div style={box}>取引種別：売主／ローン利用：なし／決済集合：あり　→ 金消契約欄は非表示になります</div>
+    <div style={h3}>ローンあり・振込決済</div>
+    <div style={box}>ローン利用：あり／決済集合：なし　→ 金消契約のみ来場、残金決済は振込で完了するパターン</div>
+    <div style={h3}>売主が夫婦2名</div>
+    <div style={box}>①基本情報の「＋売主を追加」で2名分入力。それぞれに振込口座と振込金額を設定。2人目の振込手数料は自動的に売主ご負担と表示されます。</div>
+    <div style={h3}>解体費用を当社経由で回収する場合</div>
+    <div style={box}>④売主設定の「その他諸費用」→「＋費用を追加」→ 費用名「建物解体費」、支払方法「②ViVi」を選択。買主から当社経由でお預かりし、業者へ支払います。</div>
+    <div style={h3}>司法書士への抵当権抹消費用を当日現金で</div>
+    <div style={box}>④売主設定の代行費用「抵当権抹消・住所登記変更」→「③現金」を選択。備考欄に「残代金受取後に引き出してその場でお支払いください」等を記載。</div>
+
+    <div style={h2}>⑧ 注意事項</div>
+    <div style={warn}>
+      ・金額の単位はすべて「円」です。<br/>
+      ・固都税の起算日は「4/1」（富山市標準）または「1/1」から選択できます。<br/>
+      ・翌年度がうるう年の場合、日数は自動的に366日と表示されます。<br/>
+      ・実測清算を行う場合は「平米単価」「公簿面積」「実測面積」をすべて入力してください。<br/>
+      ・データはこのブラウザ内にのみ保存されます。別のデバイスやブラウザでは引き継がれません。
+    </div>
+  </div>);
 }
 
 const TABS=["案内_売主","案内_買主","領収書","実測清算覚書","固都税清算書","管理費等清算書","引渡確認書","給水装置変更届"];
@@ -1467,6 +1578,7 @@ function App(){
   const [tab,setTab]=useState(0);
   const [spTab,setSpTab]=useState("input");
   const [showHist,setShowHist]=useState(false);
+  const [showManual,setShowManual]=useState(false);
   const [saved,setSaved]=useState([]);
   const [saveName,setSaveName]=useState("");
   const [showSaveDlg,setShowSaveDlg]=useState(false);
@@ -1534,6 +1646,7 @@ function App(){
           </div>
           <div style={{display:"flex",background:"#1a3a6b",borderTop:"2px solid #0d2a52",height:52,flexShrink:0}}>
             <button onClick={()=>setSpTab("input")} style={{flex:1,background:spTab==="input"?"#fff":"transparent",color:spTab==="input"?"#1a3a6b":"#cce",border:"none",cursor:"pointer",fontSize:14,fontWeight:"bold"}}>📝 入力</button>
+            <button onClick={()=>setShowManual(true)} style={{flex:1,background:"transparent",color:"#cce",border:"none",cursor:"pointer",fontSize:14,fontWeight:"bold"}}>❓ 使い方</button>
             <button onClick={()=>setSpTab("preview")} style={{flex:1,background:spTab==="preview"?"#fff":"transparent",color:spTab==="preview"?"#1a3a6b":"#cce",border:"none",cursor:"pointer",fontSize:14,fontWeight:"bold"}}>👁 確認</button>
           </div>
         </>
@@ -1541,6 +1654,21 @@ function App(){
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
           <InputPanelComp key={loadKey} {...ipProps}/>
           {PreviewPanel}
+        </div>
+      )}
+      <button onClick={()=>setShowManual(true)} style={{display:sp?"none":"flex",position:"fixed",bottom:20,right:20,zIndex:900,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:"50%",width:52,height:52,fontSize:20,cursor:"pointer",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 10px rgba(0,0,0,0.3)"}}>❓</button>
+
+      {showManual&&(
+        <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000}} onClick={()=>setShowManual(false)}>
+          <div style={{background:"#fff",borderRadius:8,width:"min(92vw,740px)",maxHeight:"88vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}} onClick={e=>e.stopPropagation()}>
+            <div style={{background:"#1a3a6b",color:"#fff",padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+              <span style={{fontWeight:"bold",fontSize:14}}>📖 ViVi不動産 残金決済ツール　使い方マニュアル</span>
+              <button onClick={()=>setShowManual(false)} style={{background:"none",border:"none",color:"#fff",fontSize:20,cursor:"pointer",lineHeight:1}}>✕</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"16px 20px",fontSize:11,lineHeight:1.8}}>
+              <ManualContent/>
+            </div>
+          </div>
         </div>
       )}
 
