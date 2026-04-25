@@ -935,7 +935,7 @@ function HandoverDoc({d,c}){
               <td style={cellSt}>{zipDisp}{d.address}</td>
             </tr>
             <tr><td style={labelSt}>付属建物</td><td style={cellSt}></td></tr>
-            <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　本</td></tr>
+            <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　　本、勝手口　　　本、物置　　　本、宅配ボックス　　　本</td></tr>
           </>}
           {isLand&&<>
             <tr>
@@ -950,13 +950,13 @@ function HandoverDoc({d,c}){
             <tr>
               <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>マン<br/>ション</td>
               <td style={labelSt}>名　称</td>
-              <td style={cellSt}>{d.mansionName}</td>
+              <td style={cellSt}>{d.mansionName}　{d.roomNo}</td>
             </tr>
             <tr>
               <td style={labelSt}>所在地</td>
-              <td style={cellSt}>{zipDisp}{d.address}　家屋番号：{d.roomNo}</td>
+              <td style={cellSt}>{zipDisp}{d.address}</td>
             </tr>
-            <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　本、ポスト　　本、宅配BOX　　本</td></tr>
+            <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　　本、トランクルーム　　　本、宅配ボックスカード　　　枚、ポスト番号　　　　　　</td></tr>
           </>}
         </tbody>
       </table>
@@ -990,9 +990,16 @@ function WaterDoc({d,c}){
           <tbody>
             <tr>
               <td rowSpan={3} style={{paddingRight:16,fontSize:10,verticalAlign:"top"}}>届　　　出　　　者<br/>（給水装置の新所有者）</td>
-              <td style={{padding:"2px 8px",fontSize:10}}>住　所</td>
+              <td style={{padding:"2px 8px",fontSize:10,verticalAlign:"top"}}>住　所</td>
               <td style={{padding:"2px 8px",fontSize:10,borderBottom:"1px solid #aaa",minWidth:200}}>
-                {buyers.map((b,i)=><div key={i}>{b.addr}</div>)}
+                {buyers.length===1
+                  ? buyers[0].addr
+                  : <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
+                      {buyers.map((b,i)=>(
+                        <tr key={i}><td style={{whiteSpace:"nowrap",paddingRight:8,verticalAlign:"top",fontSize:10}}>{i+1}.</td><td style={{fontSize:10}}>{b.addr}</td></tr>
+                      ))}
+                    </tbody></table>
+                }
               </td>
             </tr>
             <tr>
@@ -1000,9 +1007,16 @@ function WaterDoc({d,c}){
               <td style={{padding:"2px 8px",borderBottom:"1px solid #aaa"}}></td>
             </tr>
             <tr>
-              <td style={{padding:"2px 8px",fontSize:10}}>氏　名</td>
+              <td style={{padding:"2px 8px",fontSize:10,verticalAlign:"top"}}>氏　名</td>
               <td style={{padding:"2px 8px",fontSize:10,borderBottom:"1px solid #aaa"}}>
-                {buyers.map((b,i)=><span key={i}>{b.name}{i<buyers.length-1?"　":""}</span>)}
+                {buyers.length===1
+                  ? buyers[0].name
+                  : <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
+                      {buyers.map((b,i)=>(
+                        <tr key={i}><td style={{whiteSpace:"nowrap",paddingRight:8,verticalAlign:"top",fontSize:10}}>{i+1}.</td><td style={{fontSize:10}}>{b.name}</td></tr>
+                      ))}
+                    </tbody></table>
+                }
               </td>
             </tr>
           </tbody>
@@ -1027,13 +1041,27 @@ function WaterDoc({d,c}){
             <td rowSpan={2} style={{...labelSt,textAlign:"center"}}>給水装置の<br/>前所有者</td>
             <td style={labelSt}>住　所</td>
             <td colSpan={3} style={cellSt}>
-              {sellers.map((s,i)=><div key={i}>{s.addr}</div>)}
+              {sellers.length===1
+                ? sellers[0].addr
+                : <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
+                    {sellers.map((s,i)=>(
+                      <tr key={i}><td style={{whiteSpace:"nowrap",paddingRight:8,verticalAlign:"top",fontSize:10}}>{i+1}.</td><td style={{fontSize:10}}>{s.addr}</td></tr>
+                    ))}
+                  </tbody></table>
+              }
             </td>
           </tr>
           <tr>
             <td style={labelSt}>氏　名</td>
             <td colSpan={3} style={cellSt}>
-              {sellers.map((s,i)=><span key={i}>{s.name}{i<sellers.length-1?"　":""}</span>)}
+              {sellers.length===1
+                ? sellers[0].name
+                : <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
+                    {sellers.map((s,i)=>(
+                      <tr key={i}><td style={{whiteSpace:"nowrap",paddingRight:8,verticalAlign:"top",fontSize:10}}>{i+1}.</td><td style={{fontSize:10}}>{s.name}</td></tr>
+                    ))}
+                  </tbody></table>
+              }
             </td>
           </tr>
           <tr>
