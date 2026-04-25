@@ -41,6 +41,7 @@ const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s
 
 const INIT={
   propType:"戸建",txType:"売主",address:"",addressZip:"",
+  mansionName:"",roomNo:"",landArea:"",buildingArea:"",
   sellers:[{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る"}],
   buyers:[{name:"",addr:"",kinshoAttend:"来る",mendanAttend:"来る",settlementAttend:"来る"}],
   contractDate:"",settlementDT:"",settlementTime:"",
@@ -858,8 +859,219 @@ const Sec=({label,color})=><div style={{fontSize:10,fontWeight:"bold",padding:"3
 const F=({label,children,half})=><div style={{marginBottom:3,width:half?"50%":"100%",display:"inline-block",paddingRight:half?3:0,boxSizing:"border-box"}}><div style={{fontSize:10,color:"#666",marginBottom:1}}>{label}</div>{children}</div>;
 const TB=({val,onChange,opts})=><div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>{opts.map(o=><button key={o} onClick={()=>onChange(o)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:val===o?"#1a3a6b":"#f5f5f5",color:val===o?"#fff":"#333",fontWeight:val===o?"bold":"normal"}}>{o}</button>)}</div>;
 
-const TABS=["案内_売主","案内_買主","領収書","実測清算覚書","固都税清算書","管理費等清算書"];
-const TAB_COMPS=[SellerGuide,BuyerGuide,Receipt,CoverageMemo,TaxDoc,MgmtDoc];
+// =================== 引渡確認書 ===================
+function HandoverDoc({d,c}){
+  const sellers=getSellers(d);
+  const buyers=getBuyers(d);
+  const zipDisp=d.addressZip?`〒${d.addressZip.slice(0,3)}-${d.addressZip.slice(3)}　`:""
+  const isMansion=d.propType==="マンション";
+  const isLand=d.propType==="土地";
+  const cellSt={border:"1px solid #aaa",padding:"6px 8px",fontSize:10,verticalAlign:"top"};
+  const labelSt={...cellSt,background:"#f0f4f8",fontWeight:"bold",whiteSpace:"nowrap",width:"18%"};
+  return(
+    <div style={DOC.page}>
+      <DocHeader d={d}/>
+      <div style={{...DOC.docTitle,marginBottom:16}}>売 買 物 件 引 渡 確 認 書</div>
+      <div style={{textAlign:"right",fontSize:10,marginBottom:16}}>{toReiwa(d.settlementDT)}</div>
+      {sellers.map((s,i)=>(
+        <table key={i} style={{width:"100%",borderCollapse:"collapse",marginBottom:10}}>
+          <tbody>
+            <tr>
+              <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center",fontSize:12}}>{sellers.length>1?`売主${i+1}`:"売　主"}</td>
+              <td style={labelSt}>住　所</td>
+              <td style={cellSt}>{s.addr}</td>
+            </tr>
+            <tr>
+              <td style={labelSt}>氏　名</td>
+              <td style={{...cellSt,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span>{s.name}</span><span style={DOC.stamp}>印</span>
+              </td>
+            </tr>
+            <tr>
+              <td style={labelSt}>連 絡 先</td>
+              <td style={cellSt}>〒<br/>TEL</td>
+            </tr>
+          </tbody>
+        </table>
+      ))}
+      {buyers.map((b,i)=>(
+        <table key={i} style={{width:"100%",borderCollapse:"collapse",marginBottom:10}}>
+          <tbody>
+            <tr>
+              <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center",fontSize:12}}>{buyers.length>1?`買主${i+1}`:"買　主"}</td>
+              <td style={labelSt}>住　所</td>
+              <td style={cellSt}>{b.addr}</td>
+            </tr>
+            <tr>
+              <td style={labelSt}>氏　名</td>
+              <td style={{...cellSt,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span>{b.name}</span><span style={DOC.stamp}>印</span>
+              </td>
+            </tr>
+            <tr>
+              <td style={labelSt}>連 絡 先</td>
+              <td style={cellSt}>〒<br/>TEL</td>
+            </tr>
+          </tbody>
+        </table>
+      ))}
+      <div style={{fontSize:10,lineHeight:2,margin:"16px 0"}}>
+        {toReiwa(d.contractDate)}付売買契約に基づき、売主は登記関係書類を買主に交付し、買主は、本書を売主に交付して、本日　　　時　　　分 下記物件の引渡しを完了したことを確認する。
+      </div>
+      <div style={{textAlign:"center",fontWeight:"bold",fontSize:11,marginBottom:6,letterSpacing:2}}>物　件　の　表　示</div>
+      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:8}}>
+        <tbody>
+          {!isLand&&!isMansion&&<>
+            <tr>
+              <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>土地</td>
+              <td style={labelSt}>所　在</td>
+              <td style={cellSt}>{zipDisp}{d.address}</td>
+            </tr>
+            <tr><td style={labelSt}>地　積</td><td style={cellSt}>{d.landArea&&`${d.landArea} ㎡`}</td></tr>
+            <tr><td style={labelSt}>備　考</td><td style={cellSt}></td></tr>
+            <tr>
+              <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>建物</td>
+              <td style={labelSt}>所在地</td>
+              <td style={cellSt}>{zipDisp}{d.address}</td>
+            </tr>
+            <tr><td style={labelSt}>付属建物</td><td style={cellSt}></td></tr>
+            <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　本</td></tr>
+          </>}
+          {isLand&&<>
+            <tr>
+              <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>土地</td>
+              <td style={labelSt}>所　在</td>
+              <td style={cellSt}>{zipDisp}{d.address}</td>
+            </tr>
+            <tr><td style={labelSt}>地　積</td><td style={cellSt}>{d.landArea&&`${d.landArea} ㎡`}</td></tr>
+            <tr><td style={labelSt}>備　考</td><td style={cellSt}></td></tr>
+          </>}
+          {isMansion&&<>
+            <tr>
+              <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>マン<br/>ション</td>
+              <td style={labelSt}>名　称</td>
+              <td style={cellSt}>{d.mansionName}</td>
+            </tr>
+            <tr>
+              <td style={labelSt}>所在地</td>
+              <td style={cellSt}>{zipDisp}{d.address}　家屋番号：{d.roomNo}</td>
+            </tr>
+            <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　本、ポスト　　本、宅配BOX　　本</td></tr>
+          </>}
+        </tbody>
+      </table>
+      <div style={{fontSize:9,color:"#555",marginTop:8,borderTop:"1px solid #ddd",paddingTop:6}}>
+        ※鍵等の本数は引渡時に記入してください。
+      </div>
+      <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
+    </div>
+  );
+}
+
+// =================== 給水装置所有者変更届 ===================
+function WaterDoc({d,c}){
+  const sellers=getSellers(d);
+  const buyers=getBuyers(d);
+  if(d.propType==="マンション"){
+    return<div style={{...DOC.page,color:"#888",textAlign:"center",paddingTop:40}}>※マンションは給水装置所有者変更届の対象外です。</div>;
+  }
+  const cellSt={border:"1px solid #aaa",padding:"6px 8px",fontSize:10,verticalAlign:"top"};
+  const labelSt={...cellSt,background:"#f0f4f8",fontWeight:"bold",whiteSpace:"nowrap"};
+  const zipDisp=d.addressZip?`〒${d.addressZip.slice(0,3)}-${d.addressZip.slice(3)}　`:"";
+  return(
+    <div style={DOC.page}>
+      <DocHeader d={d}/>
+      <div style={{fontSize:9,marginBottom:4}}>様式第6号（第10条関係）</div>
+      <div style={{...DOC.docTitle,marginBottom:4}}>給 水 装 置 所 有 者 変 更 届</div>
+      <div style={{textAlign:"right",fontSize:10,marginBottom:6}}>{toReiwa(d.settlementDT)}</div>
+      <div style={{fontSize:10,marginBottom:12}}>（宛先）　富山市上下水道事業管理者</div>
+      <div style={{fontSize:10,marginBottom:12,paddingLeft:40}}>
+        <table style={{borderCollapse:"collapse"}}>
+          <tbody>
+            <tr>
+              <td rowSpan={3} style={{paddingRight:16,fontSize:10,verticalAlign:"top"}}>届　　　出　　　者<br/>（給水装置の新所有者）</td>
+              <td style={{padding:"2px 8px",fontSize:10}}>住　所</td>
+              <td style={{padding:"2px 8px",fontSize:10,borderBottom:"1px solid #aaa",minWidth:200}}>
+                {buyers.map((b,i)=><div key={i}>{b.addr}</div>)}
+              </td>
+            </tr>
+            <tr>
+              <td style={{padding:"2px 8px",fontSize:10}}>（ふりがな）</td>
+              <td style={{padding:"2px 8px",borderBottom:"1px solid #aaa"}}></td>
+            </tr>
+            <tr>
+              <td style={{padding:"2px 8px",fontSize:10}}>氏　名</td>
+              <td style={{padding:"2px 8px",fontSize:10,borderBottom:"1px solid #aaa"}}>
+                {buyers.map((b,i)=><span key={i}>{b.name}{i<buyers.length-1?"　":""}</span>)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div style={{marginTop:4,fontSize:10}}>電　話　（　　　　）</div>
+      </div>
+      <div style={{fontSize:10,marginBottom:8}}>給水装置の所有者を変更したので、次のとおり届け出ます。</div>
+      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:10}}>
+        <tbody>
+          <tr>
+            <td rowSpan={2} style={{...labelSt,width:"15%",textAlign:"center"}}>給 水 装 置</td>
+            <td style={labelSt}>設置の場所</td>
+            <td colSpan={3} style={cellSt}>{zipDisp}{d.address}</td>
+          </tr>
+          <tr>
+            <td style={labelSt}>所有者変更<br/>年　月　日</td>
+            <td style={cellSt}>{toReiwa(d.settlementDT)}</td>
+            <td style={labelSt}>お客さま番号<br/>流末未完番号</td>
+            <td style={cellSt}>第　　　　号<br/>第　　　　号</td>
+          </tr>
+          <tr>
+            <td rowSpan={2} style={{...labelSt,textAlign:"center"}}>給水装置の<br/>前所有者</td>
+            <td style={labelSt}>住　所</td>
+            <td colSpan={3} style={cellSt}>
+              {sellers.map((s,i)=><div key={i}>{s.addr}</div>)}
+            </td>
+          </tr>
+          <tr>
+            <td style={labelSt}>氏　名</td>
+            <td colSpan={3} style={cellSt}>
+              {sellers.map((s,i)=><span key={i}>{s.name}{i<sellers.length-1?"　":""}</span>)}
+            </td>
+          </tr>
+          <tr>
+            <td rowSpan={2} style={{...labelSt,textAlign:"center"}}>給水装置の<br/>使　用　者</td>
+            <td style={labelSt}>住　所</td>
+            <td colSpan={3} style={cellSt}></td>
+          </tr>
+          <tr>
+            <td style={labelSt}>氏　名</td>
+            <td colSpan={3} style={cellSt}></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style={{fontSize:9,color:"#555",marginBottom:8}}>
+        備考<br/>
+        1　届出者の欄及び給水装置の前所有者の欄は、本人（法人にあっては代表者）が自署してください。<br/>
+        2　給水装置の使用者の欄は、給水装置の所有者と使用者が異なる場合のみ記入してください。
+      </div>
+      <table style={{borderCollapse:"collapse",marginLeft:"auto"}}>
+        <tbody>
+          <tr>
+            <td style={{...cellSt,width:80,textAlign:"center"}}>OL入力</td>
+            <td style={{...cellSt,width:80,textAlign:"center"}}>台帳記入</td>
+            <td style={{...cellSt,width:80,textAlign:"center"}}>主　務</td>
+          </tr>
+          <tr><td style={{...cellSt,height:30}}></td><td style={cellSt}></td><td style={cellSt}></td></tr>
+        </tbody>
+      </table>
+      <div style={{fontSize:9,color:"#555",marginTop:8}}>
+        【郵送先】〒930-0859 富山市牛島本町二丁目1番20号<br/>
+        上下水道局 給排水サービス課　水道給水係
+      </div>
+    </div>
+  );
+}
+
+const TABS=["案内_売主","案内_買主","領収書","実測清算覚書","固都税清算書","管理費等清算書","引渡確認書","給水装置変更届"];
+const TAB_COMPS=[SellerGuide,BuyerGuide,Receipt,CoverageMemo,TaxDoc,MgmtDoc,HandoverDoc,WaterDoc];
 const SK="vivi_saved_cases";
 
 // アコーディオン — App外のトップレベルで定義することでフォーカス問題を回避
@@ -919,6 +1131,14 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
           </div>
           <TI val={d.address} onChange={set("address")} placeholder="住所を入力"/>
         </F>
+        {d.propType==="マンション"&&<>
+          <F label="マンション名"><TI val={d.mansionName||""} onChange={set("mansionName")} placeholder="例：グランドパレス富山"/></F>
+          <F label="部屋番号"><TI val={d.roomNo||""} onChange={set("roomNo")} placeholder="例：301号"/></F>
+        </>}
+        <div style={{display:"flex",gap:3}}>
+          <F label="土地面積(㎡)" half><TI val={d.landArea||""} onChange={set("landArea")} placeholder="例：125.00"/></F>
+          {d.propType!=="土地"&&<F label="建物面積(㎡)" half><TI val={d.buildingArea||""} onChange={set("buildingArea")} placeholder="例：98.00"/></F>}
+        </div>
         <F label="売主">
           {getSellers(d).map((s,i)=>(
             <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"5px",marginBottom:3,background:"#fff8f8"}}>
