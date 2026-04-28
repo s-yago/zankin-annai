@@ -1009,20 +1009,20 @@ function WaterDoc({d,c}){
         <table style={{borderCollapse:"collapse"}}>
           <tbody>
             <tr>
-              <td rowSpan={4} style={{paddingRight:20,verticalAlign:"top",fontSize:10,lineHeight:2}}>届　　出　　者<br/>（給水装置の新所有者）</td>
-              <td style={{padding:"1px 8px",fontSize:10,width:70}}>住　　所</td>
-              <td style={{padding:"1px 8px",fontSize:10,borderBottom:"1px solid #333",minWidth:220,height:22}}>{buyerAddr}</td>
+              <td rowSpan={4} style={{paddingRight:20,verticalAlign:"middle",fontSize:10,lineHeight:1.8,whiteSpace:"nowrap"}}>届　　出　　者<br/>（給水装置の新所有者）</td>
+              <td style={{padding:"1px 8px",fontSize:10,width:70,verticalAlign:"top"}}>住　　所</td>
+              <td style={{padding:"1px 8px",fontSize:10,borderBottom:"1px solid #333",minWidth:220,minHeight:22}}>{buyerAddr}</td>
             </tr>
             <tr>
-              <td style={{padding:"1px 8px",fontSize:10}}>（ふりがな）</td>
-              <td style={{padding:"1px 8px",borderBottom:"1px solid #333",height:18}}></td>
+              <td style={{padding:"1px 8px",fontSize:10,height:20,lineHeight:"20px"}}>（ふりがな）</td>
+              <td style={{padding:"1px 2px",borderBottom:"1px solid #333",height:20}}></td>
             </tr>
             <tr>
-              <td style={{padding:"1px 8px",fontSize:10}}>氏　　名</td>
+              <td style={{padding:"1px 8px",fontSize:10,height:22,lineHeight:"22px"}}>氏　　名</td>
               <td style={{padding:"1px 8px",fontSize:10,borderBottom:"1px solid #333",height:22}}>{buyerName}</td>
             </tr>
             <tr>
-              <td style={{padding:"1px 8px",fontSize:10}}>電　話</td>
+              <td style={{padding:"1px 8px",fontSize:10,height:22,lineHeight:"22px"}}>電　話</td>
               <td style={{padding:"1px 8px",fontSize:10,borderBottom:"1px solid #333",height:22}}>（　　　　　　　）</td>
             </tr>
           </tbody>
