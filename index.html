@@ -975,125 +975,111 @@ function WaterDoc({d,c}){
   if(d.propType==="マンション"){
     return<div style={{...DOC.page,color:"#888",textAlign:"center",paddingTop:40}}>※マンションは給水装置所有者変更届の対象外です。</div>;
   }
-  const cellSt={border:"1px solid #aaa",padding:"6px 8px",fontSize:10,verticalAlign:"top"};
-  const labelSt={...cellSt,background:"#f0f4f8",fontWeight:"bold",whiteSpace:"nowrap"};
   const zipDisp=d.addressZip?`〒${d.addressZip.slice(0,3)}-${d.addressZip.slice(3)}　`:"";
+  const cellSt={border:"1px solid #333",padding:"4px 6px",fontSize:10,verticalAlign:"middle"};
+  const labelSt={...cellSt,writingMode:"vertical-rl",textOrientation:"mixed",textAlign:"center",whiteSpace:"nowrap",letterSpacing:2,width:28,padding:"6px 4px"};
+  const subLabelSt={...cellSt,fontSize:10,width:60,background:"#fff"};
+  // 複数人を1行にまとめる
+  const buyerAddr=buyers.map(b=>b.addr).filter(Boolean).join("　");
+  const buyerName=buyers.map(b=>b.name).filter(Boolean).join("　");
+  const sellerAddr=sellers.map(s=>s.addr).filter(Boolean).join("　");
+  const sellerName=sellers.map(s=>s.name).filter(Boolean).join("　");
   return(
-    <div style={DOC.page}>
-      <DocHeader d={d}/>
-      <div style={{fontSize:9,marginBottom:4}}>様式第6号（第10条関係）</div>
-      <div style={{...DOC.docTitle,marginBottom:4}}>給 水 装 置 所 有 者 変 更 届</div>
-      <div style={{textAlign:"right",fontSize:10,marginBottom:6}}>{toReiwa(d.settlementDT)}</div>
-      <div style={{fontSize:10,marginBottom:12}}>（宛先）　富山市上下水道事業管理者</div>
-      <div style={{fontSize:10,marginBottom:12,paddingLeft:40}}>
+    <div style={{...DOC.page,fontFamily:"serif"}}>
+      <div style={{fontSize:10,marginBottom:2}}>様式第６号（第10条関係）</div>
+      <div style={{textAlign:"center",fontSize:13,fontWeight:"bold",letterSpacing:4,marginBottom:8}}>給水装置所有者変更届</div>
+      <div style={{textAlign:"right",fontSize:11,marginBottom:16}}>年　　月　　日</div>
+      <div style={{fontSize:10,marginBottom:16}}>（宛先）　富山市上下水道事業管理者</div>
+      {/* 届出者 */}
+      <div style={{marginLeft:80,marginBottom:16,fontSize:10}}>
         <table style={{borderCollapse:"collapse"}}>
           <tbody>
             <tr>
-              <td rowSpan={3} style={{paddingRight:16,fontSize:10,verticalAlign:"top"}}>届　　　出　　　者<br/>（給水装置の新所有者）</td>
-              <td style={{padding:"2px 8px",fontSize:10,verticalAlign:"top"}}>住　所</td>
-              <td style={{padding:"2px 8px",fontSize:10,borderBottom:"1px solid #aaa",minWidth:200}}>
-                {buyers.length===1
-                  ? buyers[0].addr
-                  : <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
-                      {buyers.map((b,i)=>(
-                        <tr key={i}><td style={{whiteSpace:"nowrap",paddingRight:8,verticalAlign:"top",fontSize:10}}>{i+1}.</td><td style={{fontSize:10}}>{b.addr}</td></tr>
-                      ))}
-                    </tbody></table>
-                }
-              </td>
+              <td rowSpan={4} style={{paddingRight:20,verticalAlign:"top",fontSize:10,lineHeight:2}}>届　　出　　者<br/>（給水装置の新所有者）</td>
+              <td style={{padding:"1px 8px",fontSize:10,width:70}}>住　　所</td>
+              <td style={{padding:"1px 8px",fontSize:10,borderBottom:"1px solid #333",minWidth:220,height:22}}>{buyerAddr}</td>
             </tr>
             <tr>
-              <td style={{padding:"2px 8px",fontSize:10}}>（ふりがな）</td>
-              <td style={{padding:"2px 8px",borderBottom:"1px solid #aaa"}}></td>
+              <td style={{padding:"1px 8px",fontSize:10}}>（ふりがな）</td>
+              <td style={{padding:"1px 8px",borderBottom:"1px solid #333",height:18}}></td>
             </tr>
             <tr>
-              <td style={{padding:"2px 8px",fontSize:10,verticalAlign:"top"}}>氏　名</td>
-              <td style={{padding:"2px 8px",fontSize:10,borderBottom:"1px solid #aaa"}}>
-                {buyers.length===1
-                  ? buyers[0].name
-                  : <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
-                      {buyers.map((b,i)=>(
-                        <tr key={i}><td style={{whiteSpace:"nowrap",paddingRight:8,verticalAlign:"top",fontSize:10}}>{i+1}.</td><td style={{fontSize:10}}>{b.name}</td></tr>
-                      ))}
-                    </tbody></table>
-                }
-              </td>
+              <td style={{padding:"1px 8px",fontSize:10}}>氏　　名</td>
+              <td style={{padding:"1px 8px",fontSize:10,borderBottom:"1px solid #333",height:22}}>{buyerName}</td>
+            </tr>
+            <tr>
+              <td style={{padding:"1px 8px",fontSize:10}}>電　話</td>
+              <td style={{padding:"1px 8px",fontSize:10,borderBottom:"1px solid #333",height:22}}>（　　　　　　　）</td>
             </tr>
           </tbody>
         </table>
-        <div style={{marginTop:4,fontSize:10}}>電　話　（　　　　）</div>
       </div>
-      <div style={{fontSize:10,marginBottom:8}}>給水装置の所有者を変更したので、次のとおり届け出ます。</div>
-      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:10}}>
+      <div style={{fontSize:10,marginBottom:6,marginLeft:4}}>　給水装置の所有者を変更したので、次のとおり届け出ます。</div>
+      {/* メインテーブル */}
+      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:12,fontSize:10}}>
         <tbody>
+          {/* 給水装置 - 設置の場所 */}
           <tr>
-            <td rowSpan={2} style={{...labelSt,width:"15%",textAlign:"center"}}>給 水 装 置</td>
-            <td style={labelSt}>設置の場所</td>
-            <td colSpan={3} style={cellSt}>{zipDisp}{d.address}</td>
+            <td rowSpan={3} style={{...labelSt,background:"#fff"}}>給水装置</td>
+            <td style={{...subLabelSt,textAlign:"center",lineHeight:1.4}}>設置の場<br/>所</td>
+            <td colSpan={4} style={cellSt}>{zipDisp}{d.address}</td>
+          </tr>
+          {/* 給水装置 - 所有者変更年月日 + お客さま番号 */}
+          <tr>
+            <td style={{...subLabelSt,textAlign:"center",lineHeight:1.4}}>所有者変<br/>更年月日</td>
+            <td style={{...cellSt,textAlign:"center"}}>年　　月　　日</td>
+            <td style={{...cellSt,fontSize:9,textAlign:"center",whiteSpace:"nowrap"}}>お客さま番号</td>
+            <td colSpan={2} style={cellSt}><div style={{display:"flex",justifyContent:"space-between",minWidth:80}}>第<span>号</span></div></td>
+          </tr>
+          {/* 流末未完番号 */}
+          <tr>
+            <td style={{...subLabelSt,fontSize:9,textAlign:"center",whiteSpace:"nowrap"}} colSpan={2}></td>
+            <td style={{...cellSt,fontSize:9,textAlign:"center",whiteSpace:"nowrap"}}>流末未完番号</td>
+            <td colSpan={2} style={cellSt}><div style={{display:"flex",justifyContent:"space-between",minWidth:80}}>第<span>号</span></div></td>
+          </tr>
+          {/* 前所有者 */}
+          <tr>
+            <td rowSpan={2} style={{...labelSt}}>給水装置の前所有者</td>
+            <td style={subLabelSt}>住　所</td>
+            <td colSpan={4} style={{...cellSt,height:40}}>{sellerAddr}</td>
           </tr>
           <tr>
-            <td style={labelSt}>所有者変更<br/>年　月　日</td>
-            <td style={cellSt}>{toReiwa(d.settlementDT)}</td>
-            <td style={labelSt}>お客さま番号<br/>流末未完番号</td>
-            <td style={{...cellSt,width:"22%"}}><div style={{display:"flex",justifyContent:"space-between"}}>第<span>号</span></div><div style={{display:"flex",justifyContent:"space-between"}}>第<span>号</span></div></td>
+            <td style={subLabelSt}>氏　名</td>
+            <td colSpan={4} style={{...cellSt,height:40}}>{sellerName}</td>
+          </tr>
+          {/* 使用者 */}
+          <tr>
+            <td rowSpan={2} style={{...labelSt}}>給水装置の使用者</td>
+            <td style={subLabelSt}>住　所</td>
+            <td colSpan={4} style={{...cellSt,height:40}}></td>
           </tr>
           <tr>
-            <td rowSpan={2} style={{...labelSt,textAlign:"center"}}>給水装置の<br/>前所有者</td>
-            <td style={labelSt}>住　所</td>
-            <td colSpan={3} style={cellSt}>
-              {sellers.length===1
-                ? sellers[0].addr
-                : <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
-                    {sellers.map((s,i)=>(
-                      <tr key={i}><td style={{whiteSpace:"nowrap",paddingRight:8,verticalAlign:"top",fontSize:10}}>{i+1}.</td><td style={{fontSize:10}}>{s.addr}</td></tr>
-                    ))}
-                  </tbody></table>
-              }
-            </td>
-          </tr>
-          <tr>
-            <td style={labelSt}>氏　名</td>
-            <td colSpan={3} style={cellSt}>
-              {sellers.length===1
-                ? sellers[0].name
-                : <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
-                    {sellers.map((s,i)=>(
-                      <tr key={i}><td style={{whiteSpace:"nowrap",paddingRight:8,verticalAlign:"top",fontSize:10}}>{i+1}.</td><td style={{fontSize:10}}>{s.name}</td></tr>
-                    ))}
-                  </tbody></table>
-              }
-            </td>
-          </tr>
-          <tr>
-            <td rowSpan={2} style={{...labelSt,textAlign:"center"}}>給水装置の<br/>使　用　者</td>
-            <td style={labelSt}>住　所</td>
-            <td colSpan={3} style={cellSt}></td>
-          </tr>
-          <tr>
-            <td style={labelSt}>氏　名</td>
-            <td colSpan={3} style={cellSt}></td>
+            <td style={subLabelSt}>氏　名</td>
+            <td colSpan={4} style={{...cellSt,height:40}}></td>
           </tr>
         </tbody>
       </table>
-      <div style={{fontSize:9,color:"#555",marginBottom:8}}>
+      {/* 備考 */}
+      <div style={{fontSize:9,marginBottom:12}}>
         備考<br/>
-        1　届出者の欄及び給水装置の前所有者の欄は、本人（法人にあっては代表者）が自署してください。<br/>
-        2　給水装置の使用者の欄は、給水装置の所有者と使用者が異なる場合のみ記入してください。
+        　１　届出者の欄及び給水装置の前所有者の欄は、本人（法人にあっては代表者）が自署してください。ただし、本人（法人にあっては代表者）が自署することができないときは、届出者又は給水装置の前所有者が個人の場合にあっては記名のうえ本人確認書類を添付し、法人の場合にあっては記名押印してください。<br/>
+        　２　給水装置の使用者の欄は、廃止する給水装置の所有者と使用者が異なる場合のみ記入してください。
       </div>
-      <table style={{borderCollapse:"collapse",marginLeft:"auto"}}>
+      {/* 事務欄 */}
+      <table style={{borderCollapse:"collapse",marginLeft:"auto",marginRight:0,fontSize:10}}>
         <tbody>
           <tr>
             <td style={{...cellSt,width:80,textAlign:"center"}}>OL入力</td>
             <td style={{...cellSt,width:80,textAlign:"center"}}>台帳記入</td>
             <td style={{...cellSt,width:80,textAlign:"center"}}>主　務</td>
           </tr>
-          <tr><td style={{...cellSt,height:30}}></td><td style={cellSt}></td><td style={cellSt}></td></tr>
+          <tr>
+            <td style={{...cellSt,height:32}}></td>
+            <td style={cellSt}></td>
+            <td style={cellSt}></td>
+          </tr>
         </tbody>
       </table>
-      <div style={{fontSize:9,color:"#555",marginTop:8}}>
-        【郵送先】〒930-0859 富山市牛島本町二丁目1番20号<br/>
-        上下水道局 給排水サービス課　水道給水係
-      </div>
     </div>
   );
 }
