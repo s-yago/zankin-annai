@@ -1040,14 +1040,13 @@ function WaterDoc({d,c}){
           </tr>
           {/* 給水装置 - 所有者変更年月日 + お客さま番号 */}
           <tr>
-            <td style={{...subLabelSt,textAlign:"center",lineHeight:1.4}}>所有者変<br/>更年月日</td>
-            <td style={{...cellSt,textAlign:"center"}}>{toReiwa(d.settlementDT)}</td>
+            <td rowSpan={2} style={{...subLabelSt,textAlign:"center",lineHeight:1.4,verticalAlign:"middle"}}>所有者変<br/>更年月日</td>
+            <td rowSpan={2} style={{...cellSt,textAlign:"center",verticalAlign:"middle"}}>{toReiwa(d.settlementDT)}</td>
             <td style={{...cellSt,fontSize:9,textAlign:"center",whiteSpace:"nowrap"}}>お客さま番号</td>
             <td colSpan={2} style={cellSt}><div style={{display:"flex",justifyContent:"space-between",minWidth:80}}>第<span>号</span></div></td>
           </tr>
           {/* 流末未完番号 */}
           <tr>
-            <td style={{...subLabelSt,fontSize:9,textAlign:"center",whiteSpace:"nowrap"}} colSpan={2}></td>
             <td style={{...cellSt,fontSize:9,textAlign:"center",whiteSpace:"nowrap"}}>流末未完番号</td>
             <td colSpan={2} style={cellSt}><div style={{display:"flex",justifyContent:"space-between",minWidth:80}}>第<span>号</span></div></td>
           </tr>
