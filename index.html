@@ -979,11 +979,25 @@ function WaterDoc({d,c}){
   const cellSt={border:"1px solid #333",padding:"4px 6px",fontSize:10,verticalAlign:"middle"};
   const labelSt={...cellSt,writingMode:"vertical-rl",textOrientation:"mixed",textAlign:"center",whiteSpace:"nowrap",letterSpacing:2,width:28,padding:"6px 4px"};
   const subLabelSt={...cellSt,fontSize:10,width:60,background:"#fff"};
-  // 複数人を1行にまとめる
-  const buyerAddr=buyers.map(b=>b.addr).filter(Boolean).join("　");
-  const buyerName=buyers.map(b=>b.name).filter(Boolean).join("　");
-  const sellerAddr=sellers.map(s=>s.addr).filter(Boolean).join("　");
-  const sellerName=sellers.map(s=>s.name).filter(Boolean).join("　");
+  // 複数人を縦ライン揃えで表示するヘルパー
+  const multiLine=(items)=>{
+    if(items.length===0)return"";
+    if(items.length===1)return items[0];
+    return(
+      <table style={{borderCollapse:"collapse",width:"100%"}}><tbody>
+        {items.map((v,i)=>(
+          <tr key={i}>
+            <td style={{whiteSpace:"nowrap",paddingRight:6,verticalAlign:"top",fontSize:10,width:16}}>{i+1}.</td>
+            <td style={{fontSize:10,verticalAlign:"top"}}>{v}</td>
+          </tr>
+        ))}
+      </tbody></table>
+    );
+  };
+  const buyerAddr=multiLine(buyers.map(b=>b.addr).filter(Boolean));
+  const buyerName=multiLine(buyers.map(b=>b.name).filter(Boolean));
+  const sellerAddr=multiLine(sellers.map(s=>s.addr).filter(Boolean));
+  const sellerName=multiLine(sellers.map(s=>s.name).filter(Boolean));
   return(
     <div style={{...DOC.page,fontFamily:"serif"}}>
       <div style={{fontSize:10,marginBottom:2}}>様式第６号（第10条関係）</div>
