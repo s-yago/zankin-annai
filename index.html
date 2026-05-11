@@ -1012,7 +1012,7 @@ function WaterDoc({d,c}){
   const sellerAddr=multiLine(sellers.map(s=>s.addr).filter(Boolean));
   const sellerName=multiLine(sellers.map(s=>s.name).filter(Boolean));
   return(
-    <div style={{...DOC.page,fontFamily:"serif"}}>
+    <div style={{...DOC.page,fontFamily:"serif",minHeight:"277mm",display:"flex",flexDirection:"column"}}>
       <div style={{fontSize:10,marginBottom:2}}>様式第６号（第10条関係）</div>
       <div style={{textAlign:"center",fontSize:13,fontWeight:"bold",letterSpacing:4,marginBottom:8}}>給水装置所有者変更届</div>
       <div style={{textAlign:"right",fontSize:11,marginBottom:16}}>年　　月　　日</div>
@@ -1091,6 +1091,8 @@ function WaterDoc({d,c}){
         　１　届出者の欄及び給水装置の前所有者の欄は、本人（法人にあっては代表者）が自署してください。ただし、本人（法人にあっては代表者）が自署することができないときは、届出者又は給水装置の前所有者が個人の場合にあっては記名のうえ本人確認書類を添付し、法人の場合にあっては記名押印してください。<br/>
         　２　給水装置の使用者の欄は、廃止する給水装置の所有者と使用者が異なる場合のみ記入してください。
       </div>
+      {/* スペーサー：残りの高さを埋めてA4ピッタリに */}
+      <div style={{flex:1}}/>
       {/* 事務欄 */}
       <table style={{borderCollapse:"collapse",marginLeft:"auto",marginRight:0,fontSize:10}}>
         <tbody>
