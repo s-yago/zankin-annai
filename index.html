@@ -19,13 +19,11 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
   body *{visibility:hidden!important}
   #print-area,#print-area *{visibility:visible!important}
   #print-area{position:absolute;top:0;left:0;width:100%;max-width:100%!important;box-shadow:none!important;margin:0!important}
-  #print-area>div{padding:10mm 12mm!important;font-size:9.5pt!important;line-height:1.5!important}
+  #print-area>div{padding:10mm 12mm!important;font-size:10pt!important;line-height:1.6!important}
   table{page-break-inside:avoid;border-collapse:collapse}
   tr{page-break-inside:avoid}
-  *{word-break:break-strict;overflow-wrap:anywhere}
-  .sec-head{page-break-before:auto!important;page-break-after:avoid!important;break-after:avoid!important}
-  .sec-head+*{page-break-before:avoid!important;break-before:avoid!important}
-  @page{margin:0}
+  .sec-head{page-break-after:avoid!important;break-after:avoid!important}
+  @page{margin:10mm 12mm}
 }
 </style>
 </head>
@@ -1869,7 +1867,7 @@ function App(){
           </div>
         </div>
       )}
-      <style>{`@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body *{visibility:hidden!important}#print-area,#print-area *{visibility:visible!important}#print-area{position:absolute;top:0;left:0;width:100%;max-width:100%!important;box-shadow:none!important;margin:0!important}#print-area>div{padding:10mm 12mm!important;font-size:9.5pt!important;line-height:1.5!important}table{page-break-inside:avoid;border-collapse:collapse}tr{page-break-inside:avoid}.water-doc{height:277mm!important;min-height:unset!important;display:flex!important;flex-direction:column!important;justify-content:space-between!important;box-sizing:border-box!important}.water-doc .water-spacer{display:none!important}@page{margin:0}}`}</style>
+      <style>{`@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body *{visibility:hidden!important}#print-area,#print-area *{visibility:visible!important}#print-area{position:absolute;top:0;left:0;width:100%;max-width:100%!important;box-shadow:none!important;margin:0!important}#print-area>div{padding:10mm 12mm!important;font-size:10pt!important;line-height:1.6!important}table{page-break-inside:avoid;border-collapse:collapse}tr{page-break-inside:avoid}.sec-head{page-break-after:avoid!important;break-after:avoid!important}@page{margin:10mm 12mm}}`}</style>
     </div>
   );
 }
