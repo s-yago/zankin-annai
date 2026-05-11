@@ -22,6 +22,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
   #print-area>div{padding:10mm 12mm!important;font-size:9.5pt!important;line-height:1.5!important}
   table{page-break-inside:avoid;border-collapse:collapse}
   tr{page-break-inside:avoid}
+  *{word-break:break-strict;overflow-wrap:anywhere}
   .sec-head{page-break-before:auto!important;page-break-after:avoid!important;break-after:avoid!important}
   .sec-head+*{page-break-before:avoid!important;break-before:avoid!important}
   @page{margin:0}
@@ -162,9 +163,11 @@ function calcAll(d){
   const sProxyBetsu=sProxies.filter(x=>x.method==="別口座").reduce((s,x)=>s+Math.round(num(x.amt)),0);
   // 売主側その他諸費用（売主が直接支払う費用）
   const sExtraItems=(d.sExtraItems||[]).filter(x=>num(x.amt)>0);
+  const sExtraDeduct=sExtraItems.filter(x=>x.deductMode==="差引").reduce((s,x)=>s+Math.round(num(x.amt)),0);
+  const sExtraSeparate=sExtraItems.filter(x=>(x.deductMode||"別途授受")!=="差引").reduce((s,x)=>s+Math.round(num(x.amt)),0);
   const sExtraTotal=sExtraItems.reduce((s,x)=>s+Math.round(num(x.amt)),0);
   const sCash=Math.round(num(d.sCashAmt1))+Math.round(num(d.sCashAmt2))+sProxyCash;
-  const aToS=incomeTot-sViViProxy-sProxyBetsu-sExtraTotal;
+  const aToS=incomeTot-sViViProxy-sProxyBetsu-sExtraDeduct;
   // 買主側代行費用（新構造）
   const bBroker=Math.round(num(d.bBrokerTotal))-Math.round(num(d.bBrokerPaid));
   const bProxies=(d.bProxies||[]).filter(x=>num(x.amt)>0);
@@ -202,7 +205,7 @@ function calcAll(d){
     incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
-    sProxies,sProxyCash,sProxyBetsu,sExtraItems,sExtraTotal,bProxies,bProxyCash,bProxyBetsu,extraItems,
+    sProxies,sProxyCash,sProxyBetsu,sExtraItems,sExtraTotal,sExtraDeduct,sExtraSeparate,bProxies,bProxyCash,bProxyBetsu,extraItems,
     viviBank,sellerBank,sellerBanks,sellerAmts,taxLabel,stYear};
 }
 
@@ -406,18 +409,28 @@ function SellerGuide({d,c}){
               {x.bankName&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>→ {x.bankName} {x.bankType} {x.bankNo}（{x.bankHolder}）</td></tr>}
             </React.Fragment>
           ))}
-          {c.sExtraTotal>0&&<TRow label="【売主様ご負担 諸費用】" value={yen(c.sExtraTotal)} bold sub="残金受取後、売主様より直接お支払い"/>}
-          {c.sExtraItems.map((x,i)=>(
+          {c.sExtraDeduct>0&&<TRow label="【売主様ご負担 諸費用（売買代金から差引）】" value={yen(c.sExtraDeduct)} bold sub="買主振込時に相殺"/>}
+          {c.sExtraItems.filter(x=>x.deductMode==="差引").map((x,i)=>(
             <React.Fragment key={i}>
               <TRow label={x.label} value={yen(x.amt)} indent/>
               {x.method==="別口座"&&x.bankName&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>→ {x.bankName} {x.bankType} {x.bankNo}（{x.bankHolder}）</td></tr>}
-              {x.method==="③現金"&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>（現金でお支払い）</td></tr>}
             </React.Fragment>
           ))}
-          <TRow label="★ 売主様口座へのご入金額（収入 − 当社経由分 − 別口座振込分）" value={yen(c.aToS)} total warn={c.overLoan}/>
+          <TRow label="★ 売主様口座へのご入金額（収入 − 当社経由分）" value={yen(c.aToS)} total warn={c.overLoan}/>
           {sellers.length>1&&c.sellerAmts.map((sa,i)=>(
             <TRow key={i} label={`　└ 売主${i+1}（${sellers[i].name}）へのお振込${sa.isAuto?"（残額）":""}`} value={yen(sa.amt)} indent/>
           ))}
+          {c.sExtraSeparate>0&&<>
+            <TRow label="【売主様ご負担 諸費用（別途授受）】" value={yen(c.sExtraSeparate)} bold sub="ご入金後、売主様より別途お支払い"/>
+            {c.sExtraItems.filter(x=>(x.deductMode||"別途授受")!=="差引").map((x,i)=>(
+              <React.Fragment key={i}>
+                <TRow label={x.label} value={yen(x.amt)} indent/>
+                {x.method==="別口座"&&x.bankName&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>→ {x.bankName} {x.bankType} {x.bankNo}（{x.bankHolder}）</td></tr>}
+                {x.method==="③現金"&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>（現金でお支払い）</td></tr>}
+              </React.Fragment>
+            ))}
+            <tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#1a6b3a",paddingLeft:8}}>差引：売主様の最終手取り　{yen(c.aToS-c.sExtraSeparate)}</td></tr>
+          </>}
         </tbody>
       </table>
       <div style={DOC.bankBox}>
@@ -1226,7 +1239,7 @@ function Acc({id,label,color,children,openSec,toggleSec}){
   );
 }
 
-function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist}){
+function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport}){
   const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
   const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
   const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
@@ -1255,6 +1268,13 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         {curId?<><button onClick={doOverwrite} style={{flex:2,padding:"5px 0",fontSize:10,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 上書き</button><button onClick={()=>setShowSaveDlg(true)} style={{flex:2,padding:"5px 0",fontSize:10,background:"#4a7ab5",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📋 別名</button></>:<button onClick={()=>setShowSaveDlg(true)} style={{flex:3,padding:"5px 0",fontSize:10,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 保存</button>}
         <button onClick={()=>setShowHist(true)} style={{flex:2,padding:"5px 0",fontSize:10,background:"#555",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📂 履歴({saved.length})</button>
         <button onClick={doNew} style={{flex:1,padding:"5px 0",fontSize:10,background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>＋新規</button>
+      </div>
+      <div style={{display:"flex",gap:4,marginBottom:6}}>
+        <button onClick={doExport} style={{flex:1,padding:"4px 0",fontSize:10,background:"#2e7d32",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📤 JSONで保存</button>
+        <label style={{flex:1,padding:"4px 0",fontSize:10,background:"#1565c0",color:"#fff",borderRadius:4,cursor:"pointer",fontWeight:"bold",textAlign:"center",display:"block"}}>
+          📥 JSONを読込
+          <input type="file" accept=".json" onChange={doImport} style={{display:"none"}}/>
+        </label>
       </div>
 
       {/* ① 基本情報 */}
@@ -1456,6 +1476,12 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
               <button onClick={()=>delSExtraItem(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>
             </div>
             <input defaultValue={x.label||""} onBlur={e=>setSExtraItem(i,"label",e.target.value)} placeholder="費用名（例：住所変更登記費用）" style={{...iS,marginBottom:2}}/>
+            <div style={{fontSize:9,color:"#555",marginBottom:2}}>授受方法</div>
+            <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc",marginBottom:4}}>
+              {["別途授受","差引"].map(opt=>(
+                <button key={opt} onClick={()=>setSExtraItem(i,"deductMode",opt)} style={{flex:1,padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:(x.deductMode||"別途授受")===opt?(opt==="差引"?"#8b0000":"#1a6b3a"):"#f5f5f5",color:(x.deductMode||"別途授受")===opt?"#fff":"#333",fontWeight:(x.deductMode||"別途授受")===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt==="別途授受"?"別途授受（入金後お支払い）":"売買代金から差引"}</button>
+              ))}
+            </div>
             <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:4}}>
               <input type="number" defaultValue={x.amt||""} onBlur={e=>setSExtraItem(i,"amt",e.target.value)} placeholder="0" style={{...iS,textAlign:"right",flex:1}}/>
               <div style={{display:"flex",flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
@@ -1605,9 +1631,33 @@ function App(){
   const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);setLoadKey(k=>k+1);};
   const doDel=id=>{const upd=saved.filter(i=>i.id!==id);setSaved(upd);if(id===curId){setCurId(null);setCurName("");}try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};setDelConf(null);};
   const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");setLoadKey(k=>k+1);}};
+  // JSONエクスポート
+  const doExport=()=>{
+    const name=curName||`${getSellerName(d)}→${getBuyerName(d)}_${d.settlementDT||"未設定"}`;
+    const blob=new Blob([JSON.stringify({name,exportedAt:new Date().toLocaleString("ja-JP"),data:d},null,2)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    a.download=`zankin_${name.replace(/[/\\:*?"<>|]/g,"_")}.json`;a.click();URL.revokeObjectURL(a.href);
+  };
+  // JSONインポート
+  const doImport=(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const obj=JSON.parse(ev.target.result);
+        const data=obj.data||obj;
+        if(!data.salePrice&&!data.sellers)throw new Error("不正なファイル形式");
+        if(window.confirm(`「${obj.name||"データ"}」を読み込みます。現在の入力内容は失われます。よろしいですか？`)){
+          setD({...INIT,...data});setCurId(null);setCurName(obj.name||"");setLoadKey(k=>k+1);
+        }
+      }catch(err){alert("JSONファイルの読み込みに失敗しました。\n"+err.message);}
+    };
+    reader.readAsText(file);
+    e.target.value="";
+  };
   const TabComp=TAB_COMPS[tab];
 
-  const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist};
+  const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport};
 
   const PreviewPanel=(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",height:"100%"}}>
