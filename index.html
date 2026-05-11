@@ -1012,7 +1012,7 @@ function WaterDoc({d,c}){
   const sellerAddr=multiLine(sellers.map(s=>s.addr).filter(Boolean));
   const sellerName=multiLine(sellers.map(s=>s.name).filter(Boolean));
   return(
-    <div style={{...DOC.page,fontFamily:"serif",minHeight:"277mm",display:"flex",flexDirection:"column"}}>
+    <div className="water-doc" style={{...DOC.page,fontFamily:"serif",display:"flex",flexDirection:"column",justifyContent:"space-between",boxSizing:"border-box"}}>
       <div style={{fontSize:10,marginBottom:2}}>様式第６号（第10条関係）</div>
       <div style={{textAlign:"center",fontSize:13,fontWeight:"bold",letterSpacing:4,marginBottom:8}}>給水装置所有者変更届</div>
       <div style={{textAlign:"right",fontSize:11,marginBottom:16}}>年　　月　　日</div>
@@ -1043,7 +1043,8 @@ function WaterDoc({d,c}){
       </div>
       <div style={{fontSize:10,marginBottom:6,marginLeft:4}}>　給水装置の所有者を変更したので、次のとおり届け出ます。</div>
       {/* メインテーブル */}
-      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:12,fontSize:10}}>
+      <div style={{flex:1,display:"flex",flexDirection:"column"}}>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:10,height:"100%"}}>
         <tbody>
           {/* 給水装置 - 設置の場所 */}
           <tr>
@@ -1067,11 +1068,11 @@ function WaterDoc({d,c}){
           <tr>
             <td rowSpan={2} style={{...labelSt}}>給水装置の前所有者</td>
             <td style={subLabelSt}>住　所</td>
-            <td colSpan={4} style={{...cellSt,height:40}}>{sellerAddr}</td>
+            <td colSpan={4} style={{...cellSt,minHeight:60,height:"auto"}}>{sellerAddr}</td>
           </tr>
           <tr>
             <td style={subLabelSt}>氏　名</td>
-            <td colSpan={4} style={{...cellSt,height:40}}>{sellerName}</td>
+            <td colSpan={4} style={{...cellSt,minHeight:60,height:"auto"}}>{sellerName}</td>
           </tr>
           {/* 使用者 */}
           <tr>
@@ -1085,14 +1086,13 @@ function WaterDoc({d,c}){
           </tr>
         </tbody>
       </table>
+      </div>
       {/* 備考 */}
       <div style={{fontSize:9,marginBottom:12}}>
         備考<br/>
         　１　届出者の欄及び給水装置の前所有者の欄は、本人（法人にあっては代表者）が自署してください。ただし、本人（法人にあっては代表者）が自署することができないときは、届出者又は給水装置の前所有者が個人の場合にあっては記名のうえ本人確認書類を添付し、法人の場合にあっては記名押印してください。<br/>
         　２　給水装置の使用者の欄は、廃止する給水装置の所有者と使用者が異なる場合のみ記入してください。
       </div>
-      {/* スペーサー：残りの高さを埋めてA4ピッタリに */}
-      <div style={{flex:1}}/>
       {/* 事務欄 */}
       <table style={{borderCollapse:"collapse",marginLeft:"auto",marginRight:0,fontSize:10}}>
         <tbody>
@@ -1764,7 +1764,7 @@ function App(){
           </div>
         </div>
       )}
-      <style>{`@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body *{visibility:hidden!important}#print-area,#print-area *{visibility:visible!important}#print-area{position:absolute;top:0;left:0;width:100%;max-width:100%!important;box-shadow:none!important;margin:0!important}#print-area>div{padding:10mm 12mm!important;font-size:9.5pt!important;line-height:1.5!important}table{page-break-inside:avoid;border-collapse:collapse}tr{page-break-inside:avoid}@page{margin:0}}`}</style>
+      <style>{`@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body *{visibility:hidden!important}#print-area,#print-area *{visibility:visible!important}#print-area{position:absolute;top:0;left:0;width:100%;max-width:100%!important;box-shadow:none!important;margin:0!important}#print-area>div{padding:10mm 12mm!important;font-size:9.5pt!important;line-height:1.5!important}table{page-break-inside:avoid;border-collapse:collapse}tr{page-break-inside:avoid}.water-doc{height:277mm!important;min-height:unset!important;display:flex!important;flex-direction:column!important;justify-content:space-between!important;box-sizing:border-box!important}.water-doc .water-spacer{display:none!important}@page{margin:0}}`}</style>
     </div>
   );
 }
