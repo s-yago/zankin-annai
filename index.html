@@ -1856,7 +1856,43 @@ function App(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+function PasswordGate({children}){
+  const PW="vivi-zankin";
+  const SK_PW="vivi_auth";
+  const [auth,setAuth]=React.useState(()=>sessionStorage.getItem(SK_PW)==="1");
+  const [input,setInput]=React.useState("");
+  const [err,setErr]=React.useState(false);
+  const doLogin=()=>{
+    if(input===PW){sessionStorage.setItem(SK_PW,"1");setAuth(true);setErr(false);}
+    else{setErr(true);setInput("");}
+  };
+  if(auth)return children;
+  return(
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#1a3a6b"}}>
+      <div style={{background:"#fff",borderRadius:10,padding:"40px 36px",width:320,boxShadow:"0 8px 32px rgba(0,0,0,0.3)",textAlign:"center"}}>
+        <div style={{fontSize:13,fontWeight:"bold",color:"#1a3a6b",marginBottom:4}}>ViVi不動産</div>
+        <div style={{fontSize:11,color:"#555",marginBottom:24}}>残金決済・清算書作成ツール</div>
+        <div style={{fontSize:12,color:"#333",marginBottom:10,textAlign:"left"}}>パスワード</div>
+        <input
+          type="password"
+          value={input}
+          onChange={e=>{setInput(e.target.value);setErr(false);}}
+          onKeyDown={e=>e.key==="Enter"&&doLogin()}
+          placeholder="パスワードを入力"
+          autoFocus
+          style={{width:"100%",padding:"10px 12px",fontSize:13,border:`2px solid ${err?"#c00":"#ccc"}`,borderRadius:6,boxSizing:"border-box",marginBottom:8,outline:"none"}}
+        />
+        {err&&<div style={{color:"#c00",fontSize:11,marginBottom:8}}>パスワードが違います</div>}
+        <button
+          onClick={doLogin}
+          style={{width:"100%",padding:"10px 0",background:"#1a3a6b",color:"#fff",border:"none",borderRadius:6,fontSize:13,fontWeight:"bold",cursor:"pointer",marginTop:4}}
+        >ログイン</button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<PasswordGate><App/></PasswordGate>);
 </script>
 </body>
 </html>
