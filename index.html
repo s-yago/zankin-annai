@@ -995,133 +995,133 @@ function buildWaterHTML(d){
 <title>給水装置所有者変更届</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:"MS Mincho","Yu Mincho","游明朝",serif;font-size:10.5pt;line-height:1.45;background:white}
-  @page{size:A4 portrait;margin:20mm 20mm 20mm 20mm}
+  body{font-family:"MS Mincho","Yu Mincho","游明朝",serif;font-size:10pt;line-height:1.4;background:white}
+  @page{size:A4 portrait;margin:18mm 18mm 16mm 18mm}
   @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   table{border-collapse:collapse}
-  td{vertical-align:middle}
+  /* 左側ラベル：横書き・折り返しあり・中央寄せ */
   .vlabel{
     border:1px solid #333;
-    writing-mode:vertical-rl;
-    text-orientation:mixed;
+    width:2.8em;
+    font-size:9.5pt;
     text-align:center;
-    white-space:pre;
-    width:28px;
-    font-size:10pt;
-    letter-spacing:2pt;
-    padding:6px 3px;
+    vertical-align:middle;
+    padding:4px 2px;
+    line-height:1.6;
+    word-break:break-all;
+    white-space:normal;
   }
-  .sublabel{border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle;line-height:1.3}
-  .datacell{border:1px solid #333;padding:5px 8px;font-size:10.5pt}
+  .sublabel{border:1px solid #333;padding:3px 4px;text-align:center;font-size:9pt;vertical-align:middle;line-height:1.4;word-break:keep-all}
+  .dc{border:1px solid #333;padding:5px 7px;font-size:10pt;vertical-align:middle}
 </style>
 </head><body>
-  <div style="font-size:9pt;margin-bottom:6px">様式第6号（第10条関係）</div>
-  <div style="text-align:center;font-size:13pt;letter-spacing:3pt;margin-bottom:16px">給水装置所有者変更届</div>
-  <div style="text-align:right;font-size:10.5pt;margin-bottom:22px">年　　月　　日</div>
-  <div style="font-size:10.5pt;margin-bottom:22px">（宛先）　富山市上下水道事業管理者</div>
+<div style="font-size:8.5pt;margin-bottom:3px">様式第6号（第10条関係）</div>
+<div style="text-align:center;font-size:13pt;letter-spacing:4pt;margin-bottom:12px">給水装置所有者変更届</div>
+<div style="text-align:right;font-size:10pt;margin-bottom:16px">年　　月　　日</div>
+<div style="font-size:10pt;margin-bottom:16px">（宛先）　富山市上下水道事業管理者</div>
 
-  <!-- 届出者（空欄・手書き） -->
-  <div style="display:flex;justify-content:flex-end;margin-bottom:22px">
-    <table style="border-collapse:collapse;font-size:10.5pt">
-      <tbody>
-        <tr>
-          <td rowspan="4" style="padding-right:20px;vertical-align:middle;white-space:nowrap;line-height:2.2;text-align:center">届　　出　　者<br>（給水装置の新所有者）</td>
-          <td style="padding:1px 10px;white-space:nowrap">住　　所</td>
-          <td style="border-bottom:1px solid #333;min-width:230px;height:28px;padding:1px 8px"></td>
-        </tr>
-        <tr>
-          <td style="padding:1px 10px;white-space:nowrap;font-size:9.5pt">（ふりがな）</td>
-          <td style="border-bottom:1px solid #333;height:22px"></td>
-        </tr>
-        <tr>
-          <td style="padding:1px 10px;white-space:nowrap">氏　　名</td>
-          <td style="border-bottom:1px solid #333;height:26px;padding:1px 8px"></td>
-        </tr>
-        <tr>
-          <td style="padding:1px 10px;white-space:nowrap">電　話</td>
-          <td style="border-bottom:1px solid #333;height:26px;padding:1px 8px">（　　　　　　　）</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div style="font-size:10.5pt;margin-bottom:8px">　給水装置の所有者を変更したので、次のとおり届け出ます。</div>
-
-  <!-- メインテーブル -->
-  <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-    <colgroup>
-      <col style="width:30px">
-      <col style="width:64px">
-      <col>
-      <col style="width:14%">
-      <col style="width:20%">
-    </colgroup>
+<!-- 届出者（空欄・手書き） -->
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+  <table style="border-collapse:collapse;font-size:10pt">
     <tbody>
-      <!-- 給水装置：設置の場所 -->
-      <tr style="height:40px">
-        <td rowspan="3" style="border:1px solid #333;width:28px;font-size:10pt;text-align:center;vertical-align:middle;padding:4px 2px;line-height:1.8">給水<br>装置</td>
-        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle;line-height:1.8">設置の場<br>所</td>
-        <td colspan="3" class="datacell">${zipDisp}${d.address||""}</td>
+      <tr>
+        <td rowspan="4" style="padding-right:16px;vertical-align:middle;white-space:nowrap;line-height:2;text-align:center">届　　出　　者<br>（給水装置の新所有者）</td>
+        <td style="padding:1px 8px;white-space:nowrap">住　　所</td>
+        <td style="border-bottom:1px solid #333;min-width:220px;height:26px"></td>
       </tr>
-      <!-- 給水装置：所有者変更年月日＋お客さま番号 -->
-      <tr style="height:34px">
-        <td rowspan="2" style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle;line-height:1.8">所有者変<br>更年月日</td>
-        <td rowspan="2" class="datacell" style="text-align:center">${toR(d.settlementDT)}</td>
-        <td class="datacell" style="text-align:center;font-size:9.5pt;white-space:nowrap">お客さま番号</td>
-        <td class="datacell"><div style="display:flex;justify-content:space-between;padding:0 4px">第<span>号</span></div></td>
+      <tr>
+        <td style="padding:1px 8px;white-space:nowrap;font-size:9pt">（ふりがな）</td>
+        <td style="border-bottom:1px solid #333;height:20px"></td>
       </tr>
-      <!-- 流末未完番号 -->
-      <tr style="height:34px">
-        <td class="datacell" style="text-align:center;font-size:9.5pt;white-space:nowrap">流末未完番号</td>
-        <td class="datacell"><div style="display:flex;justify-content:space-between;padding:0 4px">第<span>号</span></div></td>
+      <tr>
+        <td style="padding:1px 8px;white-space:nowrap">氏　　名</td>
+        <td style="border-bottom:1px solid #333;height:24px"></td>
       </tr>
-      <!-- 前所有者：住所 -->
-      <tr style="height:58px">
-        <td rowspan="2" style="border:1px solid #333;width:28px;font-size:10pt;text-align:center;vertical-align:middle;padding:4px 2px;line-height:1.8">給水装置<br>の前所有<br>者</td>
-        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle">住　所</td>
-        <td colspan="3" class="datacell" style="vertical-align:top;padding:6px 8px">${sellerAddr}</td>
-      </tr>
-      <!-- 前所有者：氏名 -->
-      <tr style="height:58px">
-        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle">氏　名</td>
-        <td colspan="3" class="datacell" style="vertical-align:top;padding:6px 8px">${sellerName}</td>
-      </tr>
-      <!-- 使用者：住所 -->
-      <tr style="height:58px">
-        <td rowspan="2" style="border:1px solid #333;width:28px;font-size:10pt;text-align:center;vertical-align:middle;padding:4px 2px;line-height:1.8">給水装置<br>の使用者</td>
-        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle">住　所</td>
-        <td colspan="3" class="datacell"></td>
-      </tr>
-      <!-- 使用者：氏名 -->
-      <tr style="height:58px">
-        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle">氏　名</td>
-        <td colspan="3" class="datacell"></td>
+      <tr>
+        <td style="padding:1px 8px;white-space:nowrap">電　話</td>
+        <td style="border-bottom:1px solid #333;height:24px;padding:1px 8px">（　　　　　　　）</td>
       </tr>
     </tbody>
   </table>
+</div>
 
-  <!-- 備考 -->
-  <div style="font-size:9pt;line-height:1.75;margin-bottom:20px">
-    備考<br>
-    　１　届出者の欄及び給水装置の前所有者の欄は、本人（法人にあっては代表者）が自署してください。ただし、本人（法人にあっては代表者）が自署することができないときは、届出者又は給水装置の前所有者が個人の場合にあっては記名のうえ本人確認書類を添付し、法人の場合にあっては記名押印してください。<br>
-    　２　給水装置の使用者の欄は、廃止する給水装置の所有者と使用者が異なる場合のみ記入してください。
-  </div>
+<div style="font-size:10pt;margin-bottom:6px">　給水装置の所有者を変更したので、次のとおり届け出ます。</div>
 
-  <!-- 事務欄 -->
-  <table style="width:auto;margin-left:auto;border-collapse:collapse">
-    <tbody>
-      <tr>
-        <td style="border:1px solid #333;width:92px;text-align:center;padding:4px;font-size:10.5pt">OL入力</td>
-        <td style="border:1px solid #333;width:92px;text-align:center;padding:4px;font-size:10.5pt">台帳記入</td>
-        <td style="border:1px solid #333;width:92px;text-align:center;padding:4px;font-size:10.5pt">主　務</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #333;height:40px"></td>
-        <td style="border:1px solid #333"></td>
-        <td style="border:1px solid #333"></td>
-      </tr>
-    </tbody>
-  </table>
+<!-- メインテーブル -->
+<table style="width:100%;border-collapse:collapse;margin-bottom:12px;table-layout:fixed">
+  <colgroup>
+    <col style="width:2.8em">
+    <col style="width:5.2em">
+    <col>
+    <col style="width:13%">
+    <col style="width:19%">
+  </colgroup>
+  <tbody>
+    <!-- 給水装置：設置の場所 -->
+    <tr style="height:44px">
+      <td rowspan="3" class="vlabel">給水装置</td>
+      <td class="sublabel">設置の場<br>所</td>
+      <td colspan="3" class="dc">${zipDisp}${d.address||""}</td>
+    </tr>
+    <!-- 所有者変更年月日 + お客さま番号 -->
+    <tr style="height:38px">
+      <td rowspan="2" class="sublabel">所有者変<br>更年月日</td>
+      <td rowspan="2" class="dc" style="text-align:center">${toR(d.settlementDT)}</td>
+      <td class="dc" style="text-align:center;font-size:8.5pt">お客さま番号</td>
+      <td class="dc"><div style="display:flex;justify-content:space-between;padding:0 2px">第<span>号</span></div></td>
+    </tr>
+    <!-- 流末未完番号 -->
+    <tr style="height:38px">
+      <td class="dc" style="text-align:center;font-size:8.5pt">流末未完番号</td>
+      <td class="dc"><div style="display:flex;justify-content:space-between;padding:0 2px">第<span>号</span></div></td>
+    </tr>
+    <!-- 前所有者：住所 -->
+    <tr style="height:62px">
+      <td rowspan="2" class="vlabel">給水装置の前所有者</td>
+      <td class="sublabel">住　所</td>
+      <td colspan="3" class="dc" style="vertical-align:top">${sellerAddr}</td>
+    </tr>
+    <!-- 前所有者：氏名 -->
+    <tr style="height:62px">
+      <td class="sublabel">氏　名</td>
+      <td colspan="3" class="dc" style="vertical-align:top">${sellerName}</td>
+    </tr>
+    <!-- 使用者：住所 -->
+    <tr style="height:62px">
+      <td rowspan="2" class="vlabel">給水装置の使用者</td>
+      <td class="sublabel">住　所</td>
+      <td colspan="3" class="dc"></td>
+    </tr>
+    <!-- 使用者：氏名 -->
+    <tr style="height:62px">
+      <td class="sublabel">氏　名</td>
+      <td colspan="3" class="dc"></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 備考 -->
+<div style="font-size:8.5pt;line-height:1.7;margin-bottom:14px">
+  備考<br>
+  　１　届出者の欄及び給水装置の前所有者の欄は、本人（法人にあっては代表者）が自署してください。ただし、本人（法人にあっては代表者）が自署することができないときは、届出者又は給水装置の前所有者が個人の場合にあっては記名のうえ本人確認書類を添付し、法人の場合にあっては記名押印してください。<br>
+  　２　給水装置の使用者の欄は、廃止する給水装置の所有者と使用者が異なる場合のみ記入してください。
+</div>
+
+<!-- 事務欄 -->
+<table style="width:auto;margin-left:auto;border-collapse:collapse">
+  <tbody>
+    <tr>
+      <td style="border:1px solid #333;width:88px;text-align:center;padding:4px;font-size:10pt">OL入力</td>
+      <td style="border:1px solid #333;width:88px;text-align:center;padding:4px;font-size:10pt">台帳記入</td>
+      <td style="border:1px solid #333;width:88px;text-align:center;padding:4px;font-size:10pt">主　務</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #333;height:36px"></td>
+      <td style="border:1px solid #333"></td>
+      <td style="border:1px solid #333"></td>
+    </tr>
+  </tbody>
+</table>
 </body></html>`;
 }
 
