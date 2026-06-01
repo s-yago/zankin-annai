@@ -1059,13 +1059,13 @@ function buildWaterHTML(d){
     <tbody>
       <!-- 給水装置：設置の場所 -->
       <tr style="height:40px">
-        <td rowspan="3" class="vlabel">給&#10;水&#10;装&#10;置</td>
-        <td class="sublabel">設置の場<br>所</td>
+        <td rowspan="3" style="border:1px solid #333;width:28px;font-size:10pt;text-align:center;vertical-align:middle;padding:4px 2px;line-height:1.8">給水<br>装置</td>
+        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle;line-height:1.8">設置の場<br>所</td>
         <td colspan="3" class="datacell">${zipDisp}${d.address||""}</td>
       </tr>
       <!-- 給水装置：所有者変更年月日＋お客さま番号 -->
       <tr style="height:34px">
-        <td rowspan="2" class="sublabel">所有者変<br>更年月日</td>
+        <td rowspan="2" style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle;line-height:1.8">所有者変<br>更年月日</td>
         <td rowspan="2" class="datacell" style="text-align:center">${toR(d.settlementDT)}</td>
         <td class="datacell" style="text-align:center;font-size:9.5pt;white-space:nowrap">お客さま番号</td>
         <td class="datacell"><div style="display:flex;justify-content:space-between;padding:0 4px">第<span>号</span></div></td>
@@ -1077,24 +1077,24 @@ function buildWaterHTML(d){
       </tr>
       <!-- 前所有者：住所 -->
       <tr style="height:58px">
-        <td rowspan="2" class="vlabel">給&#10;水&#10;装&#10;置&#10;の&#10;前&#10;所&#10;有&#10;者</td>
-        <td class="sublabel">住　所</td>
+        <td rowspan="2" style="border:1px solid #333;width:28px;font-size:10pt;text-align:center;vertical-align:middle;padding:4px 2px;line-height:1.8">給水装置<br>の前所有<br>者</td>
+        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle">住　所</td>
         <td colspan="3" class="datacell" style="vertical-align:top;padding:6px 8px">${sellerAddr}</td>
       </tr>
       <!-- 前所有者：氏名 -->
       <tr style="height:58px">
-        <td class="sublabel">氏　名</td>
+        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle">氏　名</td>
         <td colspan="3" class="datacell" style="vertical-align:top;padding:6px 8px">${sellerName}</td>
       </tr>
       <!-- 使用者：住所 -->
       <tr style="height:58px">
-        <td rowspan="2" class="vlabel">給&#10;水&#10;装&#10;置&#10;の&#10;使&#10;用&#10;者</td>
-        <td class="sublabel">住　所</td>
+        <td rowspan="2" style="border:1px solid #333;width:28px;font-size:10pt;text-align:center;vertical-align:middle;padding:4px 2px;line-height:1.8">給水装置<br>の使用者</td>
+        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle">住　所</td>
         <td colspan="3" class="datacell"></td>
       </tr>
       <!-- 使用者：氏名 -->
       <tr style="height:58px">
-        <td class="sublabel">氏　名</td>
+        <td style="border:1px solid #333;padding:4px 5px;text-align:center;font-size:9.5pt;vertical-align:middle">氏　名</td>
         <td colspan="3" class="datacell"></td>
       </tr>
     </tbody>
