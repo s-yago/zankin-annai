@@ -999,23 +999,20 @@ body{font-family:"MS Mincho","Yu Mincho",serif;font-size:10pt;line-height:1.5;ba
 @page{size:A4 portrait;margin:20mm 18mm}
 @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 table{border-collapse:collapse;width:100%}
-td{border:1px solid #333;vertical-align:middle;font-size:10pt}
-.lbl{text-align:center;padding:4px 3px;font-size:9pt;width:3.5em}
-.sub{text-align:center;padding:3px 5px;font-size:9pt;width:5.5em}
-.dat{padding:5px 8px}
+td{border:1px solid #333;vertical-align:middle;font-size:10pt;padding:0}
 </style>
 </head><body>
 <p style="font-size:9pt;margin-bottom:4px">様式第6号（第10条関係）</p>
-<p style="text-align:center;font-size:14pt;letter-spacing:5pt;margin-bottom:14px">給水装置所有者変更届</p>
+<p style="text-align:center;font-size:12pt;letter-spacing:3pt;margin-bottom:14px">給水装置所有者変更届</p>
 <p style="text-align:right;margin-bottom:18px">年　　月　　日</p>
 <p style="margin-bottom:18px">（宛先）　富山市上下水道事業管理者</p>
 
 <div style="display:flex;justify-content:flex-end;margin-bottom:18px">
   <table style="width:auto;border-collapse:collapse">
     <tr>
-      <td rowspan="4" style="border:none;padding-right:14px;white-space:nowrap;vertical-align:middle;text-align:center;line-height:2.2">届　　出　　者<br>（給水装置の新所有者）</td>
+      <td rowspan="4" style="border:none;padding-right:14px;white-space:nowrap;text-align:center;line-height:2.2">届　　出　　者<br>（給水装置の新所有者）</td>
       <td style="border:none;border-bottom:1px solid #333;padding:2px 8px;white-space:nowrap">住　　所</td>
-      <td style="border:none;border-bottom:1px solid #333;min-width:210px;height:26px"></td>
+      <td style="border:none;border-bottom:1px solid #333;min-width:200px;height:26px"></td>
     </tr>
     <tr>
       <td style="border:none;border-bottom:1px solid #333;padding:2px 8px;white-space:nowrap;font-size:9pt">（ふりがな）</td>
@@ -1034,47 +1031,50 @@ td{border:1px solid #333;vertical-align:middle;font-size:10pt}
 
 <p style="margin-bottom:6px">　給水装置の所有者を変更したので、次のとおり届け出ます。</p>
 
-<table style="margin-bottom:12px;table-layout:fixed">
+<table style="margin-bottom:14px;table-layout:fixed">
   <colgroup>
-    <col style="width:3.5em">
-    <col style="width:5.5em">
+    <col style="width:52px">
+    <col style="width:72px">
     <col>
-    <col style="width:12%">
-    <col style="width:18%">
+    <col style="width:13%">
+    <col style="width:19%">
   </colgroup>
   <tbody>
+    <!-- 給水装置：設置の場所 -->
     <tr style="height:42px">
-      <td rowspan="3" class="lbl">給水<br>装置</td>
-      <td class="sub">設置の場<br>所</td>
-      <td colspan="3" class="dat">${zipDisp}${d.address||""}</td>
+      <td rowspan="3" style="text-align:center;font-size:9.5pt;line-height:1.8;padding:4px 2px;letter-spacing:2pt">給 水 装 置</td>
+      <td style="text-align:center;font-size:9pt;line-height:1.4;padding:3px">設 置 の 場<br>所</td>
+      <td colspan="3" style="padding:5px 8px">${zipDisp}${d.address||""}</td>
     </tr>
     <tr style="height:36px">
-      <td rowspan="2" class="sub">所有者変<br>更年月日</td>
-      <td rowspan="2" class="dat" style="text-align:center">${toR(d.settlementDT)}</td>
-      <td class="sub">お客さま番号</td>
-      <td class="dat"><div style="display:flex;justify-content:space-between">第<span>号</span></div></td>
+      <td rowspan="2" style="text-align:center;font-size:9pt;line-height:1.4;padding:3px">所 有 者 変<br>更 年 月 日</td>
+      <td rowspan="2" style="text-align:center;padding:4px">${toR(d.settlementDT)}</td>
+      <td style="text-align:center;font-size:9pt;padding:3px">お客さま番号</td>
+      <td style="padding:4px 8px"><div style="display:flex;justify-content:space-between">第<span>号</span></div></td>
     </tr>
     <tr style="height:36px">
-      <td class="sub">流末未完番号</td>
-      <td class="dat"><div style="display:flex;justify-content:space-between">第<span>号</span></div></td>
+      <td style="text-align:center;font-size:9pt;padding:3px">流末未完番号</td>
+      <td style="padding:4px 8px"><div style="display:flex;justify-content:space-between">第<span>号</span></div></td>
     </tr>
-    <tr style="height:60px">
-      <td rowspan="2" class="lbl">給水<br>装置の<br>前所有<br>者</td>
-      <td class="sub">住　所</td>
-      <td colspan="3" class="dat" style="vertical-align:top">${sellerAddr}</td>
+    <!-- 前所有者 -->
+    <tr style="height:62px">
+      <td rowspan="2" style="text-align:center;font-size:9.5pt;line-height:1.8;padding:4px 2px;letter-spacing:2pt">給 水 装 置<br>の 前 所 有<br><span style="letter-spacing:0">者</span></td>
+      <td style="text-align:center;font-size:9.5pt;padding:3px;letter-spacing:2pt">住　所</td>
+      <td colspan="3" style="padding:5px 8px;vertical-align:top">${sellerAddr}</td>
     </tr>
-    <tr style="height:60px">
-      <td class="sub">氏　名</td>
-      <td colspan="3" class="dat" style="vertical-align:top">${sellerName}</td>
+    <tr style="height:62px">
+      <td style="text-align:center;font-size:9.5pt;padding:3px;letter-spacing:2pt">氏　名</td>
+      <td colspan="3" style="padding:5px 8px;vertical-align:top">${sellerName}</td>
     </tr>
-    <tr style="height:60px">
-      <td rowspan="2" class="lbl">給水<br>装置の<br>使用者</td>
-      <td class="sub">住　所</td>
-      <td colspan="3" class="dat"></td>
+    <!-- 使用者 -->
+    <tr style="height:62px">
+      <td rowspan="2" style="text-align:center;font-size:9.5pt;line-height:1.8;padding:4px 2px;letter-spacing:2pt">給 水 装 置<br>の 使 用 者</td>
+      <td style="text-align:center;font-size:9.5pt;padding:3px;letter-spacing:2pt">住　所</td>
+      <td colspan="3" style="padding:5px 8px"></td>
     </tr>
-    <tr style="height:60px">
-      <td class="sub">氏　名</td>
-      <td colspan="3" class="dat"></td>
+    <tr style="height:62px">
+      <td style="text-align:center;font-size:9.5pt;padding:3px;letter-spacing:2pt">氏　名</td>
+      <td colspan="3" style="padding:5px 8px"></td>
     </tr>
   </tbody>
 </table>
@@ -1092,9 +1092,7 @@ td{border:1px solid #333;vertical-align:middle;font-size:10pt}
     <td style="width:88px;text-align:center;padding:4px">主　務</td>
   </tr>
   <tr>
-    <td style="height:36px"></td>
-    <td></td>
-    <td></td>
+    <td style="height:36px"></td><td></td><td></td>
   </tr>
 </table>
 </body></html>`;
