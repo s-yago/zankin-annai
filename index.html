@@ -62,7 +62,6 @@ const INIT={
     {label:"荷物片づけ",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
     {label:"その他経費",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
   ],
-  sCashLabel1:"",sCashAmt1:0,sCashLabel2:"",sCashAmt2:0,
   sJuminCount:"1",sInkanCount:"1",sKenriCount:"1",
   sKosekiHuhyo:"表示",showInkanWarning:"表示",
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
@@ -79,7 +78,6 @@ const INIT={
   ],
   reformTotal:0,reformDepositYN:"なし",reformDepositAmt:0,
   bLoanFee:0,bFireInsurance:0,bMgmtFund:0,bTransferFee:0,bOtherDraw:0,
-  bCashLabel1:"",bCashAmt1:0,bCashLabel2:"",bCashAmt2:0,
   bJuminTransfer:"0",bInkanTransfer:"0",
   bExtraLabel1:"",bExtraLabel2:"",bExtraLabel3:"",
   bMultiNote:"",
@@ -164,7 +162,7 @@ function calcAll(d){
   const sExtraDeduct=sExtraItems.filter(x=>x.deductMode==="差引").reduce((s,x)=>s+Math.round(num(x.amt)),0);
   const sExtraSeparate=sExtraItems.filter(x=>(x.deductMode||"別途授受")!=="差引").reduce((s,x)=>s+Math.round(num(x.amt)),0);
   const sExtraTotal=sExtraItems.reduce((s,x)=>s+Math.round(num(x.amt)),0);
-  const sCash=Math.round(num(d.sCashAmt1))+Math.round(num(d.sCashAmt2))+sProxyCash;
+  const sCash=sProxyCash;
   const aToS=incomeTot-sViViProxy-sProxyBetsu-sExtraDeduct;
   // 買主側代行費用（新構造）
   const bBroker=Math.round(num(d.bBrokerTotal))-Math.round(num(d.bBrokerPaid));
@@ -177,7 +175,7 @@ function calcAll(d){
   const extraCash=extraItems.filter(e=>e.zone==="③").reduce((s,e)=>s+Math.round(num(e.amt)),0);
   const extraViVi=extraItems.filter(e=>e.zone==="②").reduce((s,e)=>s+Math.round(num(e.amt)),0);
   const bBankDraw=Math.round(num(d.bLoanFee))+Math.round(num(d.bFireInsurance))+Math.round(num(d.bMgmtFund))+Math.round(num(d.bTransferFee))+Math.round(num(d.bOtherDraw))+reformBalance+extraBankDraw;
-  const bCash=Math.round(num(d.bCashAmt1))+Math.round(num(d.bCashAmt2))+bProxyCash+extraCash;
+  const bCash=bProxyCash+extraCash;
   const bViViProxy=bProxyViVi+extraViVi;
   const tExpB=incomeTot+bViViProxy+bBankDraw+bCash+bProxyBetsu;
   let selfFunds=0,surplus=0;
@@ -269,7 +267,7 @@ function SellerItems({d,c}){
       {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{multiSeller?"各":""}{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず残金決済時より３か月以内のものをご用意ください</span></div>}
       {c.sCash>0&&(()=>{
         const cashItems=[...(d.sProxies||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0),...(d.sExtraItems||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0)];
-        const cashLabel=cashItems.length>0?cashItems.map(x=>x.label).join("・"):(d.sCashLabel1||"");
+        const cashLabel=cashItems.map(x=>x.label).join("・");
         return <div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{cashLabel}）</div>;
       })()}
       <div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>
@@ -620,8 +618,6 @@ function BuyerGuide({d,c}){
           {num(d.bMgmtFund)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>管理基金等（引落）</td><td style={DOC.tdRight}>{yen(d.bMgmtFund)}</td></tr>}
           {num(d.bTransferFee)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>振込手数料</td><td style={DOC.tdRight}>{yen(d.bTransferFee)}</td></tr>}
           {num(d.bOtherDraw)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#fde8cc",fontWeight:"bold",fontSize:11,color:"#8b5000"}}>④</td><td style={DOC.td}>その他（引落・後日払）</td><td style={DOC.tdRight}>{yen(d.bOtherDraw)}</td></tr>}
-          {num(d.bCashAmt1)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#d8f5e0",fontWeight:"bold",fontSize:11,color:"#1a6b3a"}}>③</td><td style={DOC.td}>{d.bCashLabel1}</td><td style={DOC.tdRight}>{yen(d.bCashAmt1)}</td></tr>}
-          {num(d.bCashAmt2)>0&&<tr><td style={{...DOC.td,textAlign:"center",background:"#d8f5e0",fontWeight:"bold",fontSize:11,color:"#1a6b3a"}}>③</td><td style={DOC.td}>{d.bCashLabel2}</td><td style={DOC.tdRight}>{yen(d.bCashAmt2)}</td></tr>}
           {c.extraItems.map((e,i)=>e.label&&num(e.amt)>0&&(()=>{
             const zoneMap={"①":["#dce6f1","#1a3a6b"],"②":["#e8d8f5","#5a1a8b"],"③":["#d8f5e0","#1a6b3a"],"④":["#fde8cc","#8b5000"]};
             const [bg,col]=zoneMap[e.zone]||zoneMap["④"];
@@ -1351,11 +1347,6 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
   const setSExtraItem=(i,field,val)=>setD(p=>{const n=(p.sExtraItems||[]).map((x,j)=>j===i?{...x,[field]:val}:x);return{...p,sExtraItems:n};});
   const addSExtraItem=()=>setD(p=>({...p,sExtraItems:[...(p.sExtraItems||[]),{label:"",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""}]}));
   const delSExtraItem=(i)=>setD(p=>({...p,sExtraItems:(p.sExtraItems||[]).filter((_,j)=>j!==i)}));
-  const addBExtraItem=()=>setD(p=>({...p,bExtraItems:[...(p.bExtraItems||[]),{label:"",amt:0,zone:"④"}]}));
-  const setBExtraItem=(i,field,val)=>setD(p=>{const n=[...(p.bExtraItems||[])];n[i]={...n[i],[field]:val};return{...p,bExtraItems:n};});
-  const delBExtraItem=i=>setD(p=>({...p,bExtraItems:(p.bExtraItems||[]).filter((_,j)=>j!==i)}));
-  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");}};
-  const doOverwrite=()=>{const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
   const c=calcAll(d);
   return(
     <div style={{width:sp?"100%":280,flexShrink:0,overflowY:"auto",background:"#fff",borderRight:sp?"none":"1px solid #ddd",padding:"6px 8px",height:"100%",boxSizing:"border-box"}}>
@@ -1552,8 +1543,6 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
             </div>}
           </div>
         ))}
-        <div style={{display:"flex",gap:3}}><F label="現金名目①" half><TI val={d.sCashLabel1} onChange={set("sCashLabel1")}/></F><F label="金額①" half><NI val={d.sCashAmt1} onChange={set("sCashAmt1")}/></F></div>
-        <div style={{display:"flex",gap:3}}><F label="現金名目②" half><TI val={d.sCashLabel2} onChange={set("sCashLabel2")}/></F><F label="金額②" half><NI val={d.sCashAmt2} onChange={set("sCashAmt2")}/></F></div>
         <F label="登記識別情報通知通数"><SI val={String(d.sKenriCount)} onChange={set("sKenriCount")} opts={["0","1","2","3"]}/></F>
         <F label="住民票通数"><SI val={String(d.sJuminCount)} onChange={set("sJuminCount")} opts={["0","1","2","3"]}/></F>
         <F label="戸籍の附票の写し"><TB val={d.sKosekiHuhyo} onChange={set("sKosekiHuhyo")} opts={["表示","非表示"]}/></F>
