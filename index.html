@@ -1693,20 +1693,109 @@ const InputPanelComp=InputPanelCompInner;
 
 // ハトサポPDFテキストパーサー（App外で定義）
 function parseHatoText(items,text){
-    const result={};
+  const result={};
 
-    // 【売主氏名】インデックス16「本人」の次に名前が2つ（姓・名）
-    const honninIdxs=items.reduce((acc,s,i)=>s==='本人'?[...acc,i]:acc,[]);
+  // 【売主氏名】最初の「本人」の後：姓・名
+  const honninIdxs=items.reduce((acc,s,i)=>s==='本人'?[...acc,i]:acc,[]);
+  if(honninIdxs.length>=1){
+    const sIdx=honninIdxs[0];
+    const sSei=items[sIdx+1]||'';
+    const sMei=items[sIdx+2]||'';
+    if(sSei&&sSei!=='住所'&&sSei!=='TEL'){
+      const sname=sMei&&sMei!=='住所'&&sMei!=='TEL'?`${sSei}　${sMei}`:sSei;
+      result.sellers=[{name:sname,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
+    }
+  }
 
-    if(honninIdxs.length>=1){
-      // 売主：「本人」→ 姓 → 名 → 「住所」の順
-      const sIdx=honninIdxs[0];
-      const sSei=items[sIdx+1]||'';
-      const sMei=items[sIdx+2]||'';
-      if(sSei&&sSei!=='住所'&&sSei!=='TEL'){
-        const sname=sMei&&sMei!=='住所'&&sMei!=='TEL'?`${sSei}　${sMei}`:sSei;
-        result.sellers=[{...INIT.sellers[0],name:sname}];
+  // 【売主住所】VPB_a-TS-0_f の前（「その他」より前の住所文字列）
+  const vpbIdx=items.findIndex(s=>s==='VPB_a-TS-0_f');
+  if(vpbIdx>=0){
+    for(let i=vpbIdx-1;i>=Math.max(0,vpbIdx-8);i--){
+      const s=items[i];
+      if(s&&s.length>5&&s!=='その他'&&s!=='マイナンバーカード'&&s!=='パスポート'&&s!=='運転免許証'&&s!=='('&&s!==')'){
+        if(result.sellers) result.sellers[0].addr=s;
+        break;
       }
+    }
+  }
+
+  // 【買主氏名】2番目の「本人」の後
+  if(honninIdxs.length>=2){
+    const bIdx=honninIdxs[1];
+    const bSei=items[bIdx+1]||'';
+    const bMei=items[bIdx+2]||'';
+    if(bSei&&bSei!=='住所'&&bSei!=='TEL'){
+      const bname=bMei&&bMei!=='住所'&&bMei!=='TEL'?`${bSei}　${bMei}`:bSei;
+      result.buyers=[{name:bname,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
+    }
+  }
+
+  // 【買主住所】VPB_a-TS-0_f の直後から「本人」まで結合
+  if(vpbIdx>=0){
+    let bAddr='';
+    for(let i=vpbIdx+1;i<Math.min(items.length,vpbIdx+6);i++){
+      const s=items[i];
+      if(s==='本人'||s==='主'||s==='代理人'||s==='買') break;
+      if(s&&s.length>0&&s!=='運転免許証'&&s!=='パスポート'&&s!=='マイナンバーカード'&&s!=='その他'){
+        bAddr+=s;
+      }
+    }
+    if(bAddr&&result.buyers) result.buyers[0].addr=bAddr;
+  }
+
+  // 【マンション名】「称」の直後
+  const shoCIdx=items.findIndex(s=>s==='称');
+  if(shoCIdx>=0){
+    const mname=items[shoCIdx+1];
+    if(mname&&mname!=='棟'&&mname.length>1) result.mansionName=mname;
+  }
+
+  // 【号室】「205号室」のような形式
+  const goshitsuItem=items.find(s=>/\d+号室$/.test(s));
+  if(goshitsuItem) result.roomNo=goshitsuItem;
+
+  // 【住居表示（物件所在地）】「住居表示」の次
+  const jukyoIdx=items.findIndex(s=>s==='住居表示');
+  if(jukyoIdx>=0){
+    const addr=items[jukyoIdx+1];
+    if(addr&&addr.length>5) result.address=addr;
+  }
+
+  // 【契約成立日】
+  const keiyakuMatch=text.match(/契約成立日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(keiyakuMatch){
+    let year=parseInt(keiyakuMatch[2]);
+    if(keiyakuMatch[1]==='令和') year+=2018;
+    else if(keiyakuMatch[1]==='平成') year+=1988;
+    else if(keiyakuMatch[1]==='昭和') year+=1925;
+    result.contractDate=`${year}-${String(keiyakuMatch[3]).padStart(2,'0')}-${String(keiyakuMatch[4]).padStart(2,'0')}`;
+  }
+
+  // 【引渡日】
+  const watashiMatch=text.match(/引渡日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(watashiMatch){
+    let year=parseInt(watashiMatch[2]);
+    if(watashiMatch[1]==='令和') year+=2018;
+    else if(watashiMatch[1]==='平成') year+=1988;
+    else if(watashiMatch[1]==='昭和') year+=1925;
+    result.settlementDT=`${year}-${String(watashiMatch[3]).padStart(2,'0')}-${String(watashiMatch[4]).padStart(2,'0')}`;
+  }
+
+  // 【売買金額総額】
+  const kingakuMatch=text.match(/売買金額総額\s*([\d,]+)円/);
+  if(kingakuMatch) result.salePrice=parseInt(kingakuMatch[1].replace(/,/g,''));
+
+  // 【手付金】
+  const tetsukeMatch=text.match(/手付金\s*([\d,]+)円/);
+  if(tetsukeMatch) result.deposit=parseInt(tetsukeMatch[1].replace(/,/g,''));
+
+  // 【物件種別】
+  if(text.includes('区分所有建物')) result.propType='マンション';
+  else if(text.includes('土地建物')) result.propType='戸建';
+  else if(text.includes('土地のみ')||text.includes('土地売買')) result.propType='土地';
+
+  return result;
+}
     }
 
     // 【売主住所】「VPB_a-TS-0_f」の直前にある住所
