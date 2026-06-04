@@ -1845,7 +1845,10 @@ function App(){
         loadingTask.promise.then(pdf=>{
           pdf.getPage(1).then(page=>{
             page.getTextContent().then(tc=>{
-              const rawItems=tc.items.map(i=>i.str).filter(s=>s.trim().length>0);
+              // PDF.jsのitemsを全結合して行単位に分割
+              const allStr=tc.items.map(i=>i.str).join('');
+              // 改行で分割、空行除去
+              const rawItems=allStr.split(/\n/).map(s=>s.trim()).filter(s=>s.length>0);
               window._rawItems=rawItems;
               const text=rawItems.join('\n');
               console.log('件数:',rawItems.length);
@@ -1855,7 +1858,6 @@ function App(){
               console.log('ダイアパレス含む:', rawItems.filter(s=>s.includes('ダイアパレス')));
               const parsed=parseHatoText(rawItems,text);
               console.log('parsed:', JSON.stringify(parsed));
-              alert('Consoleを確認してからOKを押してください');
               console.log('parsed:', parsed);
               
               const confirmMsg=`以下の情報を読み込みます。よろしいですか？\n\n`+
@@ -1866,7 +1868,6 @@ function App(){
                 `マンション名：${parsed.mansionName||'(なし)'}\n`+
                 `物件住所：${parsed.address||'(なし)'}\n`+
                 `売買代金：${parsed.salePrice?Number(parsed.salePrice).toLocaleString()+'円':'(なし)'}`;
-              
               if(window.confirm(confirmMsg)){
                 setD(p=>({...p,...parsed}));
                 setLoadKey(k=>k+1);
