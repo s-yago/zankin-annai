@@ -1865,6 +1865,9 @@ function App(){
 
     return result;
   };
+
+  // JSONインポート
+  const doImport=(e)=>{
     const file=e.target.files[0];if(!file)return;
     const reader=new FileReader();
     reader.onload=ev=>{
