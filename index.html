@@ -42,8 +42,8 @@ const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s
 const INIT={
   propType:"戸建",txType:"売主",address:"",addressZip:"",addressJukyo:"",
   mansionName:"",roomNo:"",landArea:"",buildingArea:"",
-  sellers:[{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る"}],
-  buyers:[{name:"",addr:"",kinshoAttend:"来る",mendanAttend:"来る",settlementAttend:"来る"}],
+  sellers:[{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る",dairiName:"",dairiAddr:""}],
+  buyers:[{name:"",addr:"",kinshoAttend:"来る",mendanAttend:"来る",settlementAttend:"来る",dairiName:""}],
   contractDate:"",settlementDT:"",settlementTime:"",
   gathering:"あり",gatheringPlace:"",viviBank:"北陸銀行",
   shihoShoshi:"廣田司法書士事務所　076-423-6826",shihoShoshiOther:"",shihoShoshiPerson:"",
@@ -285,10 +285,17 @@ function SellerSignBlock({d}){
   return(
     <div style={{textAlign:"right",fontSize:11,borderTop:"1px solid #aaa",paddingTop:8,marginTop:10}}>
       {sellers.map((s,i)=>(
-        <div key={i} style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:10,marginBottom:i<sellers.length-1?6:0,flexWrap:"wrap"}}>
-          {s.addr&&<span style={{color:"#333"}}>住所　{s.addr}</span>}
-          <span>氏名　{s.name}</span>
-          <span style={DOC.stamp}>印</span>
+        <div key={i} style={{marginBottom:i<sellers.length-1?6:0}}>
+          <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            {s.addr&&<span style={{color:"#333"}}>住所　{s.addr}</span>}
+            <span>氏名　{s.name}</span>
+            <span style={DOC.stamp}>印</span>
+          </div>
+          {s.dairiName&&<div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:3}}>
+            {s.dairiAddr&&<span style={{color:"#333"}}>住所　{s.dairiAddr}</span>}
+            <span>代理人　{s.dairiName}</span>
+            <span style={DOC.stamp}>印</span>
+          </div>}
         </div>
       ))}
     </div>
@@ -301,10 +308,17 @@ function SellerSignLine({d}){
   return(
     <div style={{textAlign:"right",marginTop:16,fontSize:11,borderTop:"1px solid #aaa",paddingTop:8}}>
       {sellers.map((s,i)=>(
-        <div key={i} style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:10,marginBottom:i<sellers.length-1?6:0,flexWrap:"wrap"}}>
-          {s.addr&&<span style={{color:"#333"}}>住所　{s.addr}</span>}
-          <span>売主氏名　{s.name}</span>
-          <span style={DOC.stamp}>印</span>
+        <div key={i} style={{marginBottom:i<sellers.length-1?6:0}}>
+          <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            {s.addr&&<span style={{color:"#333"}}>住所　{s.addr}</span>}
+            <span>売主氏名　{s.name}</span>
+            <span style={DOC.stamp}>印</span>
+          </div>
+          {s.dairiName&&<div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:3}}>
+            {s.dairiAddr&&<span style={{color:"#333"}}>住所　{s.dairiAddr}</span>}
+            <span>代理人　{s.dairiName}</span>
+            <span style={DOC.stamp}>印</span>
+          </div>}
         </div>
       ))}
     </div>
@@ -479,7 +493,15 @@ function SellerGuide({d,c}){
           </div>
         );
       })()}
-      {d.sNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.sNote}</div>}
+      {(d.sNote||sellers.some(s=>s.dairiName))&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}>
+        <strong>【備考】</strong><br/>
+        {sellers.filter(s=>s.dairiName).map((s,i)=>(
+          <div key={i}>
+            {s.dairiAddr?`代理人：${s.dairiName}　${s.dairiAddr}（${s.name}様の代理）`:`代理人：${s.dairiName}（${s.name}様の代理）`}
+          </div>
+        ))}
+        {d.sNote}
+      </div>}
     </div>
   );
 }
@@ -696,7 +718,15 @@ function BuyerGuide({d,c}){
       </div>
       {d.propType==="マンション"&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #1a3a6b"}}><span style={{fontWeight:"bold",color:"#1a3a6b"}}>【マンション管理組合へのご連絡】</span><br/>お引っ越し日が決まりましたら、遅くとも<span style={{fontWeight:"bold"}}>1週間前まで</span>に管理会社または管理組合へご連絡ください。</div>}
       {(d.propType==="戸建"||d.propType==="マンション")&&<div style={{...DOC.noteBox,marginTop:6,borderLeft:"3px solid #c8860a"}}><span style={{fontWeight:"bold",color:"#c8860a"}}>【引越し業者のご紹介】</span><br/>当社提携の引越し業者（サカイ引越センター）を<span style={{fontWeight:"bold"}}>割引価格</span>でご紹介することも可能です。ご希望の際は担当までお気軽にお申し付けください。</div>}
-      {d.bNote&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}><strong>【備考】</strong><br/>{d.bNote}</div>}
+      {(d.bNote||buyers.some(b=>b.dairiName))&&<div style={{...DOC.noteBox,borderLeft:"3px solid #1a3a6b",marginTop:6,whiteSpace:"pre-wrap"}}>
+        <strong>【備考】</strong><br/>
+        {buyers.filter(b=>b.dairiName).map((b,i)=>(
+          <div key={i}>
+            {b.dairiAddr?`代理人：${b.dairiName}　${b.dairiAddr}（${b.name}様の代理）`:`代理人：${b.dairiName}（${b.name}様の代理）`}
+          </div>
+        ))}
+        {d.bNote}
+      </div>}
     </div>
   );
 }
@@ -851,8 +881,14 @@ function CoverageMemo({d,c}){
       </div>
       <div style={{fontSize:10,lineHeight:2,marginBottom:12}}>上記の確認を証するため本書２通を作成し、売主および買主は、各々１通を保有する。</div>
       <div style={{textAlign:"right",fontSize:11,marginBottom:16}}>{toReiwa(d.settlementDT)}</div>
-      {sellers.map((s,i)=>signBlock(sellers.length>1?`売　主　${i+1}`:"売　主",s.name,s.addr,`s${i}`))}
-      {buyers.map((b,i)=>signBlock(buyers.length>1?`買　主　${i+1}`:"買　主",b.name,b.addr,`b${i}`))}
+      {sellers.map((s,i)=><div key={i}>
+        {signBlock(sellers.length>1?`売　主　${i+1}`:"売　主",s.name,s.addr,`s${i}`)}
+        {s.dairiName&&signBlock(`代理人`,s.dairiName,s.dairiAddr||'',`sd${i}`)}
+      </div>)}
+      {buyers.map((b,i)=><div key={i}>
+        {signBlock(buyers.length>1?`買　主　${i+1}`:"買　主",b.name,b.addr,`b${i}`)}
+        {b.dairiName&&signBlock(`代理人`,b.dairiName,b.dairiAddr||'',`bd${i}`)}
+      </div>)}
       <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
@@ -1336,7 +1372,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
   const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
   const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
   const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
-  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る"}]}));
+  const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る",dairiName:"",dairiAddr:""}]}));
   const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
   const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
   const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:"",kinshoAttend:"来る",mendanAttend:"来る",settlementAttend:"来る"}]}));
@@ -1401,6 +1437,19 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
               <div style={{fontSize:9,color:"#888",marginBottom:2}}>売主{getSellers(d).length>1?` ${i+1}`:""}</div>
               <TI val={s.name} onChange={v=>setSeller(i,"name",v)} placeholder="例：売主 太郎"/>
               <div style={{marginTop:2}}><TI val={s.addr} onChange={v=>setSeller(i,"addr",v)} placeholder="住所"/></div>
+              {/* 代理人欄 */}
+              {s.dairiName!==undefined&&s.dairiName!==''?(
+                <div style={{marginTop:3,background:"#fff3cd",borderRadius:3,padding:"3px 5px",border:"1px solid #ffc107"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:1}}>
+                    <div style={{fontSize:9,color:"#856404"}}>代理人</div>
+                    <button onClick={()=>{setSeller(i,"dairiName",undefined);setSeller(i,"dairiAddr",undefined);}} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>削除</button>
+                  </div>
+                  <TI val={s.dairiName||""} onChange={v=>setSeller(i,"dairiName",v)} placeholder="代理人氏名"/>
+                  <div style={{marginTop:2}}><TI val={s.dairiAddr||""} onChange={v=>setSeller(i,"dairiAddr",v)} placeholder="代理人住所（法律事務所等）"/></div>
+                </div>
+              ):(
+                <button onClick={()=>setSeller(i,"dairiName","")} style={{marginTop:2,fontSize:9,color:"#856404",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,padding:"2px 6px",cursor:"pointer"}}>＋代理人追加</button>
+              )}
               <div style={{marginTop:2,fontSize:9,color:"#888"}}>振込口座</div>
               <TI val={s.bankName||""} onChange={v=>setSeller(i,"bankName",v)} placeholder="銀行・支店名"/>
               <div style={{display:"flex",gap:2,marginTop:2}}>
@@ -1445,6 +1494,18 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
               <div style={{fontSize:9,color:"#888",marginBottom:2}}>買主{getBuyers(d).length>1?` ${i+1}`:""}</div>
               <TI val={b.name} onChange={v=>setBuyer(i,"name",v)} placeholder="例：買主 花子"/>
               <div style={{marginTop:2}}><TI val={b.addr} onChange={v=>setBuyer(i,"addr",v)} placeholder="住所（覚書用）"/></div>
+              {/* 代理人欄 */}
+              {b.dairiName!==undefined&&b.dairiName!==''?(
+                <div style={{marginTop:3,background:"#fff3cd",borderRadius:3,padding:"3px 5px",border:"1px solid #ffc107"}}>
+                  <div style={{fontSize:9,color:"#856404",marginBottom:1}}>代理人</div>
+                  <div style={{display:"flex",gap:2,alignItems:"center"}}>
+                    <TI val={b.dairiName||""} onChange={v=>setBuyer(i,"dairiName",v)} placeholder="代理人氏名"/>
+                    <button onClick={()=>setBuyer(i,"dairiName",undefined)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",whiteSpace:"nowrap"}}>削除</button>
+                  </div>
+                </div>
+              ):(
+                <button onClick={()=>setBuyer(i,"dairiName","")} style={{marginTop:2,fontSize:9,color:"#856404",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,padding:"2px 6px",cursor:"pointer"}}>＋代理人追加</button>
+              )}
               {d.bMendan==="あり"&&!isLoan&&<div style={{marginTop:4}}>
                 <div style={{fontSize:9,color:"#555",marginBottom:2}}>本人面談への出席</div>
                 <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
@@ -1698,114 +1759,144 @@ const InputPanelComp=InputPanelCompInner;
 // text = PDF全テキストを1つの文字列にしたもの
 function parseHatoText(lines, text){
   const result={};
+  const ST={name:'',addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る',dairiName:'',dairiAddr:''};
+  const BT={name:'',addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る',dairiName:''};
 
-  // 【売主・買主氏名】「本人 ○○ ○○ 住所 TEL」スペースあり
-  const honninAll=[...text.matchAll(/本人\s+(\S+)\s+(\S+)\s+住所\s+TEL/g)];
-  if(honninAll.length>=1){
-    const m=honninAll[0];
-    result.sellers=[{name:`${m[1]}\u3000${m[2]}`,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
+  // ===== 氏名取得（売主/買主本人パターン）=====
+  const honninAll=[...text.matchAll(/(?:売\s*主|買\s*主)本人([^住代]{1,25}?)住所\s*TEL/g)];
+  const names=honninAll.map(m=>m[1].trim());
+
+  // ===== VPBマーカー解析 =====
+  const markerReg=/VPB_a-T([SB])-(\d+)_f/g;
+  const tsMarkers=[];const tbMarkers=[];
+  let mm;
+  while((mm=markerReg.exec(text))!==null){
+    const entry={idx:parseInt(mm[2]),pos:mm.index,end:mm.index+mm[0].length};
+    if(mm[1]==='S') tsMarkers.push(entry);
+    else tbMarkers.push(entry);
+  }
+  tsMarkers.sort((a,b)=>a.idx-b.idx);
+  tbMarkers.sort((a,b)=>a.idx-b.idx);
+
+  const getAddr=(pos)=>{
+    const m=text.slice(pos).match(/(.+?)(?:運転免許証|VPB_)/);
+    return m?m[1].trim():'';
+  };
+
+  // 売主1人目住所：VPB_a-TS-0_f直前「媒介(両手)代理」以降
+  const ts0pos=text.indexOf('VPB_a-TS-0_f');
+  const before=ts0pos>=0?text.slice(0,ts0pos):'';
+  const s1m=before.match(/媒介\(両手\)\s*代理(.+?)運転免許証/);
+  const sellerAddr1=s1m?s1m[1].trim():'';
+
+  // TBマーカーがある場合：TBの前のTSは売主住所、TBから後は買主住所
+  let sellerAddrs=[sellerAddr1];
+  let buyerAddrs=[];
+  if(tbMarkers.length>0){
+    const firstTBpos=tbMarkers[0].pos;
+    const sellerTS=tsMarkers.filter(m=>m.pos<firstTBpos);
+    const buyerTS=tsMarkers.filter(m=>m.pos>=firstTBpos);
+    sellerTS.forEach(m=>sellerAddrs.push(getAddr(m.end)));
+    buyerTS.forEach(m=>buyerAddrs.push(getAddr(m.end)));
+    tbMarkers.forEach(m=>buyerAddrs.push(getAddr(m.end)));
+  } else {
+    // TBなし：最後のTSが買主住所
+    const sellerTS=tsMarkers.length>0?tsMarkers.slice(0,-1):[];
+    const buyerTS=tsMarkers.length>0?tsMarkers.slice(-1):[];
+    sellerTS.forEach(m=>sellerAddrs.push(getAddr(m.end)));
+    buyerTS.forEach(m=>buyerAddrs.push(getAddr(m.end)));
   }
 
-  // 【売主住所】「媒介(両手) 代理○○○運転免許証」スペースあり
-  const sellerAddrM=text.match(/媒介\(両手\)\s+代理(.+?)運転免許証/);
-  if(sellerAddrM&&result.sellers){
-    result.sellers[0].addr=sellerAddrM[1].trim();
-  }
+  const sellerCount=Math.min(sellerAddrs.length, names.length>0?names.length-1:0)||sellerAddrs.length;
+  // sellerCountが名前の総数以上にならないよう調整（買主が必ず1人以上いると仮定）
+  const adjustedSellerCount=names.length>1?Math.min(sellerCount,names.length-1):sellerCount;
+  result.sellers=names.slice(0,adjustedSellerCount).map((n,i)=>({...ST,name:n,addr:sellerAddrs[i]||''}));
+  result.buyers=names.slice(adjustedSellerCount).map((n,i)=>({...BT,name:n,addr:buyerAddrs[i]||''}));
+  if(result.sellers.length===0) result.sellers=[{...ST}];
+  if(result.buyers.length===0) result.buyers=[{...BT}];
 
-  // 【買主氏名】2番目の「本人 ○○ ○○ 住所 TEL」
-  if(honninAll.length>=2){
-    const m=honninAll[1];
-    result.buyers=[{name:`${m[1]}\u3000${m[2]}`,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
-  }
+  // ===== 代理人取得 =====
+  const dairiBlocks=[...text.matchAll(/(?:売\s*主|買\s*主)本人(.*?)代理人([^住]{0,60}?)住所\s*TEL.*?本人確認書類/g)];
+  dairiBlocks.forEach((m,i)=>{
+    const honninName=m[1].replace(/住所.*?TEL.*?/g,'').trim();
+    const dairiName=m[2].trim();
+    if(!dairiName) return;
+    const allPeople=[...result.sellers,...result.buyers];
+    if(i<allPeople.length){
+      if(!honninName&&dairiName){
+        // 本人空→代理人名を氏名に設定
+        allPeople[i].name=dairiName;
+        allPeople[i].dairiName=dairiName;
+        // 売主住所エリアの住所が代理人住所
+        allPeople[i].dairiAddr=allPeople[i].addr;
+        allPeople[i].addr=''; // 本人住所は空
+      } else if(honninName&&dairiName){
+        allPeople[i].dairiName=dairiName;
+        // 代理人住所：住所ブロックの後半（本人住所の後に続く部分）
+        // 通常代理人の場合、住所ブロック全体から本人住所を除いた残りが代理人住所
+        const addrBlock=allPeople[i].addr;
+        // 本人住所と代理人住所が連続している場合、本人住所の長さで分割
+        // シンプルに：住所ブロックをそのまま本人住所として保持し、代理人住所は空欄（手動入力）
+        allPeople[i].dairiAddr='';
+      }
+    }
+  });
 
-  // 【買主住所】「VPB_a-TS-0_f○○○運転免許証」
-  const buyerAddrM=text.match(/VPB_a-TS-0_f(.+?)運転免許証/);
-  if(buyerAddrM&&result.buyers){
-    result.buyers[0].addr=buyerAddrM[1].trim();
-  }
-
-  // 【マンション名】「VPB_bt-top-001_f○○区分所有建物」
+  // ===== マンション名・号室 =====
   const mansionM=text.match(/VPB_bt-top-001_f(.+?)区分所有建物/);
   if(mansionM) result.mansionName=mansionM[1].trim();
-
-  // 【号室】「○○号室」
   const roomM=text.match(/(\d+号室)/);
   if(roomM) result.roomNo=roomM[1];
 
-  // 【住居表示・所在地】各種パターンに対応
+  // ===== 物件住所 =====
+  // マンション：その他補足事項ブロック
   const addrBlockM=text.match(/その他補足事項(.+?)居住中/);
   if(addrBlockM){
     const block=addrBlockM[1].trim();
-    // 前半が住居表示（号で終わる）、後半が所在地（番地を含む）
-    const jukyoM2=block.match(/^(.+?号)/);
-    const sozaiM2=block.match(/(.+?(?:番地|番地\d)[^\s]*)/g);
-    if(jukyoM2){
-      const val=jukyoM2[1].trim();
-      // 「住居表示実施区域外」でなければ住居表示として設定
+    const jukyoM=block.match(/^(.+?号)/);
+    const sozaiM=block.match(/(.+?(?:番地|番地\d)[^\s]*)/g);
+    if(jukyoM){
+      const val=jukyoM[1].trim();
       if(!val.includes('実施区域外')&&!val.includes('未実施')) result.addressJukyo=val;
     }
-    if(sozaiM2&&sozaiM2.length>0){
-      // 最後のマッチが所在地
-      result.address=sozaiM2[sozaiM2.length-1].trim();
-    }
+    if(sozaiM&&sozaiM.length>0) result.address=sozaiM[sozaiM.length-1].trim();
     if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
-    if(!result.addressJukyo) result.addressJukyo='';
   }
-  // 建物の住居表示から取得（土地建物の場合）
+  // 建物の住居表示（土地建物）
   if(!result.addressJukyo){
     const jukyoM2=text.match(/住居表示\s+(.+?)(?:\s+構造|\s+VPB|\s+種類)/);
     if(jukyoM2){
       const val=jukyoM2[1].trim();
-      // 「住居表示実施区域外」の場合は空欄にする
       if(!val.includes('実施区域外')&&!val.includes('未実施')) result.addressJukyo=val;
     }
   }
-  // 所在・地番から所在地を取得（土地・土地建物の場合）
+  // 所在・地番（土地・土地建物）
   if(!result.address){
     const sozaiM2=text.match(/所在・地番\s+(.+?)(?:\s+地目|\s+登記簿)/);
     if(sozaiM2) result.address=sozaiM2[1].trim();
   }
-  // 最終フォールバック
   if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
-  }
 
-  // 【契約成立日】
-  const keiyakuM=text.match(/契約成立日(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
-  if(keiyakuM){
-    let y=parseInt(keiyakuM[2]);
-    if(keiyakuM[1]==='令和') y+=2018;
-    else if(keiyakuM[1]==='平成') y+=1988;
-    else if(keiyakuM[1]==='昭和') y+=1925;
-    result.contractDate=`${y}-${String(keiyakuM[3]).padStart(2,'0')}-${String(keiyakuM[4]).padStart(2,'0')}`;
-  }
+  // ===== 契約日・引渡日 =====
+  const dc=(t,y,m,d)=>{let yr=parseInt(y);if(t==='令和')yr+=2018;else if(t==='平成')yr+=1988;else if(t==='昭和')yr+=1925;return `${yr}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;};
+  const km=text.match(/契約成立日(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(km) result.contractDate=dc(km[1],km[2],km[3],km[4]);
+  const wm=text.match(/引渡日(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(wm) result.settlementDT=dc(wm[1],wm[2],wm[3],wm[4]);
 
-  // 【引渡日】
-  const watashiM=text.match(/引渡日(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
-  if(watashiM){
-    let y=parseInt(watashiM[2]);
-    if(watashiM[1]==='令和') y+=2018;
-    else if(watashiM[1]==='平成') y+=1988;
-    else if(watashiM[1]==='昭和') y+=1925;
-    result.settlementDT=`${y}-${String(watashiM[3]).padStart(2,'0')}-${String(watashiM[4]).padStart(2,'0')}`;
-  }
+  // ===== 金額 =====
+  const pm=text.match(/(?:売買金額総額|代金総額)\s*([\d,]+)円/);
+  if(pm) result.salePrice=parseInt(pm[1].replace(/,/g,''));
+  const dm=text.match(/手付金\s*([\d,]+)円/);
+  if(dm) result.deposit=parseInt(dm[1].replace(/,/g,''));
 
-  // 【売買金額総額】「売買金額総額」または「代金総額」
-  const salePriceM=text.match(/(?:売買金額総額|代金総額)\s*([\d,]+)円/);
-  if(salePriceM) result.salePrice=parseInt(salePriceM[1].replace(/,/g,''));
-
-  // 【手付金】
-  const depositM=text.match(/手付金\s*([\d,]+)円/);
-  if(depositM) result.deposit=parseInt(depositM[1].replace(/,/g,''));
-
-  // 【物件種別】
+  // ===== 物件種別 =====
   if(text.includes('区分所有建物')) result.propType='マンション';
-  else if(text.includes('土地建物売買')) result.propType='戸建';
-  else if(text.includes('土地建物')) result.propType='戸建';
+  else if(text.includes('土地建物売買')||text.includes('土地建物')) result.propType='戸建';
   else if(text.includes('土地売買')||text.includes('土地のみ')) result.propType='土地';
 
   return result;
 }
-
 
 function App(){
   const [d,setD]=useState(INIT);
@@ -1872,10 +1963,8 @@ function App(){
               console.log('parsed:', parsed);
               
               const confirmMsg=`以下の情報を読み込みます。よろしいですか？\n\n`+
-                `売主：${parsed.sellers?.[0]?.name||'(なし)'}\n`+
-                `売主住所：${parsed.sellers?.[0]?.addr||'(なし)'}\n`+
-                `買主：${parsed.buyers?.[0]?.name||'(なし)'}\n`+
-                `買主住所：${parsed.buyers?.[0]?.addr||'(なし)'}\n`+
+                result.sellers.map((s,i)=>`売主${result.sellers.length>1?i+1:''}：${s.name}${s.dairiName?' (代理人：'+s.dairiName+')':''}\n売主住所：${s.addr}`).join('\n')+'\n'+
+                result.buyers.map((b,i)=>`買主${result.buyers.length>1?i+1:''}：${b.name}${b.dairiName?' (代理人：'+b.dairiName+')':''}\n買主住所：${b.addr}`).join('\n')+'\n'+
                 `マンション名：${parsed.mansionName||'(なし)'}\n`+
                 `物件住所（地番）：${parsed.address||'(なし)'}\n`+
                 `住居表示：${parsed.addressJukyo||'(なし)'}\n`+
