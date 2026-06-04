@@ -1846,8 +1846,16 @@ function App(){
           pdf.getPage(1).then(page=>{
             page.getTextContent().then(tc=>{
               const rawItems=tc.items.map(i=>i.str).filter(s=>s.trim().length>0);
+              window._rawItems=rawItems;
               const text=rawItems.join('\n');
+              console.log('件数:',rawItems.length);
+              console.log('最初10件:', rawItems.slice(0,10));
+              console.log('本人含む:', rawItems.filter(s=>s.includes('本人')));
+              console.log('住居表示含む:', rawItems.filter(s=>s.includes('住居表示')));
+              console.log('ダイアパレス含む:', rawItems.filter(s=>s.includes('ダイアパレス')));
               const parsed=parseHatoText(rawItems,text);
+              console.log('parsed:', JSON.stringify(parsed));
+              alert('Consoleを確認してからOKを押してください');
               console.log('parsed:', parsed);
               
               const confirmMsg=`以下の情報を読み込みます。よろしいですか？\n\n`+
