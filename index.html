@@ -1699,11 +1699,11 @@ const InputPanelComp=InputPanelCompInner;
 function parseHatoText(lines, text){
   const result={};
 
-  // 【売主氏名】最初の「本人○○住所TEL」
-  const honninAll=[...text.matchAll(/本人(.+?)住所TEL/g)];
+  // 【売主・買主氏名】「本人 ○○ ○○ 住所 TEL」スペースあり
+  const honninAll=[...text.matchAll(/本人\s+(\S+)\s+(\S+)\s+住所\s+TEL/g)];
   if(honninAll.length>=1){
-    const name=honninAll[0][1].trim().replace(/\s+/g,' ');
-    result.sellers=[{name,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
+    const m=honninAll[0];
+    result.sellers=[{name:`${m[1]}\u3000${m[2]}`,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
   }
 
   // 【売主住所】「媒介(両手)代理○○○運転免許証」
@@ -1712,10 +1712,10 @@ function parseHatoText(lines, text){
     result.sellers[0].addr=sellerAddrM[1].trim();
   }
 
-  // 【買主氏名】2番目の「本人○○住所TEL」
+  // 【買主氏名】2番目の「本人 ○○ ○○ 住所 TEL」
   if(honninAll.length>=2){
-    const name=honninAll[1][1].trim().replace(/\s+/g,' ');
-    result.buyers=[{name,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
+    const m=honninAll[1];
+    result.buyers=[{name:`${m[1]}\u3000${m[2]}`,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
   }
 
   // 【買主住所】「VPB_a-TS-0_f○○○運転免許証」
@@ -1843,6 +1843,11 @@ function App(){
               // PDF.jsの全テキストを取得して行分割
               const fullText=tc.items.map(i=>i.str).join('');
               window._fullText=fullText;
+              const idx=fullText.indexOf('本人');
+              console.log('本人位置:',idx);
+              console.log('本人周辺:', fullText.slice(Math.max(0,idx-10),idx+50));
+              console.log('住所TEL位置:', fullText.indexOf('住所TEL'));
+              console.log('住所TEL周辺:', fullText.slice(fullText.indexOf('住所TEL')-30, fullText.indexOf('住所TEL')+20));
               const lines=fullText.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
               const text=fullText;
               const parsed=parseHatoText(lines,text);
