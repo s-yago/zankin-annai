@@ -6,6 +6,8 @@
 <title>ViVi不動産 残金決済・清算書作成ツール</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1331,7 +1333,7 @@ function Acc({id,label,color,children,openSec,toggleSec}){
   );
 }
 
-function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport,doNew,doOverwrite}){
+function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport,doNew,doOverwrite,doImportHato}){
   const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
   const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
   const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
@@ -1355,6 +1357,12 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         {curId?<><button onClick={doOverwrite} style={{flex:2,padding:"5px 0",fontSize:10,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 上書き</button><button onClick={()=>setShowSaveDlg(true)} style={{flex:2,padding:"5px 0",fontSize:10,background:"#4a7ab5",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📋 別名</button></>:<button onClick={()=>setShowSaveDlg(true)} style={{flex:3,padding:"5px 0",fontSize:10,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 保存</button>}
         <button onClick={()=>setShowHist(true)} style={{flex:2,padding:"5px 0",fontSize:10,background:"#555",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📂 履歴({saved.length})</button>
         <button onClick={doNew} style={{flex:1,padding:"5px 0",fontSize:10,background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>＋新規</button>
+      </div>
+      <div style={{display:"flex",gap:4,marginBottom:4}}>
+        <label style={{flex:1,padding:"5px 0",fontSize:10,background:"#e65100",color:"#fff",borderRadius:4,cursor:"pointer",fontWeight:"bold",textAlign:"center",display:"block"}}>
+          🏠 ハトサポPDFから読込
+          <input type="file" accept=".pdf" onChange={doImportHato} style={{display:"none"}}/>
+        </label>
       </div>
       <div style={{display:"flex",gap:4,marginBottom:6}}>
         <button onClick={doExport} style={{flex:1,padding:"4px 0",fontSize:10,background:"#2e7d32",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📤 JSONで保存</button>
@@ -1723,8 +1731,140 @@ function App(){
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);
     a.download=`zankin_${name.replace(/[/\\:*?"<>|]/g,"_")}.json`;a.click();URL.revokeObjectURL(a.href);
   };
-  // JSONインポート
-  const doImport=(e)=>{
+  // ハトサポPDF読込
+  const doImportHato=(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        // PDF.jsを使ってテキスト抽出
+        const loadingTask=pdfjsLib.getDocument({data:ev.target.result});
+        loadingTask.promise.then(pdf=>{
+          pdf.getPage(1).then(page=>{
+            page.getTextContent().then(tc=>{
+              const items=tc.items.map(i=>i.str.trim()).filter(s=>s.length>0);
+              const text=items.join('\n');
+              // パース処理
+              const parsed=parseHatoText(items,text);
+              if(window.confirm(`以下の情報を読み込みます。よろしいですか？\n\n売主：${parsed.sellers[0]?.name||'(なし)'}\n買主：${parsed.buyers[0]?.name||'(なし)'}\n物件：${parsed.address||'(なし)'}\n売買代金：${parsed.salePrice?Number(parsed.salePrice).toLocaleString()+'円':'(なし)'}`)){
+                setD(p=>({...p,...parsed}));
+                setLoadKey(k=>k+1);
+              }
+            });
+          });
+        }).catch(err=>{alert('PDFの読み込みに失敗しました。\n'+err.message);});
+      }catch(err){alert('エラーが発生しました。\n'+err.message);}
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value="";
+  };
+
+  // ハトサポPDFのテキストをパースする関数（実際のPDF構造に基づく）
+  const parseHatoText=(items,text)=>{
+    const result={};
+
+    // 【売主氏名】インデックス16「本人」の次に名前が2つ（姓・名）
+    const honninIdxs=items.reduce((acc,s,i)=>s==='本人'?[...acc,i]:acc,[]);
+
+    if(honninIdxs.length>=1){
+      // 売主：「本人」→ 姓 → 名 → 「住所」の順
+      const sIdx=honninIdxs[0];
+      const sSei=items[sIdx+1]||'';
+      const sMei=items[sIdx+2]||'';
+      if(sSei&&sSei!=='住所'&&sSei!=='TEL'){
+        const sname=sMei&&sMei!=='住所'&&sMei!=='TEL'?`${sSei}　${sMei}`:sSei;
+        result.sellers=[{...INIT.sellers[0],name:sname}];
+      }
+    }
+
+    // 【売主住所】「VPB_a-TS-0_f」の直前にある住所
+    const vpbIdx=items.findIndex(s=>s==='VPB_a-TS-0_f');
+    if(vpbIdx>=1){
+      const sAddr=items[vpbIdx-1];
+      if(sAddr&&sAddr.length>5&&sAddr!=='その他'){
+        if(result.sellers) result.sellers[0].addr=sAddr;
+      }
+    }
+
+    // 【買主氏名】2番目の「本人」の後
+    if(honninIdxs.length>=2){
+      const bIdx=honninIdxs[1];
+      const bSei=items[bIdx+1]||'';
+      const bMei=items[bIdx+2]||'';
+      if(bSei&&bSei!=='住所'&&bSei!=='TEL'){
+        const bname=bMei&&bMei!=='住所'&&bMei!=='TEL'?`${bSei}　${bMei}`:bSei;
+        result.buyers=[{...INIT.buyers[0],name:bname}];
+      }
+    }
+
+    // 【買主住所】「VPB_bt-top-001_f」の直前（「１号」などが分割されている場合も考慮）
+    const vbt1Idx=items.findIndex(s=>s==='VPB_bt-top-001_f');
+    if(vbt1Idx>=1){
+      // 直前のアイテムから住所を組み立てる（複数行に分割されている場合がある）
+      let bAddr='';
+      for(let i=vbt1Idx-1;i>=Math.max(0,vbt1Idx-5);i--){
+        const s=items[i];
+        if(s&&s!=='TEL'&&s!=='住所'&&s!=='その他'&&s!=='マイナンバーカード'&&s!=='パスポート'&&s!=='運転免許証'){
+          bAddr=s+(bAddr?bAddr:'');
+          if(s.length>5) break;
+        }
+      }
+      if(bAddr&&result.buyers) result.buyers[0].addr=bAddr;
+    }
+
+    // 【物件名称（マンション名）】「称」「ダイアパレス...」の流れ
+    const meishoIdx=items.findIndex(s=>s==='称');
+    if(meishoIdx>=0){
+      const mname=items[meishoIdx+1];
+      if(mname&&mname!=='棟'&&mname.length>1) result.mansionName=mname;
+    }
+
+    // 【号室】「205号室」のような形式
+    const goshitsuItem=items.find(s=>/\d+号室$/.test(s));
+    if(goshitsuItem) result.roomNo=goshitsuItem;
+
+    // 【住居表示（物件所在地）】「住居表示」の次
+    const jukyoIdx=items.findIndex(s=>s==='住居表示');
+    if(jukyoIdx>=0){
+      const addr=items[jukyoIdx+1];
+      if(addr&&addr.length>5) result.address=addr;
+    }
+
+    // 【契約成立日】令和/平成/西暦に対応
+    const keiyakuMatch=text.match(/契約成立日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+    if(keiyakuMatch){
+      let year=parseInt(keiyakuMatch[2]);
+      if(keiyakuMatch[1]==='令和') year+=2018;
+      else if(keiyakuMatch[1]==='平成') year+=1988;
+      else if(keiyakuMatch[1]==='昭和') year+=1925;
+      result.contractDate=`${year}-${String(keiyakuMatch[3]).padStart(2,'0')}-${String(keiyakuMatch[4]).padStart(2,'0')}`;
+    }
+
+    // 【引渡日】
+    const watashiMatch=text.match(/引渡日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+    if(watashiMatch){
+      let year=parseInt(watashiMatch[2]);
+      if(watashiMatch[1]==='令和') year+=2018;
+      else if(watashiMatch[1]==='平成') year+=1988;
+      else if(watashiMatch[1]==='昭和') year+=1925;
+      result.settlementDT=`${year}-${String(watashiMatch[3]).padStart(2,'0')}-${String(watashiMatch[4]).padStart(2,'0')}`;
+    }
+
+    // 【売買金額総額】
+    const kingakuMatch=text.match(/売買金額総額\s*([\d,]+)円/);
+    if(kingakuMatch) result.salePrice=parseInt(kingakuMatch[1].replace(/,/g,''));
+
+    // 【手付金】
+    const tetsukeMatch=text.match(/手付金\s*([\d,]+)円/);
+    if(tetsukeMatch) result.deposit=parseInt(tetsukeMatch[1].replace(/,/g,''));
+
+    // 【物件種別】タイトルから判断
+    if(text.includes('区分所有建物')) result.propType='マンション';
+    else if(text.includes('土地建物')) result.propType='戸建';
+    else if(text.includes('土地のみ')||text.includes('土地売買')) result.propType='土地';
+
+    return result;
+  };
     const file=e.target.files[0];if(!file)return;
     const reader=new FileReader();
     reader.onload=ev=>{
@@ -1742,7 +1882,7 @@ function App(){
   };
   const TabComp=TAB_COMPS[tab];
 
-  const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport,doNew,doOverwrite};
+  const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport,doNew,doOverwrite,doImportHato};
 
   const PreviewPanel=(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",height:"100%"}}>
