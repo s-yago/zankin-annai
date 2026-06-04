@@ -1849,30 +1849,44 @@ function parseHatoText(lines, text){
   if(roomM) result.roomNo=roomM[1];
 
   // ===== 物件住所 =====
-  // マンション：その他補足事項ブロック
-  const addrBlockM=text.match(/その他補足事項(.+?)居住中/);
-  if(addrBlockM){
-    const block=addrBlockM[1].trim();
-    const jukyoM=block.match(/^(.+?号)/);
-    const sozaiM=block.match(/(.+?(?:番地|番地\d)[^\s]*)/g);
-    if(jukyoM){
-      const val=jukyoM[1].trim();
-      if(!val.includes('実施区域外')&&!val.includes('未実施')) result.addressJukyo=val;
+  // 建物の「その他補足事項」ブロック（VPB_bt-top-002_f以降）を優先
+  const vbt2pos=text.indexOf('VPB_bt-top-002_f');
+  const addrTarget=vbt2pos>=0?text.slice(vbt2pos):text;
+  const addrBM=addrTarget.match(/その他補足事項(.+?)(?:居宅|共同住宅|店舗|事務所|工場|倉庫|居住中)/);
+  if(addrBM){
+    const block=addrBM[1].trim();
+    if(block.includes('実施区域外')||block.includes('未実施')){
+      // 住居表示なし：「（住居表示実施区域外）」の前が所在地
+      const sm=block.match(/^(.+?)(?:（住居表示|\(住居表示)/);
+      if(sm){
+        const t=sm[1].trim();
+        // 同じ住所が重複している場合は前半だけ
+        const half=Math.floor(t.length/2);
+        result.address=(t.slice(0,half)===t.slice(half)?t.slice(0,half):t).trim();
+      }
+    } else {
+      // 住居表示と所在地が両方ある：「号」区切りで分割
+      const parts=block.split(/(?<=[号室])\s*(?=[^\s])/);
+      parts.forEach(p=>{
+        if((p.includes('番地')||(/番\d/.test(p)))&&!result.address) result.address=p.trim();
+        else if((p.endsWith('号')||p.includes('号室'))&&!result.addressJukyo&&!p.includes('実施区域外')) result.addressJukyo=p.trim();
+      });
     }
-    if(sozaiM&&sozaiM.length>0) result.address=sozaiM[sozaiM.length-1].trim();
-    if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
   }
-  // 建物の住居表示（土地建物）
-  if(!result.addressJukyo){
-    const jukyoM2=text.match(/住居表示\s+(.+?)(?:\s+構造|\s+VPB|\s+種類)/);
-    if(jukyoM2){
-      const val=jukyoM2[1].trim();
-      if(!val.includes('実施区域外')&&!val.includes('未実施')) result.addressJukyo=val;
+  // マンションの場合（その他補足事項〜居住中）
+  if(!result.address&&!result.addressJukyo){
+    const mBlockM=text.match(/その他補足事項(.+?)居住中/);
+    if(mBlockM){
+      const block=mBlockM[1].trim();
+      const jukyoM=block.match(/^(.+?号)/);
+      const sozaiM=block.match(/([^\s]+(?:番地\d*|番\d+)[^\s]*)/g);
+      if(jukyoM&&!jukyoM[1].includes('実施区域外')) result.addressJukyo=jukyoM[1].trim();
+      if(sozaiM) result.address=sozaiM[sozaiM.length-1].trim();
     }
   }
-  // 所在・地番（土地・土地建物）
+  // 所在・地番（値が入っている場合のみ）
   if(!result.address){
-    const sozaiM2=text.match(/所在・地番\s+(.+?)(?:\s+地目|\s+登記簿)/);
+    const sozaiM2=text.match(/所在・地番\s+([^\s].+?)(?:\s+地目|\s+登記簿)/);
     if(sozaiM2) result.address=sozaiM2[1].trim();
   }
   if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
