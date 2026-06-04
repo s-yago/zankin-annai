@@ -1331,7 +1331,7 @@ function Acc({id,label,color,children,openSec,toggleSec}){
   );
 }
 
-function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport}){
+function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport,doNew,doOverwrite}){
   const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
   const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
   const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
@@ -1742,7 +1742,7 @@ function App(){
   };
   const TabComp=TAB_COMPS[tab];
 
-  const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport};
+  const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport,doNew,doOverwrite};
 
   const PreviewPanel=(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",height:"100%"}}>
