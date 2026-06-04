@@ -1841,15 +1841,11 @@ function App(){
           pdf.getPage(1).then(page=>{
             page.getTextContent().then(tc=>{
               // PDF.jsの全テキストを取得して行分割
-              const fullText=tc.items.map(i=>i.str).join('');
+              const fullText=tc.items.map(i=>i.str).join('').replace(/\n/g,' ').replace(/\r/g,' ');
               window._fullText=fullText;
-              const idx=fullText.indexOf('本人');
-              console.log('本人位置:',idx);
-              console.log('本人周辺:', fullText.slice(Math.max(0,idx-10),idx+50));
-              console.log('住所TEL位置:', fullText.indexOf('住所TEL'));
-              console.log('住所TEL周辺:', fullText.slice(fullText.indexOf('住所TEL')-30, fullText.indexOf('住所TEL')+20));
-              const lines=fullText.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+              const lines=[fullText];
               const text=fullText;
+              console.log('本人マッチ:', [...fullText.matchAll(/本人\s+(\S+)\s+(\S+)\s+住所\s+TEL/g)].map(m=>`${m[1]} ${m[2]}`));
               const parsed=parseHatoText(lines,text);
               console.log('parsed:', parsed);
               
