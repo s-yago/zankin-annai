@@ -1695,95 +1695,84 @@ const InputPanelComp=InputPanelCompInner;
 
 
 // ハトサポPDFテキストパーサー（App外で定義）
-// lines = PDF全テキストを改行で分割した配列
+// text = PDF全テキストを1つの文字列にしたもの
 function parseHatoText(lines, text){
   const result={};
 
-  // 【売主氏名】「本人 ○○ ○○ 住所」の最初の行
-  const sellerLine=lines.find(s=>/^本人\s+\S+\s+\S+\s+住所/.test(s));
-  if(sellerLine){
-    const m=sellerLine.match(/^本人\s+(\S+)\s+(\S+)\s+住所/);
-    if(m) result.sellers=[{name:`${m[1]}　${m[2]}`,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
+  // 【売主氏名】「本人 ○○ ○○ 住所 TEL」のパターン（最初の出現）
+  const sellerM=text.match(/本人\s+(\S+)\s+(\S+)\s+住所\s+TEL/);
+  if(sellerM){
+    result.sellers=[{name:`${sellerM[1]}　${sellerM[2]}`,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
   }
 
-  // 【売主住所】「VPB_a-TS-0_f」の2行前（「運転免許証...」の前の住所行）
-  const vpbAIdx=lines.findIndex(s=>s==='VPB_a-TS-0_f'||s.startsWith('VPB_a-TS-0_f'));
-  if(vpbAIdx>=2){
-    // 「運転免許証...」の前の行が住所
-    for(let i=vpbAIdx-1;i>=Math.max(0,vpbAIdx-4);i--){
-      const s=lines[i];
-      if(s&&!s.includes('運転免許証')&&!s.includes('パスポート')&&!s.includes('マイナンバーカード')&&!s.includes('売主')&&!s.includes('交換')&&s.length>3){
-        if(result.sellers) result.sellers[0].addr=s;
-        break;
-      }
-    }
+  // 【売主住所】「運転免許証」の直前にある住所
+  const sellerAddrM=text.match(/([^\s]+(?:号|丁目|番地|番|市|区|町|村|都|道|府|県)[^\s]*)\s+運転免許証\s+パスポート\s+マイナンバーカード\s+その他\s+VPB_a-TS-0/);
+  if(sellerAddrM&&result.sellers){
+    result.sellers[0].addr=sellerAddrM[1];
   }
 
-  // 【買主氏名】「本人 ○○ ○○ 住所」の2番目の行
-  const honninLines=lines.filter(s=>/^本人\s+\S+\s+\S+\s+住所/.test(s));
-  if(honninLines.length>=2){
-    const m=honninLines[1].match(/^本人\s+(\S+)\s+(\S+)\s+住所/);
-    if(m) result.buyers=[{name:`${m[1]}　${m[2]}`,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
+  // 【買主氏名】2番目の「本人 ○○ ○○ 住所 TEL」
+  const allHonnin=[...text.matchAll(/本人\s+(\S+)\s+(\S+)\s+住所\s+TEL/g)];
+  if(allHonnin.length>=2){
+    const bm=allHonnin[1];
+    result.buyers=[{name:`${bm[1]}　${bm[2]}`,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
   }
 
-  // 【買主住所】VPB_a-TS-0_f の次の行 + その次（「１号」等の続き）
-  if(vpbAIdx>=0){
-    let bAddr='';
-    for(let i=vpbAIdx+1;i<Math.min(lines.length,vpbAIdx+4);i++){
-      const s=lines[i];
-      if(!s||/^本人/.test(s)||/^主$/.test(s)||/^代理人/.test(s)||/^VPB/.test(s)) break;
-      if(!s.includes('運転免許証')&&!s.includes('パスポート')&&!s.includes('本人確認')){
-        bAddr+=s;
-      }
-    }
-    if(bAddr&&result.buyers) result.buyers[0].addr=bAddr;
+  // 【買主住所】VPB_a-TS-0_f の後、2番目の本人の前＋続き（「○号」等）を結合
+  const buyerAddrM=text.match(/VPB_a-TS-0_f\s+(.+?)\s+本人\s+(\S+)\s+(\S+)\s+住所\s+TEL\s+(\S+)/);
+  if(buyerAddrM&&result.buyers){
+    const pre=buyerAddrM[1].trim();
+    const post=buyerAddrM[4];
+    // 続きが号・丁目等で終わる場合は結合
+    const addr=(/[号丁目番地番]$/.test(post)||/^[０-９\d]/.test(post))?pre+post:pre;
+    result.buyers[0].addr=addr;
   }
 
-  // 【マンション名・号室】「VPB_bt-top-001_f 名 称 ○○ 棟 ○階 ○○号室」
-  const mansionLine=lines.find(s=>s.includes('VPB_bt-top-001_f'));
-  if(mansionLine){
-    const m=mansionLine.match(/名\s*称\s+(.+?)\s+棟/);
-    if(m) result.mansionName=m[1].trim();
-    const rm=mansionLine.match(/(\d+号室)/);
-    if(rm) result.roomNo=rm[1];
+  // 【マンション名】「名 称 ○○ 棟」のパターン
+  const mansionM=text.match(/名\s+称\s+(.+?)\s+棟/);
+  if(mansionM) result.mansionName=mansionM[1].trim();
+
+  // 【号室】「○○号室」
+  const roomM=text.match(/(\d+号室)/);
+  if(roomM) result.roomNo=roomM[1];
+
+  // 【住居表示】「住居表示」の後から「所在」または「一棟の」の前
+  const jukyoM=text.match(/住居表示\s+(.+?)\s+(?:所在|一棟の|VPB)/);
+  if(jukyoM) result.addressJukyo=jukyoM[1].trim();
+
+  // 【所在地（地番）】「所在 ○○○」のパターン
+  const sozaiM=text.match(/所在\s+(富山[^\s]+(?:番地|番)[^\s]*)/);
+  if(sozaiM){
+    result.address=sozaiM[1].trim();
+  } else if(result.addressJukyo){
+    result.address=result.addressJukyo;
   }
 
-  // 【物件住所】住居表示と所在地の両方を取得
-  // 住居表示：「住居表示 ○○○...」の行
-  const jukyoLine=lines.find(s=>s.startsWith('住居表示 '));
-  if(jukyoLine){
-    result.addressJukyo=jukyoLine.replace(/^住居表示\s+/,'').trim();
-  }
-  // 所在地（地番）：「所在 ○○○...」または「VPB_bt-top-002_f 所在・地番 ○○○」の行
-  const sozaiLine=lines.find(s=>/^所在\s+/.test(s));
-  if(sozaiLine){
-    result.address=sozaiLine.replace(/^所在\s+/,'').trim();
-  } else {
-    const vbt2Line=lines.find(s=>s.includes('VPB_bt-top-002_f'));
-    if(vbt2Line){
-      const m=vbt2Line.match(/所在・地番\s+(.+?)(?:\s+地目|$)/);
-      if(m) result.address=m[1].trim();
-    }
-  }
-  // 所在地が取れなかった場合は住居表示を代用
-  if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
-
-  // 【契約成立日・引渡日】「契約成立日 令和○年○月○日 引渡日 令和○年○月○日」
-  const dateConvert=(gengou,y,m,d)=>{
-    let year=parseInt(y);
-    if(gengou==='令和') year+=2018;
-    else if(gengou==='平成') year+=1988;
-    else if(gengou==='昭和') year+=1925;
-    return `${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  };
+  // 【契約成立日】
   const keiyakuM=text.match(/契約成立日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
-  if(keiyakuM) result.contractDate=dateConvert(keiyakuM[1],keiyakuM[2],keiyakuM[3],keiyakuM[4]);
-  const watashiM=text.match(/引渡日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
-  if(watashiM) result.settlementDT=dateConvert(watashiM[1],watashiM[2],watashiM[3],watashiM[4]);
+  if(keiyakuM){
+    let y=parseInt(keiyakuM[2]);
+    if(keiyakuM[1]==='令和') y+=2018;
+    else if(keiyakuM[1]==='平成') y+=1988;
+    else if(keiyakuM[1]==='昭和') y+=1925;
+    result.contractDate=`${y}-${String(keiyakuM[3]).padStart(2,'0')}-${String(keiyakuM[4]).padStart(2,'0')}`;
+  }
 
-  // 【売買金額・手付金】
+  // 【引渡日】
+  const watashiM=text.match(/引渡日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(watashiM){
+    let y=parseInt(watashiM[2]);
+    if(watashiM[1]==='令和') y+=2018;
+    else if(watashiM[1]==='平成') y+=1988;
+    else if(watashiM[1]==='昭和') y+=1925;
+    result.settlementDT=`${y}-${String(watashiM[3]).padStart(2,'0')}-${String(watashiM[4]).padStart(2,'0')}`;
+  }
+
+  // 【売買金額総額】
   const salePriceM=text.match(/売買金額総額\s*([\d,]+)円/);
   if(salePriceM) result.salePrice=parseInt(salePriceM[1].replace(/,/g,''));
+
+  // 【手付金】
   const depositM=text.match(/手付金\s*([\d,]+)円/);
   if(depositM) result.deposit=parseInt(depositM[1].replace(/,/g,''));
 
@@ -1852,11 +1841,7 @@ function App(){
               // PDF.jsの全テキストを取得して行分割
               const fullText=tc.items.map(i=>i.str).join('');
               const lines=fullText.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
-              const text=lines.join('\n');
-              console.log('lines件数:',lines.length);
-              console.log('lines[0]:', lines[0]);
-              console.log('lines[1]:', lines[1]);
-              console.log('fullText最初200文字:', fullText.slice(0,200));
+              const text=fullText;
               const parsed=parseHatoText(lines,text);
               console.log('parsed:', parsed);
               
