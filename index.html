@@ -1691,77 +1691,72 @@ const InputPanelComp=InputPanelCompInner;
 
 
 // ハトサポPDFテキストパーサー（App外で定義）
-function parseHatoText(items,text){
+// rawItems = PDF.jsが返す行単位のテキスト配列
+function parseHatoText(rawItems, text){
   const result={};
 
-  // 【売主氏名】最初の「本人」の後：姓・名
-  const honninIdxs=items.reduce((acc,s,i)=>s==='本人'?[...acc,i]:acc,[]);
-  if(honninIdxs.length>=1){
-    const sIdx=honninIdxs[0];
-    const sSei=items[sIdx+1]||'';
-    const sMei=items[sIdx+2]||'';
-    if(sSei&&sSei!=='住所'&&sSei!=='TEL'){
-      const sname=sMei&&sMei!=='住所'&&sMei!=='TEL'?`${sSei}　${sMei}`:sSei;
-      result.sellers=[{name:sname,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
-    }
+  // 全テキストを結合（正規表現用）
+  const fullText=rawItems.join('\n');
+
+  // 【売主氏名】「本人 勝矢 誠 住所」の行から抽出
+  const sellerLine=rawItems.find(s=>/^本人\s+\S+\s+\S+\s+住所/.test(s));
+  if(sellerLine){
+    const m=sellerLine.match(/^本人\s+(\S+)\s+(\S+)\s+住所/);
+    if(m) result.sellers=[{name:`${m[1]}　${m[2]}`,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
   }
 
-  // 【売主住所】VPB_a-TS-0_f の前（「その他」より前の住所文字列）
-  const vpbIdx=items.findIndex(s=>s==='VPB_a-TS-0_f');
-  if(vpbIdx>=0){
-    for(let i=vpbIdx-1;i>=Math.max(0,vpbIdx-8);i--){
-      const s=items[i];
-      if(s&&s.length>5&&s!=='その他'&&s!=='マイナンバーカード'&&s!=='パスポート'&&s!=='運転免許証'&&s!=='('&&s!==')'){
+  // 【売主住所】「VPB_a-TS-0_f」の前の行
+  const vpbIdx=rawItems.findIndex(s=>s==='VPB_a-TS-0_f'||s.startsWith('VPB_a-TS-0_f'));
+  if(vpbIdx>=1){
+    // 前の行から住所を探す（「運転免許証...」の前）
+    for(let i=vpbIdx-1;i>=Math.max(0,vpbIdx-4);i--){
+      const s=rawItems[i];
+      if(s&&!s.includes('運転免許証')&&!s.includes('パスポート')&&s.length>5&&!s.includes('交換')&&!s.includes('代理')){
         if(result.sellers) result.sellers[0].addr=s;
         break;
       }
     }
   }
 
-  // 【買主氏名】2番目の「本人」の後
-  if(honninIdxs.length>=2){
-    const bIdx=honninIdxs[1];
-    const bSei=items[bIdx+1]||'';
-    const bMei=items[bIdx+2]||'';
-    if(bSei&&bSei!=='住所'&&bSei!=='TEL'){
-      const bname=bMei&&bMei!=='住所'&&bMei!=='TEL'?`${bSei}　${bMei}`:bSei;
-      result.buyers=[{name:bname,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
-    }
+  // 【買主氏名】「本人 相馬 斉子 住所」の行から（2番目の本人行）
+  const honninLines=rawItems.filter(s=>/^本人\s+\S+\s+\S+\s+住所/.test(s));
+  if(honninLines.length>=2){
+    const m=honninLines[1].match(/^本人\s+(\S+)\s+(\S+)\s+住所/);
+    if(m) result.buyers=[{name:`${m[1]}　${m[2]}`,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
   }
 
-  // 【買主住所】VPB_a-TS-0_f の直後から「本人」まで結合
+  // 【買主住所】VPB_a-TS-0_f の次の行（買主住所）+ その次の行（続き）
   if(vpbIdx>=0){
     let bAddr='';
-    for(let i=vpbIdx+1;i<Math.min(items.length,vpbIdx+6);i++){
-      const s=items[i];
-      if(s==='本人'||s==='主'||s==='代理人'||s==='買') break;
-      if(s&&s.length>0&&s!=='運転免許証'&&s!=='パスポート'&&s!=='マイナンバーカード'&&s!=='その他'){
+    for(let i=vpbIdx+1;i<Math.min(rawItems.length,vpbIdx+4);i++){
+      const s=rawItems[i];
+      if(!s||s.startsWith('本人')||s.startsWith('主')||s.startsWith('代理人')||s.startsWith('VPB')) break;
+      if(!s.includes('運転免許証')&&!s.includes('パスポート')&&!s.includes('本人確認')){
         bAddr+=s;
       }
     }
     if(bAddr&&result.buyers) result.buyers[0].addr=bAddr;
   }
 
-  // 【マンション名】「称」の直後
-  const shoCIdx=items.findIndex(s=>s==='称');
-  if(shoCIdx>=0){
-    const mname=items[shoCIdx+1];
-    if(mname&&mname!=='棟'&&mname.length>1) result.mansionName=mname;
+  // 【マンション名】「VPB_bt-top-001_f 名 称 ダイアパレス城南公園 棟 ２階 205号室」
+  const mansionLine=rawItems.find(s=>s.includes('VPB_bt-top-001_f'));
+  if(mansionLine){
+    const m=mansionLine.match(/名\s*称\s+(.+?)\s+棟/);
+    if(m) result.mansionName=m[1].trim();
+    // 号室
+    const rm=mansionLine.match(/(\d+号室)/);
+    if(rm) result.roomNo=rm[1];
   }
 
-  // 【号室】「205号室」のような形式
-  const goshitsuItem=items.find(s=>/\d+号室$/.test(s));
-  if(goshitsuItem) result.roomNo=goshitsuItem;
-
-  // 【住居表示（物件所在地）】「住居表示」の次
-  const jukyoIdx=items.findIndex(s=>s==='住居表示');
-  if(jukyoIdx>=0){
-    const addr=items[jukyoIdx+1];
-    if(addr&&addr.length>5) result.address=addr;
+  // 【物件住所（住居表示）】「住居表示 富山市...」の行
+  const jukyoLine=rawItems.find(s=>s.startsWith('住居表示'));
+  if(jukyoLine){
+    const addr=jukyoLine.replace(/^住居表示\s+/,'').trim();
+    if(addr) result.address=addr;
   }
 
   // 【契約成立日】
-  const keiyakuMatch=text.match(/契約成立日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  const keiyakuMatch=fullText.match(/契約成立日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
   if(keiyakuMatch){
     let year=parseInt(keiyakuMatch[2]);
     if(keiyakuMatch[1]==='令和') year+=2018;
@@ -1771,7 +1766,7 @@ function parseHatoText(items,text){
   }
 
   // 【引渡日】
-  const watashiMatch=text.match(/引渡日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  const watashiMatch=fullText.match(/引渡日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
   if(watashiMatch){
     let year=parseInt(watashiMatch[2]);
     if(watashiMatch[1]==='令和') year+=2018;
@@ -1781,17 +1776,17 @@ function parseHatoText(items,text){
   }
 
   // 【売買金額総額】
-  const kingakuMatch=text.match(/売買金額総額\s*([\d,]+)円/);
+  const kingakuMatch=fullText.match(/売買金額総額\s*([\d,]+)円/);
   if(kingakuMatch) result.salePrice=parseInt(kingakuMatch[1].replace(/,/g,''));
 
   // 【手付金】
-  const tetsukeMatch=text.match(/手付金\s*([\d,]+)円/);
+  const tetsukeMatch=fullText.match(/手付金\s*([\d,]+)円/);
   if(tetsukeMatch) result.deposit=parseInt(tetsukeMatch[1].replace(/,/g,''));
 
   // 【物件種別】
-  if(text.includes('区分所有建物')) result.propType='マンション';
-  else if(text.includes('土地建物')) result.propType='戸建';
-  else if(text.includes('土地のみ')||text.includes('土地売買')) result.propType='土地';
+  if(fullText.includes('区分所有建物')) result.propType='マンション';
+  else if(fullText.includes('土地建物')) result.propType='戸建';
+  else if(fullText.includes('土地のみ')||fullText.includes('土地売買')) result.propType='土地';
 
   return result;
 }
@@ -1850,19 +1845,9 @@ function App(){
         loadingTask.promise.then(pdf=>{
           pdf.getPage(1).then(page=>{
             page.getTextContent().then(tc=>{
-              // PDF.jsのitemsから単語を結合
               const rawItems=tc.items.map(i=>i.str).filter(s=>s.trim().length>0);
-              // 空白のみのアイテムを除外し、単語に分割
-              const items=[];
-              rawItems.forEach(s=>{
-                // スペースで区切られた場合は分割
-                const parts=s.trim().split(/\s+/).filter(p=>p.length>0);
-                items.push(...parts);
-              });
-              const text=rawItems.join(' ');
-              console.log('rawItems(最初50):', rawItems.slice(0,50));
-              console.log('items(最初50):', items.slice(0,50));
-              const parsed=parseHatoText(items,text);
+              const text=rawItems.join('\n');
+              const parsed=parseHatoText(rawItems,text);
               console.log('parsed:', parsed);
               
               const confirmMsg=`以下の情報を読み込みます。よろしいですか？\n\n`+
