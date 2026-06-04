@@ -1958,13 +1958,11 @@ function App(){
               window._fullText=fullText;
               const lines=[fullText];
               const text=fullText;
-              console.log('本人マッチ:', [...fullText.matchAll(/本人\s+(\S+)\s+(\S+)\s+住所\s+TEL/g)].map(m=>`${m[1]} ${m[2]}`));
               const parsed=parseHatoText(lines,text);
-              console.log('parsed:', parsed);
               
               const confirmMsg=`以下の情報を読み込みます。よろしいですか？\n\n`+
-                result.sellers.map((s,i)=>`売主${result.sellers.length>1?i+1:''}：${s.name}${s.dairiName?' (代理人：'+s.dairiName+')':''}\n売主住所：${s.addr}`).join('\n')+'\n'+
-                result.buyers.map((b,i)=>`買主${result.buyers.length>1?i+1:''}：${b.name}${b.dairiName?' (代理人：'+b.dairiName+')':''}\n買主住所：${b.addr}`).join('\n')+'\n'+
+                parsed.sellers.map((s,i)=>`売主${parsed.sellers.length>1?i+1:''}：${s.name}${s.dairiName?' (代理人：'+s.dairiName+')':''}\n売主住所：${s.addr}`).join('\n')+'\n'+
+                parsed.buyers.map((b,i)=>`買主${parsed.buyers.length>1?i+1:''}：${b.name}${b.dairiName?' (代理人：'+b.dairiName+')':''}\n買主住所：${b.addr}`).join('\n')+'\n'+
                 `マンション名：${parsed.mansionName||'(なし)'}\n`+
                 `物件住所（地番）：${parsed.address||'(なし)'}\n`+
                 `住居表示：${parsed.addressJukyo||'(なし)'}\n`+
