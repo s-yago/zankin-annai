@@ -1732,20 +1732,41 @@ function parseHatoText(lines, text){
   const roomM=text.match(/(\d+号室)/);
   if(roomM) result.roomNo=roomM[1];
 
-  // 【住居表示・所在地】「その他補足事項○○（住居表示）○○（所在地）居住中」
+  // 【住居表示・所在地】各種パターンに対応
   const addrBlockM=text.match(/その他補足事項(.+?)居住中/);
   if(addrBlockM){
     const block=addrBlockM[1].trim();
     // 前半が住居表示（号で終わる）、後半が所在地（番地を含む）
     const jukyoM2=block.match(/^(.+?号)/);
     const sozaiM2=block.match(/(.+?(?:番地|番地\d)[^\s]*)/g);
-    if(jukyoM2) result.addressJukyo=jukyoM2[1].trim();
+    if(jukyoM2){
+      const val=jukyoM2[1].trim();
+      // 「住居表示実施区域外」でなければ住居表示として設定
+      if(!val.includes('実施区域外')&&!val.includes('未実施')) result.addressJukyo=val;
+    }
     if(sozaiM2&&sozaiM2.length>0){
       // 最後のマッチが所在地
       result.address=sozaiM2[sozaiM2.length-1].trim();
     }
     if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
     if(!result.addressJukyo) result.addressJukyo='';
+  }
+  // 建物の住居表示から取得（土地建物の場合）
+  if(!result.addressJukyo){
+    const jukyoM2=text.match(/住居表示\s+(.+?)(?:\s+構造|\s+VPB|\s+種類)/);
+    if(jukyoM2){
+      const val=jukyoM2[1].trim();
+      // 「住居表示実施区域外」の場合は空欄にする
+      if(!val.includes('実施区域外')&&!val.includes('未実施')) result.addressJukyo=val;
+    }
+  }
+  // 所在・地番から所在地を取得（土地・土地建物の場合）
+  if(!result.address){
+    const sozaiM2=text.match(/所在・地番\s+(.+?)(?:\s+地目|\s+登記簿)/);
+    if(sozaiM2) result.address=sozaiM2[1].trim();
+  }
+  // 最終フォールバック
+  if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
   }
 
   // 【契約成立日】
@@ -1768,8 +1789,8 @@ function parseHatoText(lines, text){
     result.settlementDT=`${y}-${String(watashiM[3]).padStart(2,'0')}-${String(watashiM[4]).padStart(2,'0')}`;
   }
 
-  // 【売買金額総額】
-  const salePriceM=text.match(/売買金額総額\s*([\d,]+)円/);
+  // 【売買金額総額】「売買金額総額」または「代金総額」
+  const salePriceM=text.match(/(?:売買金額総額|代金総額)\s*([\d,]+)円/);
   if(salePriceM) result.salePrice=parseInt(salePriceM[1].replace(/,/g,''));
 
   // 【手付金】
@@ -1778,8 +1799,9 @@ function parseHatoText(lines, text){
 
   // 【物件種別】
   if(text.includes('区分所有建物')) result.propType='マンション';
+  else if(text.includes('土地建物売買')) result.propType='戸建';
   else if(text.includes('土地建物')) result.propType='戸建';
-  else if(text.includes('土地のみ')||text.includes('土地売買')) result.propType='土地';
+  else if(text.includes('土地売買')||text.includes('土地のみ')) result.propType='土地';
 
   return result;
 }
