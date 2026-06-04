@@ -6,8 +6,7 @@
 <title>ViVi不動産 残金決済・清算書作成ツール</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1843,23 +1842,52 @@ function App(){
     const reader=new FileReader();
     reader.onload=ev=>{
       try{
-        // PDF.jsを使ってテキスト抽出
+        // PDF.js の設定
+        const pdfjsLib=window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        
         const loadingTask=pdfjsLib.getDocument({data:ev.target.result});
         loadingTask.promise.then(pdf=>{
           pdf.getPage(1).then(page=>{
             page.getTextContent().then(tc=>{
-              const items=tc.items.map(i=>i.str.trim()).filter(s=>s.length>0);
-              const text=items.join('\n');
-              // パース処理
+              // PDF.jsのitemsから単語を結合
+              const rawItems=tc.items.map(i=>i.str).filter(s=>s.trim().length>0);
+              // 空白のみのアイテムを除外し、単語に分割
+              const items=[];
+              rawItems.forEach(s=>{
+                // スペースで区切られた場合は分割
+                const parts=s.trim().split(/\s+/).filter(p=>p.length>0);
+                items.push(...parts);
+              });
+              const text=rawItems.join(' ');
+              console.log('rawItems(最初50):', rawItems.slice(0,50));
+              console.log('items(最初50):', items.slice(0,50));
               const parsed=parseHatoText(items,text);
-              if(window.confirm(`以下の情報を読み込みます。よろしいですか？\n\n売主：${parsed.sellers[0]?.name||'(なし)'}\n買主：${parsed.buyers[0]?.name||'(なし)'}\n物件：${parsed.address||'(なし)'}\n売買代金：${parsed.salePrice?Number(parsed.salePrice).toLocaleString()+'円':'(なし)'}`)){
+              console.log('parsed:', parsed);
+              
+              const confirmMsg=`以下の情報を読み込みます。よろしいですか？\n\n`+
+                `売主：${parsed.sellers?.[0]?.name||'(なし)'}\n`+
+                `売主住所：${parsed.sellers?.[0]?.addr||'(なし)'}\n`+
+                `買主：${parsed.buyers?.[0]?.name||'(なし)'}\n`+
+                `買主住所：${parsed.buyers?.[0]?.addr||'(なし)'}\n`+
+                `マンション名：${parsed.mansionName||'(なし)'}\n`+
+                `物件住所：${parsed.address||'(なし)'}\n`+
+                `売買代金：${parsed.salePrice?Number(parsed.salePrice).toLocaleString()+'円':'(なし)'}`;
+              
+              if(window.confirm(confirmMsg)){
                 setD(p=>({...p,...parsed}));
                 setLoadKey(k=>k+1);
               }
             });
           });
-        }).catch(err=>{alert('PDFの読み込みに失敗しました。\n'+err.message);});
-      }catch(err){alert('エラーが発生しました。\n'+err.message);}
+        }).catch(err=>{
+          console.error('PDF.js error:',err);
+          alert('PDFの読み込みに失敗しました。\n'+err.message);
+        });
+      }catch(err){
+        console.error('error:',err);
+        alert('エラーが発生しました。\n'+err.message);
+      }
     };
     reader.readAsArrayBuffer(file);
     e.target.value="";
