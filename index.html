@@ -1699,11 +1699,91 @@ const InputPanelComp=InputPanelCompInner;
 function parseHatoText(lines, text){
   const result={};
 
-  // 【売主氏名】「本人 ○○ ○○ 住所 TEL」のパターン（最初の出現）
-  const sellerM=text.match(/本人\s+(\S+)\s+(\S+)\s+住所\s+TEL/);
-  if(sellerM){
-    result.sellers=[{name:`${sellerM[1]}　${sellerM[2]}`,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
+  // 【売主氏名】「売 主本人○○[全角SP]○○住所TEL」
+  const sellerNameM=text.match(/売\s*主本人(.+?)住所TEL/);
+  if(sellerNameM){
+    const name=sellerNameM[1].trim().replace(/\s+/g,'\u3000');
+    result.sellers=[{name,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
   }
+
+  // 【売主住所】「媒介(両手)代理○○○運転免許証」
+  const sellerAddrM=text.match(/媒介\(両手\)代理(.+?)運転免許証/);
+  if(sellerAddrM&&result.sellers){
+    result.sellers[0].addr=sellerAddrM[1].trim();
+  }
+
+  // 【買主氏名】「買 主本人○○[全角SP]○○住所TEL」
+  const buyerNameM=text.match(/買\s*主本人(.+?)住所TEL/);
+  if(buyerNameM){
+    const name=buyerNameM[1].trim().replace(/\s+/g,'\u3000');
+    result.buyers=[{name,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
+  }
+
+  // 【買主住所】「VPB_a-TS-0_f○○○運転免許証」
+  const buyerAddrM=text.match(/VPB_a-TS-0_f(.+?)運転免許証/);
+  if(buyerAddrM&&result.buyers){
+    result.buyers[0].addr=buyerAddrM[1].trim();
+  }
+
+  // 【マンション名】「VPB_bt-top-001_f○○区分所有建物」
+  const mansionM=text.match(/VPB_bt-top-001_f(.+?)区分所有建物/);
+  if(mansionM) result.mansionName=mansionM[1].trim();
+
+  // 【号室】「○○号室」
+  const roomM=text.match(/(\d+号室)/);
+  if(roomM) result.roomNo=roomM[1];
+
+  // 【住居表示・所在地】「その他補足事項○○（住居表示）○○（所在地）居住中」
+  const addrBlockM=text.match(/その他補足事項(.+?)居住中/);
+  if(addrBlockM){
+    const block=addrBlockM[1].trim();
+    // 前半が住居表示（号で終わる）、後半が所在地（番地を含む）
+    const jukyoM2=block.match(/^(.+?号)/);
+    const sozaiM2=block.match(/(.+?(?:番地|番地\d)[^\s]*)/g);
+    if(jukyoM2) result.addressJukyo=jukyoM2[1].trim();
+    if(sozaiM2&&sozaiM2.length>0){
+      // 最後のマッチが所在地
+      result.address=sozaiM2[sozaiM2.length-1].trim();
+    }
+    if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
+    if(!result.addressJukyo) result.addressJukyo='';
+  }
+
+  // 【契約成立日】
+  const keiyakuM=text.match(/契約成立日(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(keiyakuM){
+    let y=parseInt(keiyakuM[2]);
+    if(keiyakuM[1]==='令和') y+=2018;
+    else if(keiyakuM[1]==='平成') y+=1988;
+    else if(keiyakuM[1]==='昭和') y+=1925;
+    result.contractDate=`${y}-${String(keiyakuM[3]).padStart(2,'0')}-${String(keiyakuM[4]).padStart(2,'0')}`;
+  }
+
+  // 【引渡日】
+  const watashiM=text.match(/引渡日(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(watashiM){
+    let y=parseInt(watashiM[2]);
+    if(watashiM[1]==='令和') y+=2018;
+    else if(watashiM[1]==='平成') y+=1988;
+    else if(watashiM[1]==='昭和') y+=1925;
+    result.settlementDT=`${y}-${String(watashiM[3]).padStart(2,'0')}-${String(watashiM[4]).padStart(2,'0')}`;
+  }
+
+  // 【売買金額総額】
+  const salePriceM=text.match(/売買金額総額\s*([\d,]+)円/);
+  if(salePriceM) result.salePrice=parseInt(salePriceM[1].replace(/,/g,''));
+
+  // 【手付金】
+  const depositM=text.match(/手付金\s*([\d,]+)円/);
+  if(depositM) result.deposit=parseInt(depositM[1].replace(/,/g,''));
+
+  // 【物件種別】
+  if(text.includes('区分所有建物')) result.propType='マンション';
+  else if(text.includes('土地建物')) result.propType='戸建';
+  else if(text.includes('土地のみ')||text.includes('土地売買')) result.propType='土地';
+
+  return result;
+}
 
   // 【売主住所】「運転免許証」の直前にある住所
   const sellerAddrM=text.match(/([^\s]+(?:号|丁目|番地|番|市|区|町|村|都|道|府|県)[^\s]*)\s+運転免許証\s+パスポート\s+マイナンバーカード\s+その他\s+VPB_a-TS-0/);
