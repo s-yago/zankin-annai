@@ -1690,77 +1690,9 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
 // openSecとcurId/curNameが変わった時だけ再レンダリング。dの変化では再レンダリングしない。
 const InputPanelComp=InputPanelCompInner;
 
-function App(){
-  const [d,setD]=useState(INIT);
-  const [loadKey,setLoadKey]=useState(0);
-  const [tab,setTab]=useState(0);
-  const [spTab,setSpTab]=useState("input");
-  const [showHist,setShowHist]=useState(false);
-  const [showManual,setShowManual]=useState(false);
-  const [saved,setSaved]=useState([]);
-  const [saveName,setSaveName]=useState("");
-  const [showSaveDlg,setShowSaveDlg]=useState(false);
-  const [delConf,setDelConf]=useState(null);
-  const [curId,setCurId]=useState(null);
-  const [curName,setCurName]=useState("");
-  const [winW,setWinW]=useState(window.innerWidth);
-  const [openSec,setOpenSec]=useState({basic:true,shiho:false,money:false,seller:false,buyer:false,other:false});
-  const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
-  const c=useMemo(()=>calcAll(d),[d]);
-  const sp=winW<=1024;
 
-  useEffect(()=>{try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{};},[]);
-  useEffect(()=>{const fn=()=>setWinW(window.innerWidth);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
-
-  const doSave=()=>{
-    const name=saveName||`${getSellerName(d)}→${getBuyerName(d)} (${d.settlementDT})`;
-    const nc={id:Date.now(),name,savedAt:new Date().toLocaleString("ja-JP"),data:d};
-    const upd=[nc,...saved].slice(0,30);
-    setSaved(upd);setCurId(nc.id);setCurName(name);
-    try{localStorage.setItem(SK,JSON.stringify(upd));}catch{}
-    setShowSaveDlg(false);setSaveName("");
-  };
-  const doOverwrite=()=>{const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
-  const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);setLoadKey(k=>k+1);};
-  const doDel=id=>{const upd=saved.filter(i=>i.id!==id);setSaved(upd);if(id===curId){setCurId(null);setCurName("");}try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};setDelConf(null);};
-  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");setLoadKey(k=>k+1);}};
-  // JSONエクスポート
-  const doExport=()=>{
-    const name=curName||`${getSellerName(d)}→${getBuyerName(d)}_${d.settlementDT||"未設定"}`;
-    const blob=new Blob([JSON.stringify({name,exportedAt:new Date().toLocaleString("ja-JP"),data:d},null,2)],{type:"application/json"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
-    a.download=`zankin_${name.replace(/[/\\:*?"<>|]/g,"_")}.json`;a.click();URL.revokeObjectURL(a.href);
-  };
-  // ハトサポPDF読込
-  const doImportHato=(e)=>{
-    const file=e.target.files[0];if(!file)return;
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      try{
-        // PDF.jsを使ってテキスト抽出
-        const loadingTask=pdfjsLib.getDocument({data:ev.target.result});
-        loadingTask.promise.then(pdf=>{
-          pdf.getPage(1).then(page=>{
-            page.getTextContent().then(tc=>{
-              const items=tc.items.map(i=>i.str.trim()).filter(s=>s.length>0);
-              const text=items.join('\n');
-              // パース処理
-              const parsed=parseHatoText(items,text);
-              if(window.confirm(`以下の情報を読み込みます。よろしいですか？\n\n売主：${parsed.sellers[0]?.name||'(なし)'}\n買主：${parsed.buyers[0]?.name||'(なし)'}\n物件：${parsed.address||'(なし)'}\n売買代金：${parsed.salePrice?Number(parsed.salePrice).toLocaleString()+'円':'(なし)'}`)){
-                setD(p=>({...p,...parsed}));
-                setLoadKey(k=>k+1);
-              }
-            });
-          });
-        }).catch(err=>{alert('PDFの読み込みに失敗しました。\n'+err.message);});
-      }catch(err){alert('エラーが発生しました。\n'+err.message);}
-    };
-    reader.readAsArrayBuffer(file);
-    e.target.value="";
-  };
-
-  // ハトサポPDFのテキストをパースする関数（実際のPDF構造に基づく）
-  const parseHatoText=(items,text)=>{
+// ハトサポPDFテキストパーサー（App外で定義）
+function parseHatoText(items,text){
     const result={};
 
     // 【売主氏名】インデックス16「本人」の次に名前が2つ（姓・名）
@@ -1864,7 +1796,77 @@ function App(){
     else if(text.includes('土地のみ')||text.includes('土地売買')) result.propType='土地';
 
     return result;
+}
+
+function App(){
+  const [d,setD]=useState(INIT);
+  const [loadKey,setLoadKey]=useState(0);
+  const [tab,setTab]=useState(0);
+  const [spTab,setSpTab]=useState("input");
+  const [showHist,setShowHist]=useState(false);
+  const [showManual,setShowManual]=useState(false);
+  const [saved,setSaved]=useState([]);
+  const [saveName,setSaveName]=useState("");
+  const [showSaveDlg,setShowSaveDlg]=useState(false);
+  const [delConf,setDelConf]=useState(null);
+  const [curId,setCurId]=useState(null);
+  const [curName,setCurName]=useState("");
+  const [winW,setWinW]=useState(window.innerWidth);
+  const [openSec,setOpenSec]=useState({basic:true,shiho:false,money:false,seller:false,buyer:false,other:false});
+  const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
+  const c=useMemo(()=>calcAll(d),[d]);
+  const sp=winW<=1024;
+
+  useEffect(()=>{try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{};},[]);
+  useEffect(()=>{const fn=()=>setWinW(window.innerWidth);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
+
+  const doSave=()=>{
+    const name=saveName||`${getSellerName(d)}→${getBuyerName(d)} (${d.settlementDT})`;
+    const nc={id:Date.now(),name,savedAt:new Date().toLocaleString("ja-JP"),data:d};
+    const upd=[nc,...saved].slice(0,30);
+    setSaved(upd);setCurId(nc.id);setCurName(name);
+    try{localStorage.setItem(SK,JSON.stringify(upd));}catch{}
+    setShowSaveDlg(false);setSaveName("");
   };
+  const doOverwrite=()=>{const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
+  const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);setLoadKey(k=>k+1);};
+  const doDel=id=>{const upd=saved.filter(i=>i.id!==id);setSaved(upd);if(id===curId){setCurId(null);setCurName("");}try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};setDelConf(null);};
+  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");setLoadKey(k=>k+1);}};
+  // JSONエクスポート
+  const doExport=()=>{
+    const name=curName||`${getSellerName(d)}→${getBuyerName(d)}_${d.settlementDT||"未設定"}`;
+    const blob=new Blob([JSON.stringify({name,exportedAt:new Date().toLocaleString("ja-JP"),data:d},null,2)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    a.download=`zankin_${name.replace(/[/\\:*?"<>|]/g,"_")}.json`;a.click();URL.revokeObjectURL(a.href);
+  };
+  // ハトサポPDF読込
+  const doImportHato=(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        // PDF.jsを使ってテキスト抽出
+        const loadingTask=pdfjsLib.getDocument({data:ev.target.result});
+        loadingTask.promise.then(pdf=>{
+          pdf.getPage(1).then(page=>{
+            page.getTextContent().then(tc=>{
+              const items=tc.items.map(i=>i.str.trim()).filter(s=>s.length>0);
+              const text=items.join('\n');
+              // パース処理
+              const parsed=parseHatoText(items,text);
+              if(window.confirm(`以下の情報を読み込みます。よろしいですか？\n\n売主：${parsed.sellers[0]?.name||'(なし)'}\n買主：${parsed.buyers[0]?.name||'(なし)'}\n物件：${parsed.address||'(なし)'}\n売買代金：${parsed.salePrice?Number(parsed.salePrice).toLocaleString()+'円':'(なし)'}`)){
+                setD(p=>({...p,...parsed}));
+                setLoadKey(k=>k+1);
+              }
+            });
+          });
+        }).catch(err=>{alert('PDFの読み込みに失敗しました。\n'+err.message);});
+      }catch(err){alert('エラーが発生しました。\n'+err.message);}
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value="";
+  };
+
 
   // JSONインポート
   const doImport=(e)=>{
