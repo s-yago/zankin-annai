@@ -1840,6 +1840,7 @@ function App(){
             page.getTextContent().then(tc=>{
               // PDF.jsの全テキストを取得して行分割
               const fullText=tc.items.map(i=>i.str).join('');
+              window._fullText=fullText;
               const lines=fullText.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
               const text=fullText;
               const parsed=parseHatoText(lines,text);
