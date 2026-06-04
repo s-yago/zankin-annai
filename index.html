@@ -1699,23 +1699,22 @@ const InputPanelComp=InputPanelCompInner;
 function parseHatoText(lines, text){
   const result={};
 
-  // 【売主氏名】「売 主本人○○[全角SP]○○住所TEL」
-  const sellerNameM=text.match(/売\s*主本人(.+?)住所TEL/);
-  if(sellerNameM){
-    const name=sellerNameM[1].trim().replace(/\s+/g,'\u3000');
+  // 【売主氏名】最初の「本人○○住所TEL」
+  const honninAll=[...text.matchAll(/本人(.+?)住所TEL/g)];
+  if(honninAll.length>=1){
+    const name=honninAll[0][1].trim().replace(/\s+/g,' ');
     result.sellers=[{name,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
   }
 
   // 【売主住所】「媒介(両手)代理○○○運転免許証」
-  const sellerAddrM=text.match(/媒介\(両手\)代理(.+?)運転免許証/);
+  const sellerAddrM=text.match(/媒介.両手.代理(.+?)運転免許証/);
   if(sellerAddrM&&result.sellers){
     result.sellers[0].addr=sellerAddrM[1].trim();
   }
 
-  // 【買主氏名】「買 主本人○○[全角SP]○○住所TEL」
-  const buyerNameM=text.match(/買\s*主本人(.+?)住所TEL/);
-  if(buyerNameM){
-    const name=buyerNameM[1].trim().replace(/\s+/g,'\u3000');
+  // 【買主氏名】2番目の「本人○○住所TEL」
+  if(honninAll.length>=2){
+    const name=honninAll[1][1].trim().replace(/\s+/g,' ');
     result.buyers=[{name,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
   }
 
