@@ -1706,8 +1706,8 @@ function parseHatoText(lines, text){
     result.sellers=[{name:`${m[1]}\u3000${m[2]}`,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
   }
 
-  // 【売主住所】「媒介(両手)代理○○○運転免許証」
-  const sellerAddrM=text.match(/媒介.両手.代理(.+?)運転免許証/);
+  // 【売主住所】「媒介(両手) 代理○○○運転免許証」スペースあり
+  const sellerAddrM=text.match(/媒介\(両手\)\s+代理(.+?)運転免許証/);
   if(sellerAddrM&&result.sellers){
     result.sellers[0].addr=sellerAddrM[1].trim();
   }
