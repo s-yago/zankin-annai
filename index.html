@@ -1853,6 +1853,10 @@ function App(){
               const fullText=tc.items.map(i=>i.str).join('');
               const lines=fullText.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
               const text=lines.join('\n');
+              console.log('lines件数:',lines.length);
+              console.log('lines[0]:', lines[0]);
+              console.log('lines[1]:', lines[1]);
+              console.log('fullText最初200文字:', fullText.slice(0,200));
               const parsed=parseHatoText(lines,text);
               console.log('parsed:', parsed);
               
