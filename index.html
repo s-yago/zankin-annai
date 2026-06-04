@@ -40,7 +40,7 @@ const md=(d)=>`${d.getMonth()+1}月${d.getDate()}日`;
 const toReiwa=(s)=>{if(!s)return"　　年　　月　　日";const d=new Date(s);return`令和${d.getFullYear()-2018}年${d.getMonth()+1}月${d.getDate()}日`};
 
 const INIT={
-  propType:"戸建",txType:"売主",address:"",addressZip:"",
+  propType:"戸建",txType:"売主",address:"",addressZip:"",addressJukyo:"",
   mansionName:"",roomNo:"",landArea:"",buildingArea:"",
   sellers:[{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る"}],
   buyers:[{name:"",addr:"",kinshoAttend:"来る",mendanAttend:"来る",settlementAttend:"来る"}],
@@ -532,7 +532,7 @@ function BuyerGuide({d,c}){
       </>}
       {isLoan&&<>
         <div className="sec-head" style={DOC.sectionHead}>■ 金銭消費貸借契約（ローン契約）</div>
-        {isPreMove&&<div style={DOC.warningBox}>★【重要】金消契約の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.address}</div>}
+        {isPreMove&&<div style={DOC.warningBox}>★【重要】金消契約の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.addressJukyo||d.address}</div>}
         <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
           <tbody><TRow label="日　時" value={`${jDate(d.kinshoDT)} ${d.kinshoTime}`}/><TRow label="場　所" value={d.kinshoPlace}/></tbody>
         </table>
@@ -554,7 +554,7 @@ function BuyerGuide({d,c}){
         })()}
       </>}
       <div className="sec-head" style={DOC.sectionHead}>■ 残金決済</div>
-      {!isLoan&&isPreMove&&<div style={DOC.warningBox}>★【重要】決済日の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.address}</div>}
+      {!isLoan&&isPreMove&&<div style={DOC.warningBox}>★【重要】決済日の前日までに、以下の新住所へ住民票を移転してください。<br/>新住所：{zipDisp}{d.addressJukyo||d.address}</div>}
       <table style={DOC.table}><colgroup><col style={{width:"35%"}}/><col style={{width:"65%"}}/></colgroup>
         <tbody>
           {d.gathering==="あり"?<><TRow label="日　時" value={`${jDate(d.settlementDT)} ${d.settlementTime} より`}/><TRow label="場　所" value={d.gatheringPlace}/></>:<><TRow label="振込予定日" value={jDate(d.settlementDT)}/><tr><td colSpan={2} style={{...DOC.td,color:"#8b0000",fontSize:10}}>※本取引は振込手続き等にて行いますので、お集まりいただく必要はございません。</td></tr></>}
@@ -933,14 +933,14 @@ function HandoverDoc({d,c}){
             <tr>
               <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>土地</td>
               <td style={labelSt}>所　在</td>
-              <td style={cellSt}>{zipDisp}{d.address}</td>
+              <td style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
             </tr>
             <tr><td style={labelSt}>地　積</td><td style={cellSt}>{d.landArea&&`${d.landArea} ㎡`}</td></tr>
             <tr><td style={labelSt}>備　考</td><td style={cellSt}></td></tr>
             <tr>
               <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>建物</td>
               <td style={labelSt}>所在地</td>
-              <td style={cellSt}>{zipDisp}{d.address}</td>
+              <td style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
             </tr>
             <tr><td style={labelSt}>付属建物</td><td style={cellSt}></td></tr>
             <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　　本、勝手口　　　本、物置　　　本、宅配ボックス　　　本</td></tr>
@@ -949,7 +949,7 @@ function HandoverDoc({d,c}){
             <tr>
               <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>土地</td>
               <td style={labelSt}>所　在</td>
-              <td style={cellSt}>{zipDisp}{d.address}</td>
+              <td style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
             </tr>
             <tr><td style={labelSt}>地　積</td><td style={cellSt}>{d.landArea&&`${d.landArea} ㎡`}</td></tr>
             <tr><td style={labelSt}>備　考</td><td style={cellSt}></td></tr>
@@ -962,7 +962,7 @@ function HandoverDoc({d,c}){
             </tr>
             <tr>
               <td style={labelSt}>所在地</td>
-              <td style={cellSt}>{zipDisp}{d.address}</td>
+              <td style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
             </tr>
             <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　　本、トランクルーム　　　本、宅配ボックスカード　　　枚、ポスト番号　　　　　　</td></tr>
           </>}
@@ -1161,7 +1161,7 @@ function WaterDoc({d,c}){
           <tr>
             <td rowSpan={3} style={labelSt}>給水装置</td>
             <td style={{...subLabelSt,lineHeight:1.3,fontSize:9}}>設置の場<br/>所</td>
-            <td colSpan={4} style={cellSt}>{zipDisp}{d.address}</td>
+            <td colSpan={4} style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
           </tr>
           <tr>
             <td rowSpan={2} style={{...subLabelSt,lineHeight:1.3,fontSize:9}}>所有者変<br/>更年月日</td>
@@ -1375,13 +1375,17 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
       <Acc id="basic" label="① 基本情報・物件・当事者" color="#d0e8ff" openSec={openSec} toggleSec={toggleSec}>
         <F label="取引種別"><TB val={d.txType} onChange={set("txType")} opts={["売主","買主"]}/></F>
         <F label="物件種別"><SI val={d.propType} onChange={set("propType")} opts={["戸建","マンション","土地"]}/></F>
-        <F label="物件所在地">
+        <F label="物件所在地（地番）">
           <div style={{display:"flex",gap:3,marginBottom:2,alignItems:"center"}}>
             <span style={{fontSize:11,whiteSpace:"nowrap"}}>〒</span>
             <input placeholder="郵便番号7桁" value={d.addressZip} onChange={e=>setD(p=>({...p,addressZip:e.target.value.replace(/[^0-9]/g,"").slice(0,7)}))} style={{...iS,width:"50%"}}/>
             {d.addressZip.length===7&&<span style={{fontSize:10,color:"#1a3a6b",fontWeight:"bold"}}>〒{d.addressZip.slice(0,3)}-{d.addressZip.slice(3)}</span>}
           </div>
-          <TI val={d.address} onChange={set("address")} placeholder="住所を入力"/>
+          <TI val={d.address} onChange={set("address")} placeholder="登記上の所在・地番（領収書等に使用）"/>
+        </F>
+        <F label="住居表示">
+          <TI val={d.addressJukyo||""} onChange={set("addressJukyo")} placeholder="住居表示（案内書・給水装置届に使用。なければ空欄）"/>
+          <div style={{fontSize:9,color:"#888",marginTop:2}}>※空欄の場合は地番を代わりに使用します</div>
         </F>
         {d.propType==="マンション"&&<>
           <F label="マンション名"><TI val={d.mansionName||""} onChange={set("mansionName")} placeholder="例：グランドパレス富山"/></F>
@@ -1691,46 +1695,43 @@ const InputPanelComp=InputPanelCompInner;
 
 
 // ハトサポPDFテキストパーサー（App外で定義）
-// rawItems = PDF.jsが返す行単位のテキスト配列
-function parseHatoText(rawItems, text){
+// lines = PDF全テキストを改行で分割した配列
+function parseHatoText(lines, text){
   const result={};
 
-  // 全テキストを結合（正規表現用）
-  const fullText=rawItems.join('\n');
-
-  // 【売主氏名】「本人 勝矢 誠 住所」の行から抽出
-  const sellerLine=rawItems.find(s=>/^本人\s+\S+\s+\S+\s+住所/.test(s));
+  // 【売主氏名】「本人 ○○ ○○ 住所」の最初の行
+  const sellerLine=lines.find(s=>/^本人\s+\S+\s+\S+\s+住所/.test(s));
   if(sellerLine){
     const m=sellerLine.match(/^本人\s+(\S+)\s+(\S+)\s+住所/);
     if(m) result.sellers=[{name:`${m[1]}　${m[2]}`,addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る'}];
   }
 
-  // 【売主住所】「VPB_a-TS-0_f」の前の行
-  const vpbIdx=rawItems.findIndex(s=>s==='VPB_a-TS-0_f'||s.startsWith('VPB_a-TS-0_f'));
-  if(vpbIdx>=1){
-    // 前の行から住所を探す（「運転免許証...」の前）
-    for(let i=vpbIdx-1;i>=Math.max(0,vpbIdx-4);i--){
-      const s=rawItems[i];
-      if(s&&!s.includes('運転免許証')&&!s.includes('パスポート')&&s.length>5&&!s.includes('交換')&&!s.includes('代理')){
+  // 【売主住所】「VPB_a-TS-0_f」の2行前（「運転免許証...」の前の住所行）
+  const vpbAIdx=lines.findIndex(s=>s==='VPB_a-TS-0_f'||s.startsWith('VPB_a-TS-0_f'));
+  if(vpbAIdx>=2){
+    // 「運転免許証...」の前の行が住所
+    for(let i=vpbAIdx-1;i>=Math.max(0,vpbAIdx-4);i--){
+      const s=lines[i];
+      if(s&&!s.includes('運転免許証')&&!s.includes('パスポート')&&!s.includes('マイナンバーカード')&&!s.includes('売主')&&!s.includes('交換')&&s.length>3){
         if(result.sellers) result.sellers[0].addr=s;
         break;
       }
     }
   }
 
-  // 【買主氏名】「本人 相馬 斉子 住所」の行から（2番目の本人行）
-  const honninLines=rawItems.filter(s=>/^本人\s+\S+\s+\S+\s+住所/.test(s));
+  // 【買主氏名】「本人 ○○ ○○ 住所」の2番目の行
+  const honninLines=lines.filter(s=>/^本人\s+\S+\s+\S+\s+住所/.test(s));
   if(honninLines.length>=2){
     const m=honninLines[1].match(/^本人\s+(\S+)\s+(\S+)\s+住所/);
     if(m) result.buyers=[{name:`${m[1]}　${m[2]}`,addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る'}];
   }
 
-  // 【買主住所】VPB_a-TS-0_f の次の行（買主住所）+ その次の行（続き）
-  if(vpbIdx>=0){
+  // 【買主住所】VPB_a-TS-0_f の次の行 + その次（「１号」等の続き）
+  if(vpbAIdx>=0){
     let bAddr='';
-    for(let i=vpbIdx+1;i<Math.min(rawItems.length,vpbIdx+4);i++){
-      const s=rawItems[i];
-      if(!s||s.startsWith('本人')||s.startsWith('主')||s.startsWith('代理人')||s.startsWith('VPB')) break;
+    for(let i=vpbAIdx+1;i<Math.min(lines.length,vpbAIdx+4);i++){
+      const s=lines[i];
+      if(!s||/^本人/.test(s)||/^主$/.test(s)||/^代理人/.test(s)||/^VPB/.test(s)) break;
       if(!s.includes('運転免許証')&&!s.includes('パスポート')&&!s.includes('本人確認')){
         bAddr+=s;
       }
@@ -1738,55 +1739,58 @@ function parseHatoText(rawItems, text){
     if(bAddr&&result.buyers) result.buyers[0].addr=bAddr;
   }
 
-  // 【マンション名】「VPB_bt-top-001_f 名 称 ダイアパレス城南公園 棟 ２階 205号室」
-  const mansionLine=rawItems.find(s=>s.includes('VPB_bt-top-001_f'));
+  // 【マンション名・号室】「VPB_bt-top-001_f 名 称 ○○ 棟 ○階 ○○号室」
+  const mansionLine=lines.find(s=>s.includes('VPB_bt-top-001_f'));
   if(mansionLine){
     const m=mansionLine.match(/名\s*称\s+(.+?)\s+棟/);
     if(m) result.mansionName=m[1].trim();
-    // 号室
     const rm=mansionLine.match(/(\d+号室)/);
     if(rm) result.roomNo=rm[1];
   }
 
-  // 【物件住所（住居表示）】「住居表示 富山市...」の行
-  const jukyoLine=rawItems.find(s=>s.startsWith('住居表示'));
+  // 【物件住所】住居表示と所在地の両方を取得
+  // 住居表示：「住居表示 ○○○...」の行
+  const jukyoLine=lines.find(s=>s.startsWith('住居表示 '));
   if(jukyoLine){
-    const addr=jukyoLine.replace(/^住居表示\s+/,'').trim();
-    if(addr) result.address=addr;
+    result.addressJukyo=jukyoLine.replace(/^住居表示\s+/,'').trim();
   }
-
-  // 【契約成立日】
-  const keiyakuMatch=fullText.match(/契約成立日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
-  if(keiyakuMatch){
-    let year=parseInt(keiyakuMatch[2]);
-    if(keiyakuMatch[1]==='令和') year+=2018;
-    else if(keiyakuMatch[1]==='平成') year+=1988;
-    else if(keiyakuMatch[1]==='昭和') year+=1925;
-    result.contractDate=`${year}-${String(keiyakuMatch[3]).padStart(2,'0')}-${String(keiyakuMatch[4]).padStart(2,'0')}`;
+  // 所在地（地番）：「所在 ○○○...」または「VPB_bt-top-002_f 所在・地番 ○○○」の行
+  const sozaiLine=lines.find(s=>/^所在\s+/.test(s));
+  if(sozaiLine){
+    result.address=sozaiLine.replace(/^所在\s+/,'').trim();
+  } else {
+    const vbt2Line=lines.find(s=>s.includes('VPB_bt-top-002_f'));
+    if(vbt2Line){
+      const m=vbt2Line.match(/所在・地番\s+(.+?)(?:\s+地目|$)/);
+      if(m) result.address=m[1].trim();
+    }
   }
+  // 所在地が取れなかった場合は住居表示を代用
+  if(!result.address&&result.addressJukyo) result.address=result.addressJukyo;
 
-  // 【引渡日】
-  const watashiMatch=fullText.match(/引渡日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
-  if(watashiMatch){
-    let year=parseInt(watashiMatch[2]);
-    if(watashiMatch[1]==='令和') year+=2018;
-    else if(watashiMatch[1]==='平成') year+=1988;
-    else if(watashiMatch[1]==='昭和') year+=1925;
-    result.settlementDT=`${year}-${String(watashiMatch[3]).padStart(2,'0')}-${String(watashiMatch[4]).padStart(2,'0')}`;
-  }
+  // 【契約成立日・引渡日】「契約成立日 令和○年○月○日 引渡日 令和○年○月○日」
+  const dateConvert=(gengou,y,m,d)=>{
+    let year=parseInt(y);
+    if(gengou==='令和') year+=2018;
+    else if(gengou==='平成') year+=1988;
+    else if(gengou==='昭和') year+=1925;
+    return `${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  };
+  const keiyakuM=text.match(/契約成立日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(keiyakuM) result.contractDate=dateConvert(keiyakuM[1],keiyakuM[2],keiyakuM[3],keiyakuM[4]);
+  const watashiM=text.match(/引渡日\s*(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  if(watashiM) result.settlementDT=dateConvert(watashiM[1],watashiM[2],watashiM[3],watashiM[4]);
 
-  // 【売買金額総額】
-  const kingakuMatch=fullText.match(/売買金額総額\s*([\d,]+)円/);
-  if(kingakuMatch) result.salePrice=parseInt(kingakuMatch[1].replace(/,/g,''));
-
-  // 【手付金】
-  const tetsukeMatch=fullText.match(/手付金\s*([\d,]+)円/);
-  if(tetsukeMatch) result.deposit=parseInt(tetsukeMatch[1].replace(/,/g,''));
+  // 【売買金額・手付金】
+  const salePriceM=text.match(/売買金額総額\s*([\d,]+)円/);
+  if(salePriceM) result.salePrice=parseInt(salePriceM[1].replace(/,/g,''));
+  const depositM=text.match(/手付金\s*([\d,]+)円/);
+  if(depositM) result.deposit=parseInt(depositM[1].replace(/,/g,''));
 
   // 【物件種別】
-  if(fullText.includes('区分所有建物')) result.propType='マンション';
-  else if(fullText.includes('土地建物')) result.propType='戸建';
-  else if(fullText.includes('土地のみ')||fullText.includes('土地売買')) result.propType='土地';
+  if(text.includes('区分所有建物')) result.propType='マンション';
+  else if(text.includes('土地建物')) result.propType='戸建';
+  else if(text.includes('土地のみ')||text.includes('土地売買')) result.propType='土地';
 
   return result;
 }
@@ -1845,19 +1849,11 @@ function App(){
         loadingTask.promise.then(pdf=>{
           pdf.getPage(1).then(page=>{
             page.getTextContent().then(tc=>{
-              // PDF.jsのitemsを全結合して行単位に分割
-              const allStr=tc.items.map(i=>i.str).join('');
-              // 改行で分割、空行除去
-              const rawItems=allStr.split(/\n/).map(s=>s.trim()).filter(s=>s.length>0);
-              window._rawItems=rawItems;
-              const text=rawItems.join('\n');
-              console.log('件数:',rawItems.length);
-              console.log('最初10件:', rawItems.slice(0,10));
-              console.log('本人含む:', rawItems.filter(s=>s.includes('本人')));
-              console.log('住居表示含む:', rawItems.filter(s=>s.includes('住居表示')));
-              console.log('ダイアパレス含む:', rawItems.filter(s=>s.includes('ダイアパレス')));
-              const parsed=parseHatoText(rawItems,text);
-              console.log('parsed:', JSON.stringify(parsed));
+              // PDF.jsの全テキストを取得して行分割
+              const fullText=tc.items.map(i=>i.str).join('');
+              const lines=fullText.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+              const text=lines.join('\n');
+              const parsed=parseHatoText(lines,text);
               console.log('parsed:', parsed);
               
               const confirmMsg=`以下の情報を読み込みます。よろしいですか？\n\n`+
@@ -1866,7 +1862,8 @@ function App(){
                 `買主：${parsed.buyers?.[0]?.name||'(なし)'}\n`+
                 `買主住所：${parsed.buyers?.[0]?.addr||'(なし)'}\n`+
                 `マンション名：${parsed.mansionName||'(なし)'}\n`+
-                `物件住所：${parsed.address||'(なし)'}\n`+
+                `物件住所（地番）：${parsed.address||'(なし)'}\n`+
+                `住居表示：${parsed.addressJukyo||'(なし)'}\n`+
                 `売買代金：${parsed.salePrice?Number(parsed.salePrice).toLocaleString()+'円':'(なし)'}`;
               if(window.confirm(confirmMsg)){
                 setD(p=>({...p,...parsed}));
