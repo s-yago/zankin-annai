@@ -1896,9 +1896,9 @@ function parseHatoText(lines, text){
 
   // ===== 契約日・引渡日 =====
   const dc=(t,y,m,d)=>{let yr=parseInt(y);if(t==='令和')yr+=2018;else if(t==='平成')yr+=1988;else if(t==='昭和')yr+=1925;return `${yr}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;};
-  const km=text.match(/契約成立日(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  const km=text.match(/契約成立日\s*(令和|平成|昭和)?\s*(\d+)年\s*(\d+)月\s*(\d+)日/);
   if(km) result.contractDate=dc(km[1],km[2],km[3],km[4]);
-  const wm=text.match(/引渡日(令和|平成|昭和)?(\d+)年(\d+)月(\d+)日/);
+  const wm=text.match(/引渡日\s*(令和|平成|昭和)?\s*(\d+)年\s*(\d+)月\s*(\d+)日/);
   if(wm) result.settlementDT=dc(wm[1],wm[2],wm[3],wm[4]);
 
   // ===== 金額 =====
