@@ -1524,7 +1524,8 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
           ))})()}
           <button onClick={addBuyer} style={{fontSize:10,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%"}}>＋ 買主を追加</button>
         </F>
-        <F label="ご契約日"><DI val={d.contractDate} onChange={set("contractDate")}/></F>
+        <F label="ご契約日" half><DI val={d.contractDate} onChange={set("contractDate")}/></F>
+        <F label="　" half></F>
         <div style={{display:"flex",gap:3}}>
           <F label="決済日" half><DI val={d.settlementDT} onChange={set("settlementDT")}/></F>
           <F label="時間" half><input type="time" value={d.settlementTime} onChange={e=>set("settlementTime")(e.target.value)} style={iS}/></F>
