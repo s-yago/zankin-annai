@@ -1762,11 +1762,27 @@ function parseHatoText(lines, text){
   const ST={name:'',addr:'',bankName:'',bankType:'普通',bankNo:'',bankHolder:'',transferAmt:'',mendanAttend:'来る',dairiName:'',dairiAddr:''};
   const BT={name:'',addr:'',kinshoAttend:'来る',mendanAttend:'来る',settlementAttend:'来る',dairiName:''};
 
-  // ===== 氏名取得（売主/買主本人パターン）=====
-  const honninAll=[...text.matchAll(/(?:売\s*主|買\s*主)本人([^住代]{1,25}?)住所\s*TEL/g)];
-  const names=honninAll.map(m=>m[1].trim());
+  // ===== 売主・買主の氏名を「売 主本人」「買 主本人」プレフィックスで正確に分類 =====
+  // ===== 売主・買主の氏名と代理人を「売 主」「買 主」ブロックで正確に取得 =====
+  const roleBlocks=[];
+  const roleReg=/(売\s*主|買\s*主)(?=本人|代理人)/g;
+  let rm;
+  while((rm=roleReg.exec(text))!==null){
+    roleBlocks.push({pos:rm.index,role:rm[1].includes('売')?'seller':'buyer'});
+  }
+  const personEntries=roleBlocks.map((b,i)=>{
+    const end=i+1<roleBlocks.length?roleBlocks[i+1].pos:b.pos+400;
+    const block=text.slice(b.pos,end);
+    const hm=block.match(/本人([^住]{0,60}?)住所\s*TEL/);
+    const dm=block.match(/代理人([^住]{0,60}?)住所\s*TEL/);
+    return{role:b.role,name:(hm?hm[1].trim():''),dairiName:(dm?dm[1].trim():'')};
+  });
+  const sellerEntries=personEntries.filter(e=>e.role==='seller');
+  const buyerEntries=personEntries.filter(e=>e.role==='buyer');
+  const sellerNames=sellerEntries.map(e=>e.name);
+  const buyerNames=buyerEntries.map(e=>e.name);
 
-  // ===== VPBマーカー解析 =====
+  // ===== VPBマーカーで住所を取得 =====
   const markerReg=/VPB_a-T([SB])-(\d+)_f/g;
   const tsMarkers=[];const tbMarkers=[];
   let mm;
@@ -1789,56 +1805,42 @@ function parseHatoText(lines, text){
   const s1m=before.match(/媒介\(両手\)\s*代理(.+?)運転免許証/);
   const sellerAddr1=s1m?s1m[1].trim():'';
 
-  // TBマーカーがある場合：TBの前のTSは売主住所、TBから後は買主住所
-  let sellerAddrs=[sellerAddr1];
-  let buyerAddrs=[];
+  // 売主住所：TS-0_f前が1人目、以降のTSマーカーで売主数分だけ取得
+  const sellerAddrs=[sellerAddr1];
+  // TSマーカーのうち売主数-1個分が売主2人目以降の住所
+  const sellerTSCount=Math.max(0,sellerNames.length-1);
+  tsMarkers.slice(0,sellerTSCount).forEach(m=>sellerAddrs.push(getAddr(m.end)));
+
+  // 買主住所：
+  // TBマーカーより後のTSマーカー → 買主住所（位置順）
+  // TBマーカー → 買主住所
+  // TBマーカーがない場合：残りのTSマーカー
+  const buyerAddrs=[];
   if(tbMarkers.length>0){
     const firstTBpos=tbMarkers[0].pos;
-    const sellerTS=tsMarkers.filter(m=>m.pos<firstTBpos);
-    const buyerTS=tsMarkers.filter(m=>m.pos>=firstTBpos);
-    sellerTS.forEach(m=>sellerAddrs.push(getAddr(m.end)));
-    buyerTS.forEach(m=>buyerAddrs.push(getAddr(m.end)));
+    // TBより前のTS（売主分を除く）→ 買主住所として先に追加
+    const buyerTSbefore=tsMarkers.slice(sellerTSCount).filter(m=>m.pos<firstTBpos);
+    buyerTSbefore.forEach(m=>buyerAddrs.push(getAddr(m.end)));
+    // TBマーカー → 買主住所
     tbMarkers.forEach(m=>buyerAddrs.push(getAddr(m.end)));
+    // TBより後のTSマーカー → 買主住所
+    tsMarkers.filter(m=>m.pos>firstTBpos).forEach(m=>buyerAddrs.push(getAddr(m.end)));
   } else {
-    // TBなし：最後のTSが買主住所
-    const sellerTS=tsMarkers.length>0?tsMarkers.slice(0,-1):[];
-    const buyerTS=tsMarkers.length>0?tsMarkers.slice(-1):[];
-    sellerTS.forEach(m=>sellerAddrs.push(getAddr(m.end)));
-    buyerTS.forEach(m=>buyerAddrs.push(getAddr(m.end)));
+    // TBなし：残りのTSマーカーが買主住所
+    tsMarkers.slice(sellerTSCount).forEach(m=>buyerAddrs.push(getAddr(m.end)));
   }
 
-  const sellerCount=Math.min(sellerAddrs.length, names.length>0?names.length-1:0)||sellerAddrs.length;
-  // sellerCountが名前の総数以上にならないよう調整（買主が必ず1人以上いると仮定）
-  const adjustedSellerCount=names.length>1?Math.min(sellerCount,names.length-1):sellerCount;
-  result.sellers=names.slice(0,adjustedSellerCount).map((n,i)=>({...ST,name:n,addr:sellerAddrs[i]||''}));
-  result.buyers=names.slice(adjustedSellerCount).map((n,i)=>({...BT,name:n,addr:buyerAddrs[i]||''}));
+  result.sellers=sellerEntries.map((e,i)=>({...ST,name:e.name,addr:sellerAddrs[i]||'',dairiName:e.dairiName,dairiAddr:''}));
+  result.buyers=buyerEntries.map((e,i)=>({...BT,name:e.name,addr:buyerAddrs[i]||'',dairiName:e.dairiName}));
   if(result.sellers.length===0) result.sellers=[{...ST}];
   if(result.buyers.length===0) result.buyers=[{...BT}];
 
-  // ===== 代理人取得 =====
-  const dairiBlocks=[...text.matchAll(/(?:売\s*主|買\s*主)本人(.*?)代理人([^住]{0,60}?)住所\s*TEL.*?本人確認書類/g)];
-  dairiBlocks.forEach((m,i)=>{
-    const honninName=m[1].replace(/住所.*?TEL.*?/g,'').trim();
-    const dairiName=m[2].trim();
-    if(!dairiName) return;
-    const allPeople=[...result.sellers,...result.buyers];
-    if(i<allPeople.length){
-      if(!honninName&&dairiName){
-        // 本人空→代理人名を氏名に設定
-        allPeople[i].name=dairiName;
-        allPeople[i].dairiName=dairiName;
-        // 売主住所エリアの住所が代理人住所
-        allPeople[i].dairiAddr=allPeople[i].addr;
-        allPeople[i].addr=''; // 本人住所は空
-      } else if(honninName&&dairiName){
-        allPeople[i].dairiName=dairiName;
-        // 代理人住所：住所ブロックの後半（本人住所の後に続く部分）
-        // 通常代理人の場合、住所ブロック全体から本人住所を除いた残りが代理人住所
-        const addrBlock=allPeople[i].addr;
-        // 本人住所と代理人住所が連続している場合、本人住所の長さで分割
-        // シンプルに：住所ブロックをそのまま本人住所として保持し、代理人住所は空欄（手動入力）
-        allPeople[i].dairiAddr='';
-      }
+  // 遺言執行者等：本人空欄の場合は代理人名を本人名として設定、代理人住所=売主住所エリア
+  result.sellers.forEach(s=>{
+    if(!s.name&&s.dairiName){
+      s.name=s.dairiName;
+      s.dairiAddr=s.addr;
+      s.addr='';
     }
   });
 
