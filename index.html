@@ -1485,15 +1485,20 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
               <div style={{marginTop:4}}>
                 <div style={{fontSize:9,color:"#555",marginBottom:1}}>振込金額(円)</div>
                 {(()=>{
-                  const prevTotal=getSellers(d).slice(0,i).reduce((sum,x)=>sum+num(x.transferAmt||0),0);
-                  const remaining=Math.round(c.aToS)-prevTotal;
+                  // 表示は必ず c.sellerAmts（帳票と同じ確定値）を使う。
+                  // 旧実装は自分より前の売主の入力しか見ていなかったため、
+                  // 先頭を空欄にして後ろに入力すると案内書の金額と食い違った。
+                  const sa=(c.sellerAmts&&c.sellerAmts[i])||{amt:0,isAuto:true};
+                  const firstBlank=c.sellerAmts?c.sellerAmts.findIndex(x=>x.isAuto):-1;
+                  const multi=getSellers(d).length>1;
                   return(
                     <div>
                       <div style={{display:"flex",gap:2,alignItems:"center"}}>
-                        <input type="number" defaultValue={s.transferAmt||""} onBlur={e=>setSeller(i,"transferAmt",e.target.value)} placeholder={getSellers(d).length>1?`空欄＝残額（${fmt(remaining)}円）`:"空欄=全額"} style={{...iS,textAlign:"right",flex:1}}/>
+                        <input type="number" defaultValue={s.transferAmt||""} onBlur={e=>setSeller(i,"transferAmt",e.target.value)} placeholder={multi?(sa.isAuto&&i===firstBlank?`空欄＝残額（${fmt(sa.amt)}円）`:"空欄＝残額"):"空欄=全額"} style={{...iS,textAlign:"right",flex:1}}/>
                       </div>
-                      {getSellers(d).length>1&&<div style={{fontSize:9,color:"#1a3a6b",marginTop:1}}>
-                        残額：{fmt(remaining)}円{s.transferAmt&&num(s.transferAmt)>0?`　→ 次の売主へ：${fmt(remaining-Math.round(num(s.transferAmt)))}円`:"（空欄の場合この金額が振込額）"}
+                      {multi&&<div style={{fontSize:9,color:sa.isAuto&&i!==firstBlank?"#8b0000":"#1a3a6b",marginTop:1}}>
+                        案内書に出る金額：{fmt(sa.amt)}円
+                        {sa.isAuto&&i===firstBlank?"（空欄のため残額が入ります）":sa.isAuto?"（他に空欄の売主様がいるため0円）":""}
                       </div>}
                     </div>
                   );
@@ -1511,10 +1516,10 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
               {getSellers(d).length>1&&<button onClick={()=>delSeller(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:2}}>✕ 削除</button>}
             </div>
           ))}
-          {getSellers(d).length>1&&c.sellerAmtDiff!==0&&<div style={{background:"#fff5f5",color:"#8b0000",border:"1px solid #c62828",borderRadius:4,padding:"4px 6px",fontSize:9,marginBottom:3,lineHeight:1.5}}>
+          {c.sellerAmtDiff!==0&&<div style={{background:"#fff5f5",color:"#8b0000",border:"1px solid #c62828",borderRadius:4,padding:"4px 6px",fontSize:9,marginBottom:3,lineHeight:1.5}}>
             ⚠ 振込金額の合計が入金額と一致しません<br/>
             　合計 {fmt(c.sellerAmtTotal)}円 ／ 入金額 {fmt(Math.round(c.aToS))}円（差額 {fmt(c.sellerAmtDiff)}円）<br/>
-            　いずれかの売主様の金額を空欄にすると、残額が自動で入ります。
+            　{getSellers(d).length>1?"いずれかの売主様の金額を空欄にすると、残額が自動で入ります。":"金額を空欄にすると、全額が自動で入ります。"}
           </div>}
           {c.sellerAmtNeedInput&&<div style={{background:"#fff5f5",color:"#8b0000",border:"1px solid #c62828",borderRadius:4,padding:"4px 6px",fontSize:9,marginBottom:3,lineHeight:1.5}}>
             ⚠ 振込金額が空欄の売主様が2名以上います<br/>
