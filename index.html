@@ -187,21 +187,39 @@ function calcAll(d){
   const sellers=getSellers(d);
   const sellerBanks=sellers.map(s=>`${s.bankName||""} ${s.bankType||"普通"} ${s.bankNo||""}\n(名義) ${s.bankHolder||s.name} 様`);
   const sellerBank=sellerBanks[0]||"";
-  // 売主ごとの振込金額を計算（入力あり→その金額、なし→残額）
+  // 売主ごとの振込金額
+  // 入力があればその金額、空欄なら「残額の受け皿」として扱う。
+  // 旧実装は空欄を見つけた時点で remaining を 0 にしていたため、
+  // 空欄より後ろに入力済みの売主がいると合計が原資と一致しなかった。
   const sellerAmts=(()=>{
-    let remaining=aToS;
-    return sellers.map((s,i)=>{
-      const hasAmt=s.transferAmt&&num(s.transferAmt)>0;
-      const amt=hasAmt?Math.round(num(s.transferAmt)):remaining;
-      if(hasAmt)remaining-=Math.round(num(s.transferAmt));
-      else remaining=0;
-      return{amt,isAuto:!hasAmt};
+    // 入力済みの金額を先に確定させる
+    const filled=sellers.map(s=>{
+      const has=s.transferAmt!==undefined&&s.transferAmt!==null&&String(s.transferAmt)!==""&&num(s.transferAmt)>0;
+      return has?Math.round(num(s.transferAmt)):null;
     });
+    const fixedSum=filled.reduce((a,v)=>a+(v||0),0);
+    const autoIdx=filled.map((v,i)=>v===null?i:-1).filter(i=>i>=0);
+    let rest=aToS-fixedSum;
+    if(rest<0)rest=0;
+    const res=filled.map(v=>({amt:v||0,isAuto:v===null}));
+    // 空欄は残額の受け皿。先頭の空欄に残額を入れる（従来の考え方を維持）。
+    // 空欄が2つ以上ある場合、持分が分からないため機械的に按分はしない。
+    if(autoIdx.length>0){
+      res[autoIdx[0]].amt=rest;
+      autoIdx.slice(1).forEach(idx=>{res[idx].amt=0;});
+    }
+    return res;
   })();
+  // 画面に警告を出すための集計値
+  const sellerAmtTotal=sellerAmts.reduce((a,x)=>a+x.amt,0);
+  const sellerAmtDiff=sellerAmtTotal-aToS;
+  const sellerAmtBlanks=sellerAmts.filter(x=>x.isAuto).length;
+  const sellerAmtNeedInput=sellers.length>1&&sellerAmtBlanks>1;
   return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,taxSellerYearFull,
     incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
+    sellerAmtTotal,sellerAmtDiff,sellerAmtBlanks,sellerAmtNeedInput,
     sProxies,sProxyCash,sProxyBetsu,sExtraItems,sExtraTotal,sExtraDeduct,sExtraSeparate,bProxies,bProxyCash,bProxyBetsu,extraItems,
     viviBank,sellerBank,sellerBanks,sellerAmts,taxLabel,stYear};
 }
@@ -1493,6 +1511,16 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
               {getSellers(d).length>1&&<button onClick={()=>delSeller(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:2}}>✕ 削除</button>}
             </div>
           ))}
+          {getSellers(d).length>1&&c.sellerAmtDiff!==0&&<div style={{background:"#fff5f5",color:"#8b0000",border:"1px solid #c62828",borderRadius:4,padding:"4px 6px",fontSize:9,marginBottom:3,lineHeight:1.5}}>
+            ⚠ 振込金額の合計が入金額と一致しません<br/>
+            　合計 {fmt(c.sellerAmtTotal)}円 ／ 入金額 {fmt(Math.round(c.aToS))}円（差額 {fmt(c.sellerAmtDiff)}円）<br/>
+            　いずれかの売主様の金額を空欄にすると、残額が自動で入ります。
+          </div>}
+          {c.sellerAmtNeedInput&&<div style={{background:"#fff5f5",color:"#8b0000",border:"1px solid #c62828",borderRadius:4,padding:"4px 6px",fontSize:9,marginBottom:3,lineHeight:1.5}}>
+            ⚠ 振込金額が空欄の売主様が2名以上います<br/>
+            　先頭の空欄に残額が全額入り、それ以降は0円になります。<br/>
+            　持分に応じて配分する場合は、金額を直接入力してください。
+          </div>}
           <button onClick={addSeller} style={{fontSize:10,padding:"3px 0",background:"#fde8e8",border:"1px solid #c66",borderRadius:4,cursor:"pointer",color:"#8b0000",width:"100%"}}>＋ 売主を追加</button>
         </F>
         <F label="買主">
