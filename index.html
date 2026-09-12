@@ -51,7 +51,7 @@ const INIT={
   bMendan:"なし",bMendanDT:"",bMendanTime:"",bMendanPlace:"",bMendanItems:"",bKinshoItems:"",bSettleItems:"",
   bMendanTiming:"本人面談を別途実施",
   taxRounding:"切り捨て",cityTax:"あり",
-  salePrice:"",deposit:"",unitPrice:0,officialArea:0,actualArea:0,
+  salePrice:0,deposit:0,unitPrice:0,officialArea:0,actualArea:0,
   taxAnnual:0,taxBase:"4/1",overYear:"なし",
   mgmtMonthly:0,repairMonthly:0,mgmtClearMonths:"当月のみ",mgmtOtherLabel:"",mgmtOtherAmt:0,
   loanBalance:0,sBrokerTotal:0,sBrokerPaid:0,
@@ -63,7 +63,7 @@ const INIT={
     {label:"荷物片づけ",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
     {label:"その他経費",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
   ],
-  sJuminCount:"1",sInkanCount:"1",sKenriCount:"1",
+  sJuminCount:"1",sInkanCount:"1",sKenriCount:"1",landParcelCount:"1",sKenriCountOverride:"",
   sKosekiHuhyo:"表示",showInkanWarning:"表示",
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
   sMultiNote:"",
@@ -93,6 +93,21 @@ const getSellers=(d)=>d.sellers||[{name:d.sellerName||"",addr:d.sellerAddr||"",b
 const getBuyers=(d)=>d.buyers||[{name:d.buyerName||"",addr:""}];
 const getSellerName=(d)=>getSellers(d)[0]?.name||"";
 const getBuyerName=(d)=>getBuyers(d)[0]?.name||"";
+
+// 登記識別情報通知（権利証）通数の自動計算
+// 不動産個数 × 売主人数
+// マンション（敷地権化済）: 1個、戸建: 建物1+土地筆数、土地: 筆数
+// 手入力上書きがある場合はそちらを優先
+function calcKenriCount(d){
+  if(d.sKenriCountOverride&&d.sKenriCountOverride!=="") return parseInt(d.sKenriCountOverride)||0;
+  const parcel=parseInt(d.landParcelCount)||1;
+  const sellerCount=(d.sellers||[{name:""}]).length||1;
+  let propCount=1;
+  if(d.propType==="マンション") propCount=1; // 敷地権化済み想定
+  else if(d.propType==="戸建") propCount=1+parcel; // 建物1+土地筆数
+  else if(d.propType==="土地") propCount=parcel;
+  return propCount*sellerCount;
+}
 
 function calcAll(d){
   const sDate=new Date(d.settlementDT||new Date());
@@ -187,39 +202,21 @@ function calcAll(d){
   const sellers=getSellers(d);
   const sellerBanks=sellers.map(s=>`${s.bankName||""} ${s.bankType||"普通"} ${s.bankNo||""}\n(名義) ${s.bankHolder||s.name} 様`);
   const sellerBank=sellerBanks[0]||"";
-  // 売主ごとの振込金額
-  // 入力があればその金額、空欄なら「残額の受け皿」として扱う。
-  // 旧実装は空欄を見つけた時点で remaining を 0 にしていたため、
-  // 空欄より後ろに入力済みの売主がいると合計が原資と一致しなかった。
+  // 売主ごとの振込金額を計算（入力あり→その金額、なし→残額）
   const sellerAmts=(()=>{
-    // 入力済みの金額を先に確定させる
-    const filled=sellers.map(s=>{
-      const has=s.transferAmt!==undefined&&s.transferAmt!==null&&String(s.transferAmt)!==""&&num(s.transferAmt)>0;
-      return has?Math.round(num(s.transferAmt)):null;
+    let remaining=aToS;
+    return sellers.map((s,i)=>{
+      const hasAmt=s.transferAmt&&num(s.transferAmt)>0;
+      const amt=hasAmt?Math.round(num(s.transferAmt)):remaining;
+      if(hasAmt)remaining-=Math.round(num(s.transferAmt));
+      else remaining=0;
+      return{amt,isAuto:!hasAmt};
     });
-    const fixedSum=filled.reduce((a,v)=>a+(v||0),0);
-    const autoIdx=filled.map((v,i)=>v===null?i:-1).filter(i=>i>=0);
-    let rest=aToS-fixedSum;
-    if(rest<0)rest=0;
-    const res=filled.map(v=>({amt:v||0,isAuto:v===null}));
-    // 空欄は残額の受け皿。先頭の空欄に残額を入れる（従来の考え方を維持）。
-    // 空欄が2つ以上ある場合、持分が分からないため機械的に按分はしない。
-    if(autoIdx.length>0){
-      res[autoIdx[0]].amt=rest;
-      autoIdx.slice(1).forEach(idx=>{res[idx].amt=0;});
-    }
-    return res;
   })();
-  // 画面に警告を出すための集計値
-  const sellerAmtTotal=sellerAmts.reduce((a,x)=>a+x.amt,0);
-  const sellerAmtDiff=sellerAmtTotal-aToS;
-  const sellerAmtBlanks=sellerAmts.filter(x=>x.isAuto).length;
-  const sellerAmtNeedInput=sellers.length>1&&sellerAmtBlanks>1;
   return{fRem,rText,tBuy,tSel,tNextYear,tAnn,mBuy,mDly,rDly,mTot,mOther,bDyM,daysInMonth,mgmtRows,mgmtLabel,mgmtSellerLastMonth,taxSellerYearFull,
     incomeTot,loanBal,sBroker,sViViProxy,sCash,aToS,bBroker,bViViProxy,bBankDraw,bCash,
     tExpB,selfFunds,surplus,overLoan,shortfall:overLoan?loanBal-aToS:0,afterLoan:overLoan?0:aToS-loanBal,
     reformDeposit,reformBalance,sellerDays,buyerDays,totalDays,startDate,endDate,sDate,
-    sellerAmtTotal,sellerAmtDiff,sellerAmtBlanks,sellerAmtNeedInput,
     sProxies,sProxyCash,sProxyBetsu,sExtraItems,sExtraTotal,sExtraDeduct,sExtraSeparate,bProxies,bProxyCash,bProxyBetsu,extraItems,
     viviBank,sellerBank,sellerBanks,sellerAmts,taxLabel,stYear};
 }
@@ -279,7 +276,7 @@ function SellerItems({d,c}){
   return(
     <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
       {multiSeller&&d.sMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:4}}>⚠ {d.sMultiNote}</div>}
-      {num(d.sKenriCount)>0&&<div>□　登記識別情報通知（権利証）　{d.sKenriCount}通</div>}
+      {(()=>{const kenri=calcKenriCount(d);return kenri>0&&<div>□　登記識別情報通知（権利証）　{kenri}通</div>;})()} 
       <div>□　実印、本人確認書類、通帳{multiSeller&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>
       {num(d.sJuminCount)>0&&<div>□　住民票　{multiSeller?"各":""}{d.sJuminCount}通{multiSeller&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
       {d.sKosekiHuhyo==="表示"&&<div>□　戸籍の附票の写し</div>}
@@ -919,64 +916,14 @@ function CoverageMemo({d,c}){
   );
 }
 
-// ===== 入力UIのサイズトークン（標準／大の切替に使う）=====
-// 帳票側(DOC/@media print)には一切影響しない。入力パネル専用。
-const UI_TOKENS={
-  std:{input:13,pad:"7px 9px",minH:32,label:11,sec:13,tgl:13,tglPad:"7px 0",note:11,panelW:320},
-  lg :{input:15,pad:"9px 10px",minH:38,label:13,sec:15,tgl:15,tglPad:"9px 0",note:12,panelW:360},
-};
-const UISZ_KEY="vivi_ui_size";
-let UI=UI_TOKENS[(()=>{try{return localStorage.getItem(UISZ_KEY)==="lg"?"lg":"std";}catch{return "std";}})()];
-const setUIMode=(m)=>{UI=UI_TOKENS[m]||UI_TOKENS.std;try{localStorage.setItem(UISZ_KEY,m);}catch{};if(typeof rebuildUI==="function")rebuildUI();};
-const getUIMode=()=>{try{return localStorage.getItem(UISZ_KEY)==="lg"?"lg":"std";}catch{return "std";}};
-
-// フォーカスリング。★の欄は赤、☆の欄は琥珀でリング色も合わせる。
-const FOCUS_CSS=`
-.vp input:focus,.vp select:focus,.vp textarea:focus{outline:2px solid #1a3a6b;outline-offset:1px}
-.vp input[data-req="1"]:focus{outline-color:#c62828}
-.vp input[data-soft="1"]:focus{outline-color:#c8860a}
-.vp select[data-soft="1"]:focus{outline-color:#c8860a}
-.vp button:focus-visible{outline:2px solid #1a3a6b;outline-offset:1px}
-`;
-// iS/iSReq/noteS は UI トークンから作る。サイズ切替時に rebuildUI() で作り直す。
-let iS,iSReq,iSSoft,noteS;
-function rebuildUI(){
-  iS={width:"100%",padding:UI.pad,fontSize:UI.input,minHeight:UI.minH,border:"1px solid #ccc",borderRadius:4,background:"#fff",color:"#222",boxSizing:"border-box"};
-  iSReq={...iS,border:"1px solid #c62828",background:"#fff5f5"};   // ★必須かつ未入力
-  iSSoft={...iS,border:"1px solid #c8860a",background:"#fffbf0"};  // ☆確認（未入力でも可の場合あり）
-  noteS={fontSize:UI.note,color:"#666",marginBottom:4};            // 補助注記（旧 fontSize:9）
-}
-rebuildUI();
-// zeroOk: 0 を「0」として表示する（未入力と区別する。手付金0円の案件用）
-// req: 必須かつ未入力のとき枠を赤くする
-const NI=({val,onChange,step,zeroOk,req,phZero})=><input type="number"
-  defaultValue={zeroOk?(val===""||val===null||val===undefined?"":String(val)):(!val||val==0?"":val)}
-  onBlur={e=>{const v=e.target.value;if(String(v)!==String(val))onChange(zeroOk?(v===""?"":v):(v||0));}}
-  step={step||1} placeholder={phZero?"金額を入力（手付なしの場合は 0）":"0"}
-  data-req={req?"1":undefined}
-  style={{...(req?iSReq:iS),textAlign:"right",fontVariantNumeric:"tabular-nums"}}/>;
-const TI=({val,onChange,placeholder,req,soft})=><input type="text" defaultValue={val} onBlur={e=>{if(e.target.value!==val)onChange(e.target.value);}} placeholder={placeholder||""} data-req={req?"1":undefined} data-soft={soft?"1":undefined} style={req?iSReq:(soft?iSSoft:iS)}/>;
-const DI=({val,onChange,req,soft})=><input type="date" value={val} onChange={e=>onChange(e.target.value)} data-req={req?"1":undefined} data-soft={soft?"1":undefined} style={req?iSReq:(soft?iSSoft:iS)}/>;
-const SI=({val,onChange,opts,req,soft})=><select value={val} onChange={e=>onChange(e.target.value)} data-req={req?"1":undefined} data-soft={soft?"1":undefined} style={req?iSReq:(soft?iSSoft:iS)}>{opts.map(o=><option key={o}>{o}</option>)}</select>;
-const Sec=({label,color})=><div style={{fontSize:UI.sec,fontWeight:"bold",padding:"5px 8px",marginTop:18,marginBottom:4,background:color||"#eee",borderRadius:3,borderLeft:"3px solid #999"}}>{label}</div>;
-const F=({label,children,half,req,soft})=><div style={{marginBottom:8,width:half?"50%":"100%",display:"inline-block",paddingRight:half?8:0,boxSizing:"border-box"}}><div style={{fontSize:UI.label,color:"#444",marginBottom:2}}>{label}{req&&<span style={{color:"#c62828",marginLeft:3,fontWeight:"bold"}}>★</span>}{soft&&<span style={{color:"#c8860a",marginLeft:3,fontWeight:"bold"}}>☆</span>}</div>{children}</div>;
-const TB=({val,onChange,opts})=>{
-  // 左右キーで選択を移動できるようにする。Tab では最初のボタンだけに止まる。
-  const onKey=(e)=>{
-    if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;
-    e.preventDefault();
-    const i=opts.indexOf(val);
-    const n=e.key==="ArrowRight"?Math.min(i+1,opts.length-1):Math.max(i-1,0);
-    if(n!==i)onChange(opts[n]);
-  };
-  return(
-    <div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}} onKeyDown={onKey}>
-      {opts.map((o,i)=><button key={o} type="button" onClick={()=>onChange(o)}
-        tabIndex={val===o?0:(opts.indexOf(val)<0&&i===0?0:-1)}
-        style={{flex:1,padding:UI.tglPad,fontSize:UI.tgl,minHeight:UI.minH,border:"none",cursor:"pointer",background:val===o?"#1a3a6b":"#f5f5f5",color:val===o?"#fff":"#333",fontWeight:val===o?"bold":"normal"}}>{o}</button>)}
-    </div>
-  );
-};
+const iS={width:"100%",padding:"4px 6px",fontSize:11,border:"0.5px solid #ccc",borderRadius:4,background:"#fff",color:"#222",boxSizing:"border-box"};
+const NI=({val,onChange,step})=><input type="number" defaultValue={!val||val==0?"":val} onBlur={e=>{if(String(e.target.value)!==String(val))onChange(e.target.value||0);}} step={step||1} placeholder="0" style={{...iS,textAlign:"right"}}/>;
+const TI=({val,onChange,placeholder})=><input type="text" defaultValue={val} onBlur={e=>{if(e.target.value!==val)onChange(e.target.value);}} placeholder={placeholder||""} style={iS}/>;
+const DI=({val,onChange})=><input type="date" value={val} onChange={e=>onChange(e.target.value)} style={iS}/>;
+const SI=({val,onChange,opts})=><select value={val} onChange={e=>onChange(e.target.value)} style={iS}>{opts.map(o=><option key={o}>{o}</option>)}</select>;
+const Sec=({label,color})=><div style={{fontSize:10,fontWeight:"bold",padding:"3px 6px",marginTop:8,marginBottom:2,background:color||"#eee",borderRadius:3,borderLeft:"3px solid #999"}}>{label}</div>;
+const F=({label,children,half})=><div style={{marginBottom:3,width:half?"50%":"100%",display:"inline-block",paddingRight:half?3:0,boxSizing:"border-box"}}><div style={{fontSize:10,color:"#666",marginBottom:1}}>{label}</div>{children}</div>;
+const TB=({val,onChange,opts})=><div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>{opts.map(o=><button key={o} onClick={()=>onChange(o)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:val===o?"#1a3a6b":"#f5f5f5",color:val===o?"#fff":"#333",fontWeight:val===o?"bold":"normal"}}>{o}</button>)}</div>;
 
 // =================== 引渡確認書 ===================
 function HandoverDoc({d,c}){
@@ -1425,59 +1372,17 @@ function ManualContent(){
   </div>);
 }
 
-// ===== 必須項目チェック =====
-// 依頼書の8項目 + 実務判断
-//  ・物件所在地は「地番」のみ必須（住居表示は任意。振られていない土地がある）
-//  ・決済時間は準必須（☆）。振込のみの決済では記載不要な場合がある
-//  ・振込先4項目は 売主1名なら★／2名以上なら1人目のみ★、2人目以降は☆
-function checkRequired(d){
-  const miss=[];
-  const add=(sec,label,key,soft)=>miss.push({sec,label,key,soft:!!soft});
-  const blank=v=>v===undefined||v===null||String(v).trim()==="";
-  if(blank(d.settlementDT)) add("basic","決済日","settlementDT");
-  if(blank(d.settlementTime)) add("basic","決済時間","settlementTime",true);
-  if(blank(d.address)) add("basic","物件所在地（地番）","address");
-  if(blank(d.salePrice)||Number(d.salePrice)===0) add("money","売買代金","salePrice");
-  if(blank(d.deposit)) add("money","手付金（受領済）","deposit");
-  const ss=getSellers(d);
-  ss.forEach((x,i)=>{
-    const n=ss.length>1?`売主${i+1}`:"売主";
-    if(blank(x.name)) add("basic",`${n}氏名`,`sellers.${i}.name`);
-    const soft=(ss.length>1&&i>0);
-    if(blank(x.bankName))   add("basic",`${n} 振込先 銀行名`,`sellers.${i}.bankName`,soft);
-    if(blank(x.bankType))   add("basic",`${n} 振込先 種別`,`sellers.${i}.bankType`,soft);
-    if(blank(x.bankNo))     add("basic",`${n} 振込先 口座番号`,`sellers.${i}.bankNo`,soft);
-    if(blank(x.bankHolder)) add("basic",`${n} 振込先 名義`,`sellers.${i}.bankHolder`,soft);
-  });
-  const bb=getBuyers(d);
-  bb.forEach((x,i)=>{
-    const n=bb.length>1?`買主${i+1}`:"買主";
-    if(blank(x.name)) add("basic",`${n}氏名`,`buyers.${i}.name`);
-  });
-  if(blank(d.staff)) add("basic","当社担当者名","staff");
-  return miss;
-}
-const missBySec=(miss)=>miss.reduce((a,m)=>{a[m.sec]=(a[m.sec]||0)+1;return a;},{});
-
 const TABS=["案内_売主","案内_買主","領収書","実測清算覚書","固都税清算書","管理費等清算書","引渡確認書","給水装置変更届"];
 const TAB_COMPS=[SellerGuide,BuyerGuide,Receipt,CoverageMemo,TaxDoc,MgmtDoc,HandoverDoc,WaterDoc];
 const SK="vivi_saved_cases";
 
 // アコーディオン — App外のトップレベルで定義することでフォーカス問題を回避
-function Acc({id,label,color,children,openSec,toggleSec,hard,soft}){
+function Acc({id,label,color,children,openSec,toggleSec}){
   const open=openSec[id];
-  // 畳んだままでも残数が分かるようにするのが要点。
-  // ★未入力があれば赤丸、なければ☆件数を琥珀、どちらも無ければ ✓。
-  const badge=()=>{
-    if(hard>0)return <span style={{background:"#c62828",color:"#fff",borderRadius:"50%",minWidth:18,height:18,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:"bold",padding:"0 4px"}}>{hard}</span>;
-    if(soft>0)return <span style={{background:"#c8860a",color:"#fff",borderRadius:"50%",minWidth:18,height:18,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:"bold",padding:"0 4px"}}>{soft}</span>;
-    return <span style={{color:"#1a6b3a",fontSize:13,fontWeight:"bold"}}>✓</span>;
-  };
   return(
     <div style={{marginBottom:2}}>
-      <button onClick={()=>toggleSec(id)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,padding:"7px 9px",background:color||"#eee",border:"none",borderRadius:open?"4px 4px 0 0":"4px",cursor:"pointer",fontWeight:"bold",fontSize:UI.sec,color:"#222",borderLeft:"3px solid #999",textAlign:"left"}}>
-        <span style={{flex:1}}>{label}</span>
-        {(hard!==undefined||soft!==undefined)&&badge()}
+      <button onClick={()=>toggleSec(id)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",background:color||"#eee",border:"none",borderRadius:open?"4px 4px 0 0":"4px",cursor:"pointer",fontWeight:"bold",fontSize:10,color:"#222",borderLeft:"3px solid #999",textAlign:"left"}}>
+        <span>{label}</span>
         <span style={{fontSize:12,color:"#555"}}>{open?"▲":"▼"}</span>
       </button>
       {open&&<div style={{border:"1px solid #ddd",borderTop:"none",borderRadius:"0 0 4px 4px",padding:"6px 6px 4px",background:"#fafafa"}}>{children}</div>}
@@ -1486,71 +1391,11 @@ function Acc({id,label,color,children,openSec,toggleSec,hard,soft}){
 }
 
 function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport,doNew,doOverwrite,doImportHato}){
-  // ===== キーボード操作 =====
-  // Enter で次の入力欄へ。非制御入力(defaultValue+onBlur)なので、
-  // フォーカスが移る時点で値が確定する（＝Enterが確定も兼ねる）。
-  const onPanelKey=(e)=>{
-    if(e.key!=="Enter")return;
-    const t=e.target;
-    if(!t||!t.tagName)return;
-    const tag=t.tagName.toLowerCase();
-    if(tag==="textarea")return;   // 備考欄は改行を許す
-    if(tag==="button")return;
-    if(tag==="select")return;     // プルダウンはEnterが選択確定なので奪わない
-    if(tag!=="input")return;
-    e.preventDefault();
-    const root=e.currentTarget;
-    const list=[...root.querySelectorAll('input:not([type=hidden]):not([disabled]),select,textarea')]
-      .filter(el=>el.tabIndex!==-1&&el.offsetParent!==null);
-    const idx=list.indexOf(t);
-    if(idx>=0&&idx<list.length-1){
-      const n=list[idx+1]; n.focus();
-      if(n.select)try{n.select();}catch{}
-      try{n.scrollIntoView({block:"nearest"});}catch{}
-    } else t.blur();
-  };
-  // セクション別の未入力件数（★と☆を分けて数える）
-  const _miss=checkRequired(d);
-  const mHard=_miss.filter(m=>!m.soft).reduce((a,m)=>{a[m.sec]=(a[m.sec]||0)+1;return a;},{});
-  const mSoft=_miss.filter(m=>m.soft).reduce((a,m)=>{a[m.sec]=(a[m.sec]||0)+1;return a;},{});
   const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
   const set=k=>v=>{setD(p=>{const next={...p,[k]:v};if(k==="txType")setTab(v==="売主"?0:1);return next;});};
   const setSeller=(i,field,val)=>setD(p=>{const ns=[...getSellers(p)];ns[i]={...ns[i],[field]:val};return{...p,sellers:ns};});
   const addSeller=()=>setD(p=>({...p,sellers:[...getSellers(p),{name:"",addr:"",bankName:"",bankType:"普通",bankNo:"",bankHolder:"",transferAmt:"",mendanAttend:"来る",dairiName:"",dairiAddr:""}]}));
   const delSeller=(i)=>setD(p=>({...p,sellers:getSellers(p).filter((_,j)=>j!==i)}));
-  // 振込金額の合計チェック
-  //   ・差額の警告は売主1名でも出す（1名の案件が大半なので条件から外す）
-  //   ・未入力2名以上の警告は複数売主が前提なので sellerAmtNeedInput 側で判定
-  //   ・色は対処の重さに対応：超過=#8b0000（破綻する） / 不足・未入力=#c8860a（まだ埋まっていない）
-  const SellerAmtWarn=()=>{
-    const box=(hard)=>({fontSize:UI.note,
-      background:hard?"#fff5f5":"#fffaf0",
-      color:hard?"#8b0000":"#8a5a00",
-      border:`1px solid ${hard?"#8b0000":"#c8860a"}`,
-      borderRadius:4,padding:"7px 9px",marginBottom:8,lineHeight:1.7});
-    const L1={fontWeight:"bold"};
-    const L2={fontSize:UI.note,marginTop:5,opacity:.9};
-    if(c.sellerAmtDiff>0)return(
-      <div style={box(true)}>
-        <div style={L1}>⚠ 振込金額の合計が入金額を超えています</div>
-        <div style={L2}>合計 {fmt(c.sellerAmtTotal)}円／入金額 {fmt(Math.round(c.aToS))}円（超過 {fmt(c.sellerAmtDiff)}円）<br/>
-        金額を減らすか、空欄にして残額を自動で入れてください。<br/>
-        控除項目（ローン残債・仲介手数料・代行費用）の入力もご確認ください。</div>
-      </div>);
-    if(c.sellerAmtDiff<0)return(
-      <div style={box(false)}>
-        <div style={L1}>⚠ 振込金額の合計が入金額に足りません</div>
-        <div style={L2}>合計 {fmt(c.sellerAmtTotal)}円／入金額 {fmt(Math.round(c.aToS))}円（不足 {fmt(-c.sellerAmtDiff)}円）<br/>
-        いずれかの売主様の金額を空欄にすると、残額が自動で入ります。</div>
-      </div>);
-    if(c.sellerAmtNeedInput)return(
-      <div style={box(false)}>
-        <div style={L1}>⚠ 振込金額が未入力の売主様が{c.sellerAmtBlanks}名います</div>
-        <div style={L2}>持分の割合はツールでは分からないため、自動では配分しません。
-        先頭の空欄に残額が全額入り、それ以降は0円になります。</div>
-      </div>);
-    return null;
-  };
   const setBuyer=(i,field,val)=>setD(p=>{const nb=[...getBuyers(p)];nb[i]={...nb[i],[field]:val};return{...p,buyers:nb};});
   const addBuyer=()=>setD(p=>({...p,buyers:[...getBuyers(p),{name:"",addr:"",kinshoAttend:"来る",mendanAttend:"来る",settlementAttend:"来る"}]}));
   const delBuyer=(i)=>setD(p=>({...p,buyers:getBuyers(p).filter((_,j)=>j!==i)}));
@@ -1563,186 +1408,170 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
   const delSExtraItem=(i)=>setD(p=>({...p,sExtraItems:(p.sExtraItems||[]).filter((_,j)=>j!==i)}));
   const c=calcAll(d);
   return(
-    <div style={{width:sp?"100%":UI.panelW,flexShrink:0,overflowY:"auto",background:"#fff",borderRight:sp?"none":"1px solid #ddd",padding:"10px 12px",height:"100%",boxSizing:"border-box"}} className="vp" onKeyDown={onPanelKey}>
-      <style>{FOCUS_CSS}</style>
-      <div style={{display:"flex",gap:8,marginBottom:6}}>
-        {curId&&curName&&<div style={{background:"#eef3fb",border:"1px solid #b0c8e8",borderRadius:4,padding:"4px 8px",marginBottom:4,fontSize:UI.label,color:"#1a3a6b",width:"100%"}}>✏️ 編集中：<strong>{curName}</strong></div>}
-        {curId?<><button tabIndex={-1} onClick={doOverwrite} style={{flex:2,padding:"5px 0",fontSize:UI.label,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 上書き</button><button tabIndex={-1} onClick={()=>setShowSaveDlg(true)} style={{flex:2,padding:"5px 0",fontSize:UI.label,background:"#4a7ab5",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📋 別名</button></>:<button tabIndex={-1} onClick={()=>setShowSaveDlg(true)} style={{flex:3,padding:"5px 0",fontSize:UI.label,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 保存</button>}
-        <button tabIndex={-1} onClick={()=>setShowHist(true)} style={{flex:2,padding:"5px 0",fontSize:UI.label,background:"#555",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📂 履歴({saved.length})</button>
-        <button tabIndex={-1} onClick={doNew} style={{flex:1,padding:"5px 0",fontSize:UI.label,background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>＋新規</button>
+    <div style={{width:sp?"100%":280,flexShrink:0,overflowY:"auto",background:"#fff",borderRight:sp?"none":"1px solid #ddd",padding:"6px 8px",height:"100%",boxSizing:"border-box"}}>
+      <div style={{display:"flex",gap:4,marginBottom:6}}>
+        {curId&&curName&&<div style={{background:"#eef3fb",border:"1px solid #b0c8e8",borderRadius:4,padding:"4px 8px",marginBottom:4,fontSize:10,color:"#1a3a6b",width:"100%"}}>✏️ 編集中：<strong>{curName}</strong></div>}
+        {curId?<><button onClick={doOverwrite} style={{flex:2,padding:"5px 0",fontSize:10,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 上書き</button><button onClick={()=>setShowSaveDlg(true)} style={{flex:2,padding:"5px 0",fontSize:10,background:"#4a7ab5",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📋 別名</button></>:<button onClick={()=>setShowSaveDlg(true)} style={{flex:3,padding:"5px 0",fontSize:10,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>💾 保存</button>}
+        <button onClick={()=>setShowHist(true)} style={{flex:2,padding:"5px 0",fontSize:10,background:"#555",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📂 履歴({saved.length})</button>
+        <button onClick={doNew} style={{flex:1,padding:"5px 0",fontSize:10,background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>＋新規</button>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:4}}>
-        <label style={{flex:1,padding:"5px 0",fontSize:UI.label,background:"#e65100",color:"#fff",borderRadius:4,cursor:"pointer",fontWeight:"bold",textAlign:"center",display:"block"}}>
+      <div style={{display:"flex",gap:4,marginBottom:4}}>
+        <label style={{flex:1,padding:"5px 0",fontSize:10,background:"#e65100",color:"#fff",borderRadius:4,cursor:"pointer",fontWeight:"bold",textAlign:"center",display:"block"}}>
           🏠 ハトサポPDFから読込
           <input type="file" accept=".pdf" onChange={doImportHato} style={{display:"none"}}/>
         </label>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:6}}>
-        <button tabIndex={-1} onClick={doExport} style={{flex:1,padding:"4px 0",fontSize:UI.label,background:"#2e7d32",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📤 JSONで保存</button>
-        <label style={{flex:1,padding:"4px 0",fontSize:UI.label,background:"#1565c0",color:"#fff",borderRadius:4,cursor:"pointer",fontWeight:"bold",textAlign:"center",display:"block"}}>
+      <div style={{display:"flex",gap:4,marginBottom:6}}>
+        <button onClick={doExport} style={{flex:1,padding:"4px 0",fontSize:10,background:"#2e7d32",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold"}}>📤 JSONで保存</button>
+        <label style={{flex:1,padding:"4px 0",fontSize:10,background:"#1565c0",color:"#fff",borderRadius:4,cursor:"pointer",fontWeight:"bold",textAlign:"center",display:"block"}}>
           📥 JSONを読込
           <input type="file" accept=".json" onChange={doImport} style={{display:"none"}}/>
         </label>
       </div>
 
       {/* ① 基本情報 */}
-      <Acc id="basic" label="① 基本情報・物件・当事者" color="#d0e8ff" openSec={openSec} toggleSec={toggleSec} hard={mHard["basic"]||0} soft={mSoft["basic"]||0}>
+      <Acc id="basic" label="① 基本情報・物件・当事者" color="#d0e8ff" openSec={openSec} toggleSec={toggleSec}>
         <F label="取引種別"><TB val={d.txType} onChange={set("txType")} opts={["売主","買主"]}/></F>
         <F label="物件種別"><SI val={d.propType} onChange={set("propType")} opts={["戸建","マンション","土地"]}/></F>
-        <F label="物件所在地（地番）" req>
-          <div style={{display:"flex",gap:8,marginBottom:2,alignItems:"center"}}>
-            <span style={{fontSize:UI.input,whiteSpace:"nowrap"}}>〒</span>
+        <F label="物件所在地（地番）">
+          <div style={{display:"flex",gap:3,marginBottom:2,alignItems:"center"}}>
+            <span style={{fontSize:11,whiteSpace:"nowrap"}}>〒</span>
             <input placeholder="郵便番号7桁" value={d.addressZip} onChange={e=>setD(p=>({...p,addressZip:e.target.value.replace(/[^0-9]/g,"").slice(0,7)}))} style={{...iS,width:"50%"}}/>
-            {d.addressZip.length===7&&<span style={{fontSize:UI.label,color:"#1a3a6b",fontWeight:"bold"}}>〒{d.addressZip.slice(0,3)}-{d.addressZip.slice(3)}</span>}
+            {d.addressZip.length===7&&<span style={{fontSize:10,color:"#1a3a6b",fontWeight:"bold"}}>〒{d.addressZip.slice(0,3)}-{d.addressZip.slice(3)}</span>}
           </div>
-          <TI val={d.address} onChange={set("address")} placeholder="登記上の所在・地番（領収書等に使用）" req={!d.address}/>
+          <TI val={d.address} onChange={set("address")} placeholder="登記上の所在・地番（領収書等に使用）"/>
         </F>
         <F label="住居表示">
           <TI val={d.addressJukyo||""} onChange={set("addressJukyo")} placeholder="住居表示（案内書・給水装置届に使用。なければ空欄）"/>
-          <div style={{fontSize:UI.note,color:"#888",marginTop:5}}>※空欄の場合は地番を代わりに使用します</div>
+          <div style={{fontSize:9,color:"#888",marginTop:2}}>※空欄の場合は地番を代わりに使用します</div>
         </F>
         {d.propType==="マンション"&&<>
           <F label="マンション名"><TI val={d.mansionName||""} onChange={set("mansionName")} placeholder="例：グランドパレス富山"/></F>
           <F label="部屋番号"><TI val={d.roomNo||""} onChange={set("roomNo")} placeholder="例：301号"/></F>
         </>}
-        <div style={{display:"flex",gap:8}}>
+        <div style={{display:"flex",gap:3}}>
           <F label="土地面積(㎡)" half><TI val={d.landArea||""} onChange={set("landArea")} placeholder="例：125.00"/></F>
           {d.propType!=="土地"&&<F label="建物面積(㎡)" half><TI val={d.buildingArea||""} onChange={set("buildingArea")} placeholder="例：98.00"/></F>}
         </div>
         <F label="売主">
           {getSellers(d).map((s,i)=>(
-            <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"8px",marginBottom:8,background:"#fff8f8"}}>
-              <div style={{fontSize:UI.note,color:"#888",marginBottom:2}}>売主{getSellers(d).length>1?` ${i+1}`:""}
-                <span style={{color:"#c62828",marginLeft:3,fontWeight:"bold"}}>★</span>氏名・振込先</div>
-              <TI val={s.name} onChange={v=>setSeller(i,"name",v)} placeholder="例：売主 太郎" req={!s.name}/>
-              <div style={{marginTop:5}}><TI val={s.addr} onChange={v=>setSeller(i,"addr",v)} placeholder="住所"/></div>
+            <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"5px",marginBottom:3,background:"#fff8f8"}}>
+              <div style={{fontSize:9,color:"#888",marginBottom:2}}>売主{getSellers(d).length>1?` ${i+1}`:""}</div>
+              <TI val={s.name} onChange={v=>setSeller(i,"name",v)} placeholder="例：売主 太郎"/>
+              <div style={{marginTop:2}}><TI val={s.addr} onChange={v=>setSeller(i,"addr",v)} placeholder="住所"/></div>
               {/* 代理人欄 */}
               {s.dairiName!==undefined&&s.dairiName!==''?(
-                <div style={{marginTop:3,background:"#fff3cd",borderRadius:3,padding:"6px 8px",border:"1px solid #ffc107"}}>
+                <div style={{marginTop:3,background:"#fff3cd",borderRadius:3,padding:"3px 5px",border:"1px solid #ffc107"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:1}}>
-                    <div style={{fontSize:UI.note,color:"#856404"}}>代理人</div>
-                    <button tabIndex={-1} onClick={()=>{setSeller(i,"dairiName",undefined);setSeller(i,"dairiAddr",undefined);}} style={{fontSize:UI.note,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>削除</button>
+                    <div style={{fontSize:9,color:"#856404"}}>代理人</div>
+                    <button onClick={()=>{setSeller(i,"dairiName",undefined);setSeller(i,"dairiAddr",undefined);}} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>削除</button>
                   </div>
                   <TI val={s.dairiName||""} onChange={v=>setSeller(i,"dairiName",v)} placeholder="代理人氏名"/>
-                  <div style={{marginTop:5}}><TI val={s.dairiAddr||""} onChange={v=>setSeller(i,"dairiAddr",v)} placeholder="代理人住所（法律事務所等）"/></div>
+                  <div style={{marginTop:2}}><TI val={s.dairiAddr||""} onChange={v=>setSeller(i,"dairiAddr",v)} placeholder="代理人住所（法律事務所等）"/></div>
                 </div>
               ):(
-                <button tabIndex={-1} onClick={()=>setSeller(i,"dairiName","")} style={{marginTop:5,fontSize:UI.note,color:"#856404",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,padding:"2px 6px",cursor:"pointer"}}>＋代理人追加</button>
+                <button onClick={()=>setSeller(i,"dairiName","")} style={{marginTop:2,fontSize:9,color:"#856404",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,padding:"2px 6px",cursor:"pointer"}}>＋代理人追加</button>
               )}
-              {/* 振込先は 1人目=★必須、2人目以降=☆確認（代表者口座への一括振込があるため） */}
-              {(()=>{
-                const bSoft=(getSellers(d).length>1&&i>0);
-                const mk=(v)=>({req:!bSoft&&!v, soft:bSoft&&!v});
-                const bn=mk(s.bankName), bt=mk(s.bankType), bno=mk(s.bankNo), bh=mk(s.bankHolder);
-                return(<>
-                  <div style={{marginTop:5,fontSize:UI.note,color:"#888"}}>振込口座
-                    <span style={{color:bSoft?"#c8860a":"#c62828",marginLeft:3,fontWeight:"bold"}}>{bSoft?"☆":"★"}</span>
-                    {bSoft&&<span style={{marginLeft:4}}>（代表の売主様へ一括の場合は空欄で可）</span>}
-                  </div>
-                  <TI val={s.bankName||""} onChange={v=>setSeller(i,"bankName",v)} placeholder="銀行・支店名" req={bn.req} soft={bn.soft}/>
-                  <div style={{display:"flex",gap:8,marginTop:5}}>
-                    <select value={s.bankType||"普通"} onChange={e=>setSeller(i,"bankType",e.target.value)}
-                      data-req={bt.req?"1":undefined} data-soft={bt.soft?"1":undefined}
-                      style={{...(bt.req?iSReq:(bt.soft?iSSoft:iS)),width:"40%"}}><option>普通</option><option>当座</option></select>
-                    <input value={s.bankNo||""} onChange={e=>setSeller(i,"bankNo",e.target.value)} placeholder="口座番号"
-                      data-req={bno.req?"1":undefined} data-soft={bno.soft?"1":undefined}
-                      style={{...(bno.req?iSReq:(bno.soft?iSSoft:iS)),width:"60%"}}/>
-                  </div>
-                  <div style={{marginTop:5}}><TI val={s.bankHolder||""} onChange={v=>setSeller(i,"bankHolder",v)} placeholder="名義人" req={bh.req} soft={bh.soft}/></div>
-                </>);
-              })()}
+              <div style={{marginTop:2,fontSize:9,color:"#888"}}>振込口座</div>
+              <TI val={s.bankName||""} onChange={v=>setSeller(i,"bankName",v)} placeholder="銀行・支店名"/>
+              <div style={{display:"flex",gap:2,marginTop:2}}>
+                <select value={s.bankType||"普通"} onChange={e=>setSeller(i,"bankType",e.target.value)} style={{...iS,width:"40%",fontSize:10}}><option>普通</option><option>当座</option></select>
+                <input value={s.bankNo||""} onChange={e=>setSeller(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
+              </div>
+              <div style={{marginTop:2}}><TI val={s.bankHolder||""} onChange={v=>setSeller(i,"bankHolder",v)} placeholder="名義人"/></div>
               <div style={{marginTop:4}}>
-                <div style={{fontSize:UI.note,color:"#555",marginBottom:1}}>振込金額(円)</div>
+                <div style={{fontSize:9,color:"#555",marginBottom:1}}>振込金額(円)</div>
                 {(()=>{
-                  // 表示は必ず c.sellerAmts（帳票と同じ確定値）を使う。
-                  // 旧実装は自分より前の売主の入力しか見ていなかったため、
-                  // 先頭を空欄にして後ろに入力すると案内書の金額と食い違った。
-                  const sa=(c.sellerAmts&&c.sellerAmts[i])||{amt:0,isAuto:true};
-                  const firstBlank=c.sellerAmts?c.sellerAmts.findIndex(x=>x.isAuto):-1;
-                  const multi=getSellers(d).length>1;
+                  const prevTotal=getSellers(d).slice(0,i).reduce((sum,x)=>sum+num(x.transferAmt||0),0);
+                  const remaining=Math.round(c.aToS)-prevTotal;
                   return(
                     <div>
-                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                        <input type="number" defaultValue={s.transferAmt||""} onBlur={e=>setSeller(i,"transferAmt",e.target.value)} placeholder={multi?(sa.isAuto&&i===firstBlank?`空欄＝残額（${fmt(sa.amt)}円）`:"空欄＝残額"):"空欄=全額"} style={{...iS,textAlign:"right",flex:1}}/>
+                      <div style={{display:"flex",gap:2,alignItems:"center"}}>
+                        <input type="number" defaultValue={s.transferAmt||""} onBlur={e=>setSeller(i,"transferAmt",e.target.value)} placeholder={getSellers(d).length>1?`空欄＝残額（${fmt(remaining)}円）`:"空欄=全額"} style={{...iS,textAlign:"right",flex:1}}/>
                       </div>
-                      {multi&&<div style={{fontSize:UI.note,color:sa.isAuto&&i!==firstBlank?"#8b0000":"#1a3a6b",marginTop:1}}>
-                        案内書に出る金額：{fmt(sa.amt)}円
-                        {sa.isAuto&&i===firstBlank?"（空欄のため残額が入ります）":sa.isAuto?"（他に空欄の売主様がいるため0円）":""}
+                      {getSellers(d).length>1&&<div style={{fontSize:9,color:"#1a3a6b",marginTop:1}}>
+                        残額：{fmt(remaining)}円{s.transferAmt&&num(s.transferAmt)>0?`　→ 次の売主へ：${fmt(remaining-Math.round(num(s.transferAmt)))}円`:"（空欄の場合この金額が振込額）"}
                       </div>}
                     </div>
                   );
                 })()}
               </div>
-              {i>=1&&<div style={{fontSize:UI.note,color:"#8b0000",marginTop:5}}>※2件目以降：振込手数料は売主様ご負担</div>}
+              {i>=1&&<div style={{fontSize:9,color:"#8b0000",marginTop:2}}>※2件目以降：振込手数料は売主様ご負担</div>}
               {d.mendan==="あり"&&<div style={{marginTop:4}}>
-                <div style={{fontSize:UI.note,color:"#555",marginBottom:2}}>本人面談への出席</div>
-                <TB val={s.mendanAttend||"来る"} onChange={v=>setSeller(i,"mendanAttend",v)} opts={["来る","来ない"]}/>
+                <div style={{fontSize:9,color:"#555",marginBottom:2}}>本人面談への出席</div>
+                <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
+                  {["来る","来ない"].map(opt=>(
+                    <button key={opt} onClick={()=>setSeller(i,"mendanAttend",opt)} style={{flex:1,padding:"3px 0",fontSize:9,border:"none",cursor:"pointer",background:(s.mendanAttend||"来る")===opt?"#1a3a6b":"#f5f5f5",color:(s.mendanAttend||"来る")===opt?"#fff":"#333",fontWeight:(s.mendanAttend||"来る")===opt?"bold":"normal"}}>{opt}</button>
+                  ))}
+                </div>
               </div>}
-              {getSellers(d).length>1&&<button tabIndex={-1} onClick={()=>delSeller(i)} style={{fontSize:UI.note,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:5}}>✕ 削除</button>}
+              {getSellers(d).length>1&&<button onClick={()=>delSeller(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:2}}>✕ 削除</button>}
             </div>
           ))}
-          <SellerAmtWarn/>
-          <button tabIndex={-1} onClick={addSeller} style={{fontSize:UI.label,padding:"3px 0",background:"#fde8e8",border:"1px solid #c66",borderRadius:4,cursor:"pointer",color:"#8b0000",width:"100%"}}>＋ 売主を追加</button>
+          <button onClick={addSeller} style={{fontSize:10,padding:"3px 0",background:"#fde8e8",border:"1px solid #c66",borderRadius:4,cursor:"pointer",color:"#8b0000",width:"100%"}}>＋ 売主を追加</button>
         </F>
         <F label="買主">
           {(()=>{const isLoan=d.loanUse==="あり";return getBuyers(d).map((b,i)=>(
-            <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"8px",marginBottom:8,background:"#f0fff4"}}>
-              <div style={{fontSize:UI.note,color:"#888",marginBottom:2}}>買主{getBuyers(d).length>1?` ${i+1}`:""}
-                <span style={{color:"#c62828",marginLeft:3,fontWeight:"bold"}}>★</span>氏名</div>
-              <TI val={b.name} onChange={v=>setBuyer(i,"name",v)} placeholder="例：買主 花子" req={!b.name}/>
-              <div style={{marginTop:5}}><TI val={b.addr} onChange={v=>setBuyer(i,"addr",v)} placeholder="住所（覚書用）"/></div>
+            <div key={i} style={{border:"1px solid #eee",borderRadius:4,padding:"5px",marginBottom:3,background:"#f0fff4"}}>
+              <div style={{fontSize:9,color:"#888",marginBottom:2}}>買主{getBuyers(d).length>1?` ${i+1}`:""}</div>
+              <TI val={b.name} onChange={v=>setBuyer(i,"name",v)} placeholder="例：買主 花子"/>
+              <div style={{marginTop:2}}><TI val={b.addr} onChange={v=>setBuyer(i,"addr",v)} placeholder="住所（覚書用）"/></div>
               {/* 代理人欄 */}
               {b.dairiName!==undefined&&b.dairiName!==''?(
-                <div style={{marginTop:3,background:"#fff3cd",borderRadius:3,padding:"6px 8px",border:"1px solid #ffc107"}}>
-                  <div style={{fontSize:UI.note,color:"#856404",marginBottom:1}}>代理人</div>
-                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <div style={{marginTop:3,background:"#fff3cd",borderRadius:3,padding:"3px 5px",border:"1px solid #ffc107"}}>
+                  <div style={{fontSize:9,color:"#856404",marginBottom:1}}>代理人</div>
+                  <div style={{display:"flex",gap:2,alignItems:"center"}}>
                     <TI val={b.dairiName||""} onChange={v=>setBuyer(i,"dairiName",v)} placeholder="代理人氏名"/>
-                    <button tabIndex={-1} onClick={()=>setBuyer(i,"dairiName",undefined)} style={{fontSize:UI.note,color:"#c00",background:"none",border:"none",cursor:"pointer",whiteSpace:"nowrap"}}>削除</button>
+                    <button onClick={()=>setBuyer(i,"dairiName",undefined)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",whiteSpace:"nowrap"}}>削除</button>
                   </div>
                 </div>
               ):(
-                <button tabIndex={-1} onClick={()=>setBuyer(i,"dairiName","")} style={{marginTop:5,fontSize:UI.note,color:"#856404",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,padding:"2px 6px",cursor:"pointer"}}>＋代理人追加</button>
+                <button onClick={()=>setBuyer(i,"dairiName","")} style={{marginTop:2,fontSize:9,color:"#856404",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,padding:"2px 6px",cursor:"pointer"}}>＋代理人追加</button>
               )}
               {d.bMendan==="あり"&&!isLoan&&<div style={{marginTop:4}}>
-                <div style={{fontSize:UI.note,color:"#555",marginBottom:2}}>本人面談への出席</div>
-                <TB val={b.mendanAttend||"来る"} onChange={v=>setBuyer(i,"mendanAttend",v)} opts={["来る","来ない"]}/>
+                <div style={{fontSize:9,color:"#555",marginBottom:2}}>本人面談への出席</div>
+                <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
+                  {["来る","来ない"].map(opt=><button key={opt} onClick={()=>setBuyer(i,"mendanAttend",opt)} style={{flex:1,padding:"3px 0",fontSize:9,border:"none",cursor:"pointer",background:(b.mendanAttend||"来る")===opt?"#1a3a6b":"#f5f5f5",color:(b.mendanAttend||"来る")===opt?"#fff":"#333",fontWeight:(b.mendanAttend||"来る")===opt?"bold":"normal"}}>{opt}</button>)}
+                </div>
               </div>}
               {d.gathering==="あり"&&!isLoan&&<div style={{marginTop:4}}>
-                <div style={{fontSize:UI.note,color:"#555",marginBottom:2}}>残金決済への出席</div>
-                <TB val={b.settlementAttend||"来る"} onChange={v=>setBuyer(i,"settlementAttend",v)} opts={["来る","来ない"]}/>
+                <div style={{fontSize:9,color:"#555",marginBottom:2}}>残金決済への出席</div>
+                <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
+                  {["来る","来ない"].map(opt=><button key={opt} onClick={()=>setBuyer(i,"settlementAttend",opt)} style={{flex:1,padding:"3px 0",fontSize:9,border:"none",cursor:"pointer",background:(b.settlementAttend||"来る")===opt?"#1a3a6b":"#f5f5f5",color:(b.settlementAttend||"来る")===opt?"#fff":"#333",fontWeight:(b.settlementAttend||"来る")===opt?"bold":"normal"}}>{opt}</button>)}
+                </div>
               </div>}
-              {isLoan&&<div style={{marginTop:4,fontSize:UI.note,color:"#1a3a6b",background:"#eef3fb",borderRadius:3,padding:"3px 6px"}}>※ローン利用のため全員出席必須</div>}
-              {getBuyers(d).length>1&&<button tabIndex={-1} onClick={()=>delBuyer(i)} style={{fontSize:UI.note,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:5}}>✕ 削除</button>}
+              {isLoan&&<div style={{marginTop:4,fontSize:9,color:"#1a3a6b",background:"#eef3fb",borderRadius:3,padding:"3px 6px"}}>※ローン利用のため全員出席必須</div>}
+              {getBuyers(d).length>1&&<button onClick={()=>delBuyer(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",marginTop:2}}>✕ 削除</button>}
             </div>
           ))})()}
-          <button tabIndex={-1} onClick={addBuyer} style={{fontSize:UI.label,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%"}}>＋ 買主を追加</button>
+          <button onClick={addBuyer} style={{fontSize:10,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%"}}>＋ 買主を追加</button>
         </F>
         <F label="ご契約日" half><DI val={d.contractDate} onChange={set("contractDate")}/></F>
-        <div style={{display:"flex",gap:8}}>
-          <F label="決済日" half req><DI val={d.settlementDT} onChange={set("settlementDT")} req={!d.settlementDT}/></F>
-          <F label="時間" half soft><input type="time" value={d.settlementTime} onChange={e=>set("settlementTime")(e.target.value)} data-soft={!d.settlementTime?"1":undefined} style={!d.settlementTime?iSSoft:iS}/></F>
+        <F label="　" half></F>
+        <div style={{display:"flex",gap:3}}>
+          <F label="決済日" half><DI val={d.settlementDT} onChange={set("settlementDT")}/></F>
+          <F label="時間" half><input type="time" value={d.settlementTime} onChange={e=>set("settlementTime")(e.target.value)} style={iS}/></F>
         </div>
         <F label="決済集合"><TB val={d.gathering} onChange={set("gathering")} opts={["あり","なし"]}/></F>
         {d.gathering==="あり"&&<F label="決済場所"><TI val={d.gatheringPlace} onChange={set("gatheringPlace")}/></F>}
         <F label="当社振込先"><SI val={d.viviBank} onChange={set("viviBank")} opts={["北陸銀行","富山第一銀行"]}/></F>
-        <F label="当社担当者名" req><TI val={d.staff} onChange={set("staff")} req={!d.staff}/></F>
       </Acc>
 
       {/* ② 司法書士・面談 */}
-      <Acc id="shiho" label="② 司法書士・本人面談" color="#e8d0ff" openSec={openSec} toggleSec={toggleSec} hard={mHard["shiho"]||0} soft={mSoft["shiho"]||0}>
+      <Acc id="shiho" label="② 司法書士・本人面談" color="#e8d0ff" openSec={openSec} toggleSec={toggleSec}>
         <F label="担当事務所"><SI val={d.shihoShoshi} onChange={set("shihoShoshi")} opts={["廣田司法書士事務所　076-423-6826","大島・杉本合同司法書士事務所　076-495-5152","宮本司法書士事務所　076-421-2162","司法書士朝倉遼太郎事務所　076-481-6707","司法書士法人谷道事務所　076-421-7717","その他"]}/></F>
         {d.shihoShoshi==="その他"&&<F label="事務所名・電話番号"><TI val={d.shihoShoshiOther} onChange={set("shihoShoshiOther")} placeholder="事務所名・電話番号"/></F>}
         <F label="担当者名（任意）"><TI val={d.shihoShoshiPerson||""} onChange={set("shihoShoshiPerson")} placeholder="例：山田 花子"/></F>
         <F label="売主：本人面談"><TB val={d.mendan} onChange={set("mendan")} opts={["あり","なし"]}/></F>
         {d.mendan==="あり"&&<>
-          <div style={{display:"flex",gap:8}}><F label="面談日" half><DI val={d.mendanDT} onChange={set("mendanDT")}/></F><F label="時間" half><input type="time" value={d.mendanTime} onChange={e=>set("mendanTime")(e.target.value)} style={iS}/></F></div>
+          <div style={{display:"flex",gap:3}}><F label="面談日" half><DI val={d.mendanDT} onChange={set("mendanDT")}/></F><F label="時間" half><input type="time" value={d.mendanTime} onChange={e=>set("mendanTime")(e.target.value)} style={iS}/></F></div>
           <F label="面談場所"><TI val={d.mendanPlace} onChange={set("mendanPlace")} placeholder="場所を入力"/></F>
         </>}
         <F label="買主：本人面談"><TB val={d.bMendan} onChange={set("bMendan")} opts={["あり","なし"]}/></F>
         {d.bMendan==="あり"&&<>
           {d.gathering==="なし"&&d.loanUse==="あり"&&<F label="面談タイミング"><TB val={d.bMendanTiming} onChange={set("bMendanTiming")} opts={["本人面談を別途実施","金消契約時に併せて実施"]}/></F>}
           {!(d.gathering==="なし"&&d.loanUse==="あり"&&d.bMendanTiming==="金消契約時に併せて実施")&&<>
-            <div style={{display:"flex",gap:8}}><F label="面談日" half><DI val={d.bMendanDT} onChange={set("bMendanDT")}/></F><F label="時間" half><input type="time" value={d.bMendanTime} onChange={e=>set("bMendanTime")(e.target.value)} style={iS}/></F></div>
+            <div style={{display:"flex",gap:3}}><F label="面談日" half><DI val={d.bMendanDT} onChange={set("bMendanDT")}/></F><F label="時間" half><input type="time" value={d.bMendanTime} onChange={e=>set("bMendanTime")(e.target.value)} style={iS}/></F></div>
             <F label="面談場所"><TI val={d.bMendanPlace} onChange={set("bMendanPlace")} placeholder="場所を入力"/></F>
           </>}
           <F label="面談持参物"><TI val={d.bMendanItems||""} onChange={set("bMendanItems")} placeholder="実印、本人確認書類、通帳（スマホ）"/></F>
@@ -1750,25 +1579,20 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
       </Acc>
 
       {/* ③ 取引金額・清算金 */}
-      <Acc id="money" label="③ 取引金額・清算金" color="#d0e8ff" openSec={openSec} toggleSec={toggleSec} hard={mHard["money"]||0} soft={mSoft["money"]||0}>
-        <F label="売買代金(円)" req><NI val={d.salePrice} onChange={set("salePrice")} zeroOk req={String(d.salePrice??"")===""||Number(d.salePrice)===0}/></F>
-        <F label="手付金（受領済・円）" req>
-          <NI val={d.deposit} onChange={set("deposit")} zeroOk phZero req={String(d.deposit??"")===""}/>
-          {String(d.deposit??"")!==""&&Number(d.deposit)===0&&<div style={{fontSize:UI.note,color:"#1a6b3a",marginTop:5}}>手付金なし</div>}
-        </F>
-        <F label="平米単価(円)"><NI val={d.unitPrice} onChange={set("unitPrice")} step="0.01"/>
-          <div style={noteS}>実測清算を行う場合のみ入力</div>
-        </F>
-        <div style={{display:"flex",gap:8}}>
+      <Acc id="money" label="③ 取引金額・清算金" color="#d0e8ff" openSec={openSec} toggleSec={toggleSec}>
+        <F label="売買代金(円)"><NI val={d.salePrice} onChange={set("salePrice")}/></F>
+        <F label="受領済手付金(円)"><NI val={d.deposit} onChange={set("deposit")}/></F>
+        <F label="平米単価(円・実測清算時のみ)"><NI val={d.unitPrice} onChange={set("unitPrice")} step="0.01"/></F>
+        <div style={{display:"flex",gap:3}}>
           <F label="公簿面積(㎡)" half><NI val={d.officialArea} onChange={set("officialArea")} step="0.01"/></F>
           <F label="実測面積(㎡)" half><NI val={d.actualArea} onChange={set("actualArea")} step="0.01"/></F>
         </div>
-        {num(d.unitPrice)>0&&num(d.actualArea)>0&&num(d.officialArea)>0&&<div style={{fontSize:UI.label,padding:"3px 6px",background:"#e8f4ff",borderRadius:3,marginBottom:8}}>実測残代金：{fmt(Math.floor(num(d.unitPrice)*num(d.actualArea))-Math.round(num(d.deposit)))}円</div>}
+        {num(d.unitPrice)>0&&num(d.actualArea)>0&&num(d.officialArea)>0&&<div style={{fontSize:10,padding:"3px 6px",background:"#e8f4ff",borderRadius:3,marginBottom:3}}>実測残代金：{fmt(Math.floor(num(d.unitPrice)*num(d.actualArea))-Math.round(num(d.deposit)))}円</div>}
         <F label="固都税年額(円)"><NI val={d.taxAnnual} onChange={set("taxAnnual")}/></F>
         <F label="都市計画税">
           <div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>
             {[["あり","あり（固定資産税及び都市計画税）"],["なし","なし（固定資産税のみ）"]].map(([v,l])=>(
-              <button tabIndex={-1} key={v} onClick={()=>set("cityTax")(v)} style={{flex:1,padding:"5px 4px",fontSize:UI.note,border:"none",cursor:"pointer",background:d.cityTax===v?"#1a3a6b":"#f5f5f5",color:d.cityTax===v?"#fff":"#333",fontWeight:d.cityTax===v?"bold":"normal"}}>{l}</button>
+              <button key={v} onClick={()=>set("cityTax")(v)} style={{flex:1,padding:"5px 4px",fontSize:9,border:"none",cursor:"pointer",background:d.cityTax===v?"#1a3a6b":"#f5f5f5",color:d.cityTax===v?"#fff":"#333",fontWeight:d.cityTax===v?"bold":"normal"}}>{l}</button>
             ))}
           </div>
         </F>
@@ -1778,44 +1602,68 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         {d.propType==="マンション"&&<>
           <F label="管理費等(月額・円)"><NI val={d.mgmtMonthly} onChange={set("mgmtMonthly")}/></F>
           <F label="修繕積立金(月額・円)"><NI val={d.repairMonthly} onChange={set("repairMonthly")}/></F>
-          <div style={{display:"flex",gap:8}}>
+          <div style={{display:"flex",gap:3}}>
             <F label="その他項目名" half><TI val={d.mgmtOtherLabel} onChange={set("mgmtOtherLabel")} placeholder="例：駐車場代"/></F>
             <F label="月額(円)" half><NI val={d.mgmtOtherAmt} onChange={set("mgmtOtherAmt")}/></F>
           </div>
           <F label="管理費等の清算範囲">
             <div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid #ccc"}}>
-              {["当月のみ","翌月まで","翌々月まで"].map(opt=><button tabIndex={-1} key={opt} onClick={()=>set("mgmtClearMonths")(opt)} style={{flex:1,padding:"5px 0",fontSize:UI.label,border:"none",cursor:"pointer",background:d.mgmtClearMonths===opt?"#1a3a6b":"#f5f5f5",color:d.mgmtClearMonths===opt?"#fff":"#333",fontWeight:d.mgmtClearMonths===opt?"bold":"normal",borderRight:"1px solid #ccc"}}>{opt}</button>)}
+              {["当月のみ","翌月まで","翌々月まで"].map(opt=><button key={opt} onClick={()=>set("mgmtClearMonths")(opt)} style={{flex:1,padding:"5px 0",fontSize:10,border:"none",cursor:"pointer",background:d.mgmtClearMonths===opt?"#1a3a6b":"#f5f5f5",color:d.mgmtClearMonths===opt?"#fff":"#333",fontWeight:d.mgmtClearMonths===opt?"bold":"normal",borderRight:"1px solid #ccc"}}>{opt}</button>)}
             </div>
           </F>
         </>}
       </Acc>
-      <Acc id="seller" label="④ 売主様の設定" color="#fde0e0" openSec={openSec} toggleSec={toggleSec} hard={mHard["seller"]||0} soft={mSoft["seller"]||0}>
+      <Acc id="seller" label="④ 売主様の設定" color="#fde0e0" openSec={openSec} toggleSec={toggleSec}>
         <F label="住宅ローン残債(円)"><NI val={d.loanBalance} onChange={set("loanBalance")}/></F>
         <F label="仲介手数料(総額)"><NI val={d.sBrokerTotal} onChange={set("sBrokerTotal")}/></F>
         <F label="受領済仲介手数料"><NI val={d.sBrokerPaid} onChange={set("sBrokerPaid")}/></F>
         {(d.sProxies||[]).map((x,i)=>(
-          <div key={`sp${i}`} style={{marginBottom:4,border:"1px solid #f0d0d0",borderRadius:4,padding:"8px"}}>
-            <div style={{fontSize:UI.note,color:"#666",marginBottom:2}}>{x.label}</div>
-            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:x.method==="別口座"?4:0}}>
+          <div key={`sp${i}`} style={{marginBottom:4,border:"1px solid #f0d0d0",borderRadius:4,padding:"5px"}}>
+            <div style={{fontSize:9,color:"#666",marginBottom:2}}>{x.label}</div>
+            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:x.method==="別口座"?4:0}}>
               <input type="number" defaultValue={x.amt} onBlur={e=>setSProxy(i,"amt",e.target.value)} style={{...iS,textAlign:"right",flex:1}}/>
               <div style={{display:"flex",flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
                 {["②ViVi","③現金","別口座"].map(opt=>(
-                  <button tabIndex={-1} key={opt} onClick={()=>setSProxy(i,"method",opt)} style={{padding:"6px 8px",fontSize:UI.note,border:"none",cursor:"pointer",background:x.method===opt?"#1a3a6b":"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
+                  <button key={opt} onClick={()=>setSProxy(i,"method",opt)} style={{padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:x.method===opt?"#1a3a6b":"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
                 ))}
               </div>
             </div>
-            {x.method==="別口座"&&<div style={{background:"#f0fff8",borderRadius:3,padding:"4px",marginTop:5}}>
-              <div style={{fontSize:UI.note,color:"#1a6b3a",marginBottom:2}}>振込先口座</div>
+            {x.method==="別口座"&&<div style={{background:"#f0fff8",borderRadius:3,padding:"4px",marginTop:2}}>
+              <div style={{fontSize:9,color:"#1a6b3a",marginBottom:2}}>振込先口座</div>
               <input defaultValue={x.bankName||""} onBlur={e=>setSProxy(i,"bankName",e.target.value)} placeholder="銀行・支店名" style={iS}/>
-              <div style={{display:"flex",gap:8,marginTop:5}}>
-                <select value={x.bankType||"普通"} onChange={e=>setSProxy(i,"bankType",e.target.value)} style={{...iS,width:"40%"}}><option>普通</option><option>当座</option></select>
+              <div style={{display:"flex",gap:2,marginTop:2}}>
+                <select value={x.bankType||"普通"} onChange={e=>setSProxy(i,"bankType",e.target.value)} style={{...iS,width:"40%",fontSize:10}}><option>普通</option><option>当座</option></select>
                 <input defaultValue={x.bankNo||""} onBlur={e=>setSProxy(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
               </div>
-              <input defaultValue={x.bankHolder||""} onBlur={e=>setSProxy(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:5}}/>
+              <input defaultValue={x.bankHolder||""} onBlur={e=>setSProxy(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:2}}/>
             </div>}
           </div>
         ))}
-        <F label="登記識別情報通知通数"><SI val={String(d.sKenriCount)} onChange={set("sKenriCount")} opts={["0","1","2","3"]}/></F>
+        <F label="土地の筆数">
+          <SI val={String(d.landParcelCount||"1")} onChange={v=>{set("landParcelCount")(v);set("sKenriCountOverride")("");}} opts={["1","2","3","4","5"]}/>
+          <div style={{fontSize:9,color:"#888",marginTop:1}}>※戸建は「建物1＋筆数」、土地は「筆数」、マンション（敷地権化済）は「1」で計算</div>
+        </F>
+        <F label="登記識別情報通知（権利証）通数">
+          <div style={{display:"flex",gap:4,alignItems:"center"}}>
+            <div style={{flex:1,background:"#eef3fb",border:"1px solid #b0c8e8",borderRadius:4,padding:"4px 8px",fontSize:11,color:"#1a3a6b"}}>
+              自動計算：<strong>{calcKenriCount(d)}通</strong>
+              <span style={{fontSize:9,color:"#888",marginLeft:4}}>（{d.propType==="マンション"?"敷地権1":d.propType==="戸建"?`建物1+土地${d.landParcelCount||1}筆`:`土地${d.landParcelCount||1}筆`} × 売主{(d.sellers||[{}]).length}名）</span>
+            </div>
+          </div>
+          <div style={{marginTop:3}}>
+            <div style={{fontSize:9,color:"#555",marginBottom:1}}>手入力で上書き（空欄=自動計算値を使用）</div>
+            <div style={{display:"flex",gap:3,alignItems:"center"}}>
+              <input
+                type="number"
+                value={d.sKenriCountOverride||""}
+                onChange={e=>set("sKenriCountOverride")(e.target.value)}
+                placeholder={`${calcKenriCount(d)}（自動）`}
+                style={{...iS,width:"60%",textAlign:"right"}}
+              />
+              {d.sKenriCountOverride&&<button onClick={()=>set("sKenriCountOverride")("")} style={{fontSize:9,padding:"3px 6px",background:"#eee",border:"1px solid #ccc",borderRadius:3,cursor:"pointer",color:"#555"}}>リセット</button>}
+            </div>
+          </div>
+        </F>
         <F label="住民票通数"><SI val={String(d.sJuminCount)} onChange={set("sJuminCount")} opts={["0","1","2","3"]}/></F>
         <F label="戸籍の附票の写し"><TB val={d.sKosekiHuhyo} onChange={set("sKosekiHuhyo")} opts={["表示","非表示"]}/></F>
         <F label="印鑑証明通数"><SI val={String(d.sInkanCount)} onChange={set("sInkanCount")} opts={["0","1","2","3"]}/></F>
@@ -1824,46 +1672,46 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="その他持参物②"><TI val={d.sExtraLabel2} onChange={set("sExtraLabel2")} placeholder="例：建物図面"/></F>
         <F label="その他持参物③"><TI val={d.sExtraLabel3} onChange={set("sExtraLabel3")} placeholder="例：マンション管理費領収書"/></F>
         <F label="複数売主時の注意書き"><TI val={d.sMultiNote} onChange={set("sMultiNote")} placeholder="例：ご夫婦それぞれ実印が必要です"/></F>
-        <div style={{fontSize:UI.label,fontWeight:"bold",color:"#8b0000",marginBottom:8,marginTop:4}}>その他諸費用（売主様ご負担・直接支払分）</div>
-        <div style={{fontSize:UI.note,color:"#888",marginBottom:4}}>残金受取後に売主様が直接支払う費用（住所変更登記・解体・ハウスクリーニング等）</div>
+        <div style={{fontSize:10,fontWeight:"bold",color:"#8b0000",marginBottom:3,marginTop:4}}>その他諸費用（売主様ご負担・直接支払分）</div>
+        <div style={{fontSize:9,color:"#888",marginBottom:4}}>残金受取後に売主様が直接支払う費用（住所変更登記・解体・ハウスクリーニング等）</div>
         {(d.sExtraItems||[]).map((x,i)=>(
-          <div key={`se${i}`} style={{marginBottom:4,border:"1px solid #f0d0d0",borderRadius:4,padding:"8px"}}>
-            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:2}}>
-              <div style={{fontSize:UI.note,color:"#666",flex:1}}>{x.label||`費用${i+1}`}</div>
-              <button tabIndex={-1} onClick={()=>delSExtraItem(i)} style={{fontSize:UI.note,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>
+          <div key={`se${i}`} style={{marginBottom:4,border:"1px solid #f0d0d0",borderRadius:4,padding:"5px"}}>
+            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:2}}>
+              <div style={{fontSize:9,color:"#666",flex:1}}>{x.label||`費用${i+1}`}</div>
+              <button onClick={()=>delSExtraItem(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>
             </div>
             <input defaultValue={x.label||""} onBlur={e=>setSExtraItem(i,"label",e.target.value)} placeholder="費用名（例：住所変更登記費用）" style={{...iS,marginBottom:2}}/>
-            <div style={{fontSize:UI.note,color:"#555",marginBottom:2}}>授受方法</div>
+            <div style={{fontSize:9,color:"#555",marginBottom:2}}>授受方法</div>
             <div style={{display:"flex",borderRadius:3,overflow:"hidden",border:"1px solid #ccc",marginBottom:4}}>
               {["別途授受","差引"].map(opt=>(
-                <button tabIndex={-1} key={opt} onClick={()=>setSExtraItem(i,"deductMode",opt)} style={{flex:1,padding:"6px 8px",fontSize:UI.note,border:"none",cursor:"pointer",background:(x.deductMode||"別途授受")===opt?(opt==="差引"?"#8b0000":"#1a6b3a"):"#f5f5f5",color:(x.deductMode||"別途授受")===opt?"#fff":"#333",fontWeight:(x.deductMode||"別途授受")===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt==="別途授受"?"別途授受（入金後お支払い）":"売買代金から差引"}</button>
+                <button key={opt} onClick={()=>setSExtraItem(i,"deductMode",opt)} style={{flex:1,padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:(x.deductMode||"別途授受")===opt?(opt==="差引"?"#8b0000":"#1a6b3a"):"#f5f5f5",color:(x.deductMode||"別途授受")===opt?"#fff":"#333",fontWeight:(x.deductMode||"別途授受")===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt==="別途授受"?"別途授受（入金後お支払い）":"売買代金から差引"}</button>
               ))}
             </div>
-            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:4}}>
               <input type="number" defaultValue={x.amt||""} onBlur={e=>setSExtraItem(i,"amt",e.target.value)} placeholder="0" style={{...iS,textAlign:"right",flex:1}}/>
               <div style={{display:"flex",flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
                 {["②ViVi","③現金","別口座"].map(opt=>(
-                  <button tabIndex={-1} key={opt} onClick={()=>setSExtraItem(i,"method",opt)} style={{padding:"6px 8px",fontSize:UI.note,border:"none",cursor:"pointer",background:x.method===opt?(opt==="②ViVi"?"#5a1a8b":opt==="③現金"?"#1a6b3a":"#1a4a6b"):"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
+                  <button key={opt} onClick={()=>setSExtraItem(i,"method",opt)} style={{padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:x.method===opt?(opt==="②ViVi"?"#5a1a8b":opt==="③現金"?"#1a6b3a":"#1a4a6b"):"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
                 ))}
               </div>
             </div>
             <div style={{background:"#f0f8ff",borderRadius:3,padding:"4px"}}>
-              <div style={{fontSize:UI.note,color:"#555",marginBottom:2}}>振込先・支払先口座</div>
+              <div style={{fontSize:9,color:"#555",marginBottom:2}}>振込先・支払先口座</div>
               <input defaultValue={x.bankName||""} onBlur={e=>setSExtraItem(i,"bankName",e.target.value)} placeholder="銀行・支店名" style={iS}/>
-              <div style={{display:"flex",gap:8,marginTop:5}}>
-                <select value={x.bankType||"普通"} onChange={e=>setSExtraItem(i,"bankType",e.target.value)} style={{...iS,width:"40%"}}><option>普通</option><option>当座</option></select>
+              <div style={{display:"flex",gap:2,marginTop:2}}>
+                <select value={x.bankType||"普通"} onChange={e=>setSExtraItem(i,"bankType",e.target.value)} style={{...iS,width:"40%",fontSize:10}}><option>普通</option><option>当座</option></select>
                 <input defaultValue={x.bankNo||""} onBlur={e=>setSExtraItem(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
               </div>
-              <input defaultValue={x.bankHolder||""} onBlur={e=>setSExtraItem(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:5}}/>
+              <input defaultValue={x.bankHolder||""} onBlur={e=>setSExtraItem(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:2}}/>
             </div>
           </div>
         ))}
-        <button tabIndex={-1} onClick={addSExtraItem} style={{fontSize:UI.label,padding:"3px 0",background:"#fde8e8",border:"1px solid #c66",borderRadius:4,cursor:"pointer",color:"#8b0000",width:"100%",marginBottom:4}}>＋ 費用を追加</button>
+        <button onClick={addSExtraItem} style={{fontSize:10,padding:"3px 0",background:"#fde8e8",border:"1px solid #c66",borderRadius:4,cursor:"pointer",color:"#8b0000",width:"100%",marginBottom:4}}>＋ 費用を追加</button>
         {(()=>{
           const cashItems=[...(d.sProxies||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0),...(d.sExtraItems||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0)];
           return cashItems.length>0&&(
-            <div style={{background:"#fff3cd",border:"1px solid #c8860a",borderRadius:4,padding:"6px 8px",marginBottom:4,fontSize:UI.note}}>
-              <div style={{fontWeight:"bold",color:"#c8860a",marginBottom:8}}>⚠ 現金払い項目があります。備考欄に取り扱い方法を記載してください。</div>
+            <div style={{background:"#fff3cd",border:"1px solid #c8860a",borderRadius:4,padding:"6px 8px",marginBottom:4,fontSize:9}}>
+              <div style={{fontWeight:"bold",color:"#c8860a",marginBottom:3}}>⚠ 現金払い項目があります。備考欄に取り扱い方法を記載してください。</div>
               {cashItems.map((x,i)=><div key={i} style={{color:"#555"}}>・{x.label}　{yen(x.amt)}</div>)}
             </div>
           );
@@ -1871,17 +1719,17 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="備考欄（売主案内のみ表示）">
           <textarea value={d.sNote||""} onChange={e=>set("sNote")(e.target.value)} placeholder="例：抵当権抹消費用は残代金受取後に引き出してその場で司法書士へお支払いください。" style={{...iS,height:72,resize:"vertical",lineHeight:1.5}}/>
         </F>
-        <div style={{fontSize:UI.note,color:"#888",marginBottom:4}}>※売主の振込口座は「①基本情報」の売主欄で入力してください</div>
+        <div style={{fontSize:9,color:"#888",marginBottom:4}}>※売主の振込口座は「①基本情報」の売主欄で入力してください</div>
       </Acc>
 
       {/* ⑤ 買主設定 */}
-      <Acc id="buyer" label="⑤ 買主様の設定" color="#d0fdd0" openSec={openSec} toggleSec={toggleSec} hard={mHard["buyer"]||0} soft={mSoft["buyer"]||0}>
+      <Acc id="buyer" label="⑤ 買主様の設定" color="#d0fdd0" openSec={openSec} toggleSec={toggleSec}>
         <F label="仲介手数料(総額)"><NI val={d.bBrokerTotal} onChange={set("bBrokerTotal")}/></F>
         <F label="受領済仲介手数料"><NI val={d.bBrokerPaid} onChange={set("bBrokerPaid")}/></F>
         <F label="ローン利用"><TB val={d.loanUse} onChange={set("loanUse")} opts={["あり","なし"]}/></F>
         {d.loanUse==="あり"&&<>
           <F label="ローン融資額(円)"><NI val={d.loanAmount} onChange={set("loanAmount")}/></F>
-          <div style={{display:"flex",gap:8}}><F label="金消日" half><DI val={d.kinshoDT} onChange={set("kinshoDT")}/></F><F label="時間" half><input type="time" value={d.kinshoTime} onChange={e=>set("kinshoTime")(e.target.value)} style={iS}/></F></div>
+          <div style={{display:"flex",gap:3}}><F label="金消日" half><DI val={d.kinshoDT} onChange={set("kinshoDT")}/></F><F label="時間" half><input type="time" value={d.kinshoTime} onChange={e=>set("kinshoTime")(e.target.value)} style={iS}/></F></div>
           <F label="金消場所"><TI val={d.kinshoPlace} onChange={set("kinshoPlace")}/></F>
         </>}
         <F label="新住所への事前移転"><TB val={d.preMove} onChange={set("preMove")} opts={["あり","なし"]}/></F>
@@ -1896,34 +1744,34 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
           <F label="振込決済用 印鑑証明通数"><SI val={String(d.bInkanTransfer)} onChange={set("bInkanTransfer")} opts={["0","1","2","3"]}/></F>
         </>}
         <F label="決済持参物"><TI val={d.bSettleItems||""} onChange={set("bSettleItems")} placeholder="実印、本人確認書類、通帳（スマホ）（空欄=デフォルト表示）"/></F>
-        <div style={{fontSize:UI.label,fontWeight:"bold",color:"#1a6b3a",marginBottom:8,marginTop:5}}>その他諸費用</div>
+        <div style={{fontSize:10,fontWeight:"bold",color:"#1a6b3a",marginBottom:3,marginTop:2}}>その他諸費用</div>
         {(d.bProxies||[]).map((x,i)=>(
-          <div key={`bp${i}`} style={{marginBottom:4,border:"1px solid #c0e0c0",borderRadius:4,padding:"8px"}}>
-            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:2}}>
-              <div style={{fontSize:UI.note,color:"#666",flex:1}}>{x.label||`費用${i+1}`}</div>
-              <button tabIndex={-1} onClick={()=>delBProxy(i)} style={{fontSize:UI.note,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>
+          <div key={`bp${i}`} style={{marginBottom:4,border:"1px solid #c0e0c0",borderRadius:4,padding:"5px"}}>
+            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:2}}>
+              <div style={{fontSize:9,color:"#666",flex:1}}>{x.label||`費用${i+1}`}</div>
+              <button onClick={()=>delBProxy(i)} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer"}}>✕</button>
             </div>
             <input defaultValue={x.label||""} onBlur={e=>setBProxy(i,"label",e.target.value)} placeholder="費用名（例：登記費用）" style={{...iS,marginBottom:2}}/>
-            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+            <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:4}}>
               <input type="number" defaultValue={x.amt} onBlur={e=>setBProxy(i,"amt",e.target.value)} style={{...iS,textAlign:"right",flex:1}}/>
               <div style={{display:"flex",flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid #ccc"}}>
                 {["②ViVi","③現金","別口座"].map(opt=>(
-                  <button tabIndex={-1} key={opt} onClick={()=>setBProxy(i,"method",opt)} style={{padding:"6px 8px",fontSize:UI.note,border:"none",cursor:"pointer",background:x.method===opt?(opt==="②ViVi"?"#5a1a8b":opt==="③現金"?"#1a6b3a":"#1a4a6b"):"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
+                  <button key={opt} onClick={()=>setBProxy(i,"method",opt)} style={{padding:"3px 5px",fontSize:9,border:"none",cursor:"pointer",background:x.method===opt?(opt==="②ViVi"?"#5a1a8b":opt==="③現金"?"#1a6b3a":"#1a4a6b"):"#f5f5f5",color:x.method===opt?"#fff":"#333",fontWeight:x.method===opt?"bold":"normal",whiteSpace:"nowrap"}}>{opt}</button>
                 ))}
               </div>
             </div>
             <div style={{background:"#f0f8ff",borderRadius:3,padding:"4px"}}>
-              <div style={{fontSize:UI.note,color:"#555",marginBottom:2}}>振込先口座（②ViVi以外の場合）</div>
+              <div style={{fontSize:9,color:"#555",marginBottom:2}}>振込先口座（②ViVi以外の場合）</div>
               <input defaultValue={x.bankName||""} onBlur={e=>setBProxy(i,"bankName",e.target.value)} placeholder="銀行・支店名" style={iS}/>
-              <div style={{display:"flex",gap:8,marginTop:5}}>
-                <select value={x.bankType||"普通"} onChange={e=>setBProxy(i,"bankType",e.target.value)} style={{...iS,width:"40%"}}><option>普通</option><option>当座</option></select>
+              <div style={{display:"flex",gap:2,marginTop:2}}>
+                <select value={x.bankType||"普通"} onChange={e=>setBProxy(i,"bankType",e.target.value)} style={{...iS,width:"40%",fontSize:10}}><option>普通</option><option>当座</option></select>
                 <input defaultValue={x.bankNo||""} onBlur={e=>setBProxy(i,"bankNo",e.target.value)} placeholder="口座番号" style={{...iS,width:"60%"}}/>
               </div>
-              <input defaultValue={x.bankHolder||""} onBlur={e=>setBProxy(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:5}}/>
+              <input defaultValue={x.bankHolder||""} onBlur={e=>setBProxy(i,"bankHolder",e.target.value)} placeholder="名義人" style={{...iS,marginTop:2}}/>
             </div>
           </div>
         ))}
-        <button tabIndex={-1} onClick={addBProxy} style={{fontSize:UI.label,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%",marginBottom:4}}>＋ 費用を追加</button>
+        <button onClick={addBProxy} style={{fontSize:10,padding:"3px 0",background:"#dcfde8",border:"1px solid #4a6",borderRadius:4,cursor:"pointer",color:"#1a6b3a",width:"100%",marginBottom:4}}>＋ 費用を追加</button>
         <F label="リフォーム代(総額)"><NI val={d.reformTotal} onChange={set("reformTotal")}/></F>
         <F label="決済時リフォーム手付"><TB val={d.reformDepositYN} onChange={set("reformDepositYN")} opts={["なし","あり"]}/></F>
         {d.reformDepositYN==="あり"&&<F label="手付金額(円)"><NI val={d.reformDepositAmt} onChange={set("reformDepositAmt")}/></F>}
@@ -1932,7 +1780,7 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="【引落】管理基金等"><NI val={d.bMgmtFund} onChange={set("bMgmtFund")}/></F>
         <F label="【引落】振込手数料"><NI val={d.bTransferFee} onChange={set("bTransferFee")}/></F>
         <F label="【引落】その他">
-          <div style={{display:"flex",gap:8}}>
+          <div style={{display:"flex",gap:3}}>
             <TI val={d.bOtherDrawLabel||""} onChange={set("bOtherDrawLabel")} placeholder="内容（例：修繕積立金）"/>
             <NI val={d.bOtherDraw} onChange={set("bOtherDraw")}/>
           </div>
@@ -1947,10 +1795,10 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
       </Acc>
 
       {/* ⑥ その他設定 */}
-      <Acc id="other" label="⑥ その他設定" color="#eee" openSec={openSec} toggleSec={toggleSec} hard={mHard["other"]||0} soft={mSoft["other"]||0}>
+      <Acc id="other" label="⑥ その他設定" color="#eee" openSec={openSec} toggleSec={toggleSec}>
         <F label="ライフライン代行対応"><TB val={d.lifeline||"なし"} onChange={set("lifeline")} opts={["なし","あり"]}/></F>
-        <div style={{fontSize:UI.note,color:"#888",marginBottom:4}}>「あり」にすると買主案内のインフラ欄に代行対応の案内が追加されます</div>
-        
+        <div style={{fontSize:9,color:"#888",marginBottom:4}}>「あり」にすると買主案内のインフラ欄に代行対応の案内が追加されます</div>
+        <F label="当社担当者名"><TI val={d.staff} onChange={set("staff")}/></F>
       </Acc>
       <div style={{height:16}}/>
     </div>
@@ -2135,87 +1983,27 @@ function App(){
   const [curName,setCurName]=useState("");
   const [winW,setWinW]=useState(window.innerWidth);
   const [openSec,setOpenSec]=useState({basic:true,shiho:false,money:false,seller:false,buyer:false,other:false});
-  const [uiMode,setUiMode]=useState(getUIMode());
-  const setUIMode2=(m)=>{setUiMode(m);setLoadKey(k=>k+1);};
-  const [draftAsk,setDraftAsk]=useState(null);
-  const [draftSavedAt,setDraftSavedAt]=useState("");
-  const [draftSaving,setDraftSaving]=useState(false);
-  const [showMiss,setShowMiss]=useState(false);
-  const [printAsk,setPrintAsk]=useState(null);
-  const [savedFlash,setSavedFlash]=useState("");
   const toggleSec=k=>setOpenSec(p=>({...p,[k]:!p[k]}));
   const c=useMemo(()=>calcAll(d),[d]);
-  const miss=useMemo(()=>checkRequired(d),[d]);
-  const missCnt=miss.length;
   const sp=winW<=1024;
 
   useEffect(()=>{try{const s=localStorage.getItem(SK);if(s)setSaved(JSON.parse(s));}catch{};},[]);
-
-  // ===== 自動下書き保存 =====
-  // 非制御入力(defaultValue+onBlur)のため、実際の保存は
-  // 「入力欄からフォーカスが外れた約1秒後」になる。
-  const DK="vivi_draft";
-  const dirtyRef=React.useRef(false);
-  useEffect(()=>{
-    try{ const raw=localStorage.getItem(DK); if(!raw)return;
-      const o=JSON.parse(raw); if(o&&o.data)setDraftAsk(o); }catch{}
-  },[]);
-  useEffect(()=>{
-    if(d===INIT)return;
-    if(draftAsk)return;
-    dirtyRef.current=true; setDraftSaving(true);
-    const t=setTimeout(()=>{
-      try{ localStorage.setItem(DK,JSON.stringify({savedAt:new Date().toISOString(),caseId:curId,caseName:curName,data:d}));
-        setDraftSavedAt(new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
-      }catch(e){}
-      setDraftSaving(false);
-    },1000);
-    return ()=>clearTimeout(t);
-  },[d,draftAsk,curId,curName]);
-  useEffect(()=>{
-    const fn=(e)=>{ if(dirtyRef.current){ e.preventDefault(); e.returnValue=""; return ""; } };
-    window.addEventListener("beforeunload",fn);
-    return ()=>window.removeEventListener("beforeunload",fn);
-  },[]);
-  // 入力中の欄を確定させる（印刷・保存の直前に必ず呼ぶ）
-  const commitFocused=()=>{try{const a=document.activeElement;if(a&&typeof a.blur==="function")a.blur();}catch{}};
-  const showSavedFlash=()=>{
-    setSavedFlash(new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
-    setTimeout(()=>setSavedFlash(""),3000);
-  };
-  const clearDraft=()=>{try{localStorage.removeItem(DK);}catch{};dirtyRef.current=false;setDraftSavedAt("");};
-  // 印刷：入力中の欄を確定 → 未入力があれば確認 → 印刷
-  const doPrint=()=>{
-    commitFocused();
-    setTimeout(()=>{ const m=checkRequired(d); if(m.length>0){setPrintAsk(m);return;} window.print(); },60);
-  };
-  // Ctrl+S / ⌘+S で保存
-  useEffect(()=>{
-    const fn=(e)=>{ if((e.ctrlKey||e.metaKey)&&(e.key==="s"||e.key==="S")){
-      e.preventDefault(); commitFocused();
-      setTimeout(()=>{ if(curId){doOverwrite();showSavedFlash();} else setShowSaveDlg(true); },60); } };
-    window.addEventListener("keydown",fn);
-    return ()=>window.removeEventListener("keydown",fn);
-  },[curId,d]);
   useEffect(()=>{const fn=()=>setWinW(window.innerWidth);window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn);},[]);
 
   const doSave=()=>{
-    commitFocused();
     const name=saveName||`${getSellerName(d)}→${getBuyerName(d)} (${d.settlementDT})`;
     const nc={id:Date.now(),name,savedAt:new Date().toLocaleString("ja-JP"),data:d};
     const upd=[nc,...saved].slice(0,30);
     setSaved(upd);setCurId(nc.id);setCurName(name);
     try{localStorage.setItem(SK,JSON.stringify(upd));}catch{}
-    clearDraft(); showSavedFlash();
     setShowSaveDlg(false);setSaveName("");
   };
-  const doOverwrite=()=>{commitFocused();showSavedFlash();const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
+  const doOverwrite=()=>{const upd=saved.map(i=>i.id===curId?{...i,data:d,savedAt:new Date().toLocaleString("ja-JP")}:i);setSaved(upd);try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};};
   const doLoad=item=>{setD(item.data);setCurId(item.id);setCurName(item.name);setShowHist(false);setLoadKey(k=>k+1);};
   const doDel=id=>{const upd=saved.filter(i=>i.id!==id);setSaved(upd);if(id===curId){setCurId(null);setCurName("");}try{localStorage.setItem(SK,JSON.stringify(upd));}catch{};setDelConf(null);};
-  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");setLoadKey(k=>k+1);clearDraft();}};
+  const doNew=()=>{if(window.confirm("現在の入力内容をクリアして新規作成しますか？")){setD(INIT);setCurId(null);setCurName("");setLoadKey(k=>k+1);}};
   // JSONエクスポート
   const doExport=()=>{
-    commitFocused();
     const name=curName||`${getSellerName(d)}→${getBuyerName(d)}_${d.settlementDT||"未設定"}`;
     const blob=new Blob([JSON.stringify({name,exportedAt:new Date().toLocaleString("ja-JP"),data:d},null,2)],{type:"application/json"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);
@@ -2290,7 +2078,8 @@ function App(){
 
   const ipProps={d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved,curId,setCurId,curName,setCurName,setShowSaveDlg,setShowHist,doExport,doImport,doNew,doOverwrite,doImportHato};
 
-    const SummaryBar=()=>(
+  const PreviewPanel=(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",height:"100%"}}>
       <div style={{display:"flex",gap:4,padding:"6px 10px",flexWrap:"wrap",background:"#1a3a6b",alignItems:"center"}}>
         {[["残代金",c.fRem,false],["売主受取(C)",c.aToS,c.overLoan],["買主総額(A)",c.tExpB,false],["自己資金",c.selfFunds,false],[d.cityTax==="あり"?"固定資産税等清算":"固定資産税清算",c.tBuy,false]].map(([lbl,val,warn])=>(
           <div key={lbl} style={{flex:"1 1 70px",padding:"3px 6px",minWidth:60,background:warn?"#8b0000":"rgba(255,255,255,0.15)",borderRadius:4,border:"1px solid rgba(255,255,255,0.3)"}}>
@@ -2298,39 +2087,14 @@ function App(){
             <div style={{fontSize:11,fontWeight:"bold",color:"#fff",fontVariantNumeric:"tabular-nums"}}>{fmt(val)}円</div>
           </div>
         ))}
-        <div style={{flex:1}}/>
-        <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <button onClick={()=>setShowMiss(true)}
-            style={{fontSize:11,fontWeight:"bold",padding:"5px 10px",borderRadius:4,cursor:"pointer",border:"1px solid rgba(255,255,255,0.5)",
-              background:miss.filter(m=>!m.soft).length>0?"#8b0000":(miss.filter(m=>m.soft).length>0?"#c8860a":"#1a6b3a"),color:"#fff",whiteSpace:"nowrap"}}>
-            {(()=>{const hard=miss.filter(m=>!m.soft).length,soft=miss.filter(m=>m.soft).length;
-              if(hard===0&&soft===0)return "✓ 未入力なし";
-              return `${hard>0?`★未入力 ${hard}件`:""}${hard>0&&soft>0?"　":""}${soft>0?`☆確認 ${soft}件`:""}`;})()}
-          </button>
-          <div style={{display:"flex",borderRadius:4,overflow:"hidden",border:"1px solid rgba(255,255,255,0.6)"}}>
-            {[["std","標準"],["lg","大"]].map(([m,lbl])=>(
-              <button key={m} onClick={()=>{setUIMode(m);setUIMode2(m);}}
-                style={{padding:"5px 10px",fontSize:11,border:"none",cursor:"pointer",
-                  background:uiMode===m?"#fff":"transparent",color:uiMode===m?"#1a3a6b":"#fff",fontWeight:uiMode===m?"bold":"normal"}}>{lbl}</button>
-            ))}
-          </div>
-        </div>
         {c.overLoan&&<div style={{flex:"0 0 100%",fontSize:10,color:"#ffc",background:"#8b0000",padding:"2px 10px",borderRadius:4}}>⚠ オーバーローン：売主様に {fmt(c.shortfall)}円 の持ち出しが発生します</div>}
-        {(savedFlash||draftSavedAt)&&<div style={{flex:"0 0 100%",fontSize:10,padding:"1px 10px",color:savedFlash?"#aef0c0":"#cce",fontWeight:savedFlash?"bold":"normal"}}>
-          {savedFlash?`✓ 保存しました ${savedFlash}`:(draftSaving?"下書きを保存中…":`下書き保存 ${draftSavedAt}`)}
-        </div>}
       </div>
-  );
-
-  const PreviewPanel=(
-    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",height:"100%"}}>
-      <SummaryBar/>
       <div style={{display:"flex",background:"#f0f0f0",borderBottom:"1px solid #ccc",paddingLeft:4,overflowX:"auto",flexShrink:0}}>
         {TABS.map((t,i)=>(
           <button key={t} onClick={()=>setTab(i)} style={{padding:"6px 8px",fontSize:sp?9:10,background:i===tab?"#fff":"transparent",border:"none",borderTop:i===tab?"2px solid #1a3a6b":"2px solid transparent",borderRight:"1px solid #ddd",cursor:"pointer",fontWeight:i===tab?"bold":"normal",color:i===tab?"#1a3a6b":"#555",whiteSpace:"nowrap"}}>{t}</button>
         ))}
         <div style={{flex:1}}/>
-        {!sp&&<button onClick={()=>doPrint()} style={{fontSize:11,margin:"3px 8px",padding:"3px 12px",border:"1px solid #aaa",borderRadius:4,background:"#fff",cursor:"pointer",color:"#333",fontWeight:"bold"}}>🖨 印刷/PDF</button>}
+        {!sp&&<button onClick={()=>window.print()} style={{fontSize:11,margin:"3px 8px",padding:"3px 12px",border:"1px solid #aaa",borderRadius:4,background:"#fff",cursor:"pointer",color:"#333",fontWeight:"bold"}}>🖨 印刷/PDF</button>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:sp?"8px":"14px 18px",background:"#d0d0d0"}}>
         <div id="print-area" style={{maxWidth:680,margin:"0 auto",boxShadow:"0 2px 12px rgba(0,0,0,0.25)"}}>
@@ -2344,9 +2108,6 @@ function App(){
     <div style={{display:"flex",flexDirection:"column",height:"100vh",background:"#e8e8e8",fontSize:12}}>
       {sp?(
         <>
-          {/* 幅が狭いと入力と確認がタブで分かれるが、集計バー（残代金など）は
-              入力中も見えていないと確認できないので常に出す。 */}
-          {spTab==="input"&&<SummaryBar/>}
           <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
             {spTab==="input"&&<InputPanelComp key={loadKey} {...ipProps}/>}
             {spTab==="preview"&&PreviewPanel}
@@ -2364,91 +2125,6 @@ function App(){
         </div>
       )}
       <button onClick={()=>setShowManual(true)} style={{display:sp?"none":"flex",position:"fixed",bottom:20,right:20,zIndex:900,background:"#1a3a6b",color:"#fff",border:"none",borderRadius:"50%",width:52,height:52,fontSize:20,cursor:"pointer",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 10px rgba(0,0,0,0.3)"}}>❓</button>
-
-      {/* ===== 下書きの復元確認 ===== */}
-      {draftAsk&&(
-        <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000}}>
-          <div style={{background:"#fff",borderRadius:8,padding:"24px",width:"min(92vw,440px)",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
-            <div style={{fontSize:15,fontWeight:"bold",color:"#1a3a6b",marginBottom:10}}>前回の入力途中のデータがあります</div>
-            <div style={{fontSize:13,color:"#333",marginBottom:6,lineHeight:1.7}}>
-              {draftAsk.caseName?<>案件：<b>{draftAsk.caseName}</b><br/></>:null}
-              保存時刻：{draftAsk.savedAt?new Date(draftAsk.savedAt).toLocaleString("ja-JP"):"不明"}
-            </div>
-            <div style={{fontSize:12,color:"#666",marginBottom:16}}>復元すると、この下書きの内容が入力画面に入ります。破棄すると下書きは削除されます。</div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{setD(draftAsk.data);setCurId(draftAsk.caseId||null);setCurName(draftAsk.caseName||"");setDraftAsk(null);setLoadKey(k=>k+1);}}
-                style={{flex:2,padding:"10px",background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold",fontSize:13}}>復元する</button>
-              <button onClick={()=>{clearDraft();setDraftAsk(null);}}
-                style={{flex:1,padding:"10px",background:"#888",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:13}}>破棄する</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== 未入力の一覧 ===== */}
-      {showMiss&&(
-        <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000}} onClick={()=>setShowMiss(false)}>
-          <div style={{background:"#fff",borderRadius:8,padding:"22px",width:"min(92vw,480px)",maxHeight:"80vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}} onClick={e=>e.stopPropagation()}>
-            <div style={{fontSize:15,fontWeight:"bold",color:"#1a3a6b",marginBottom:12}}>入力状況</div>
-            {miss.length===0
-              ? <div style={{fontSize:13,color:"#1a6b3a",fontWeight:"bold",padding:"10px 0"}}>✓ 必須項目はすべて入力されています</div>
-              : <>
-                {miss.filter(m=>!m.soft).length>0&&<>
-                  <div style={{fontSize:13,fontWeight:"bold",color:"#c62828",margin:"6px 0"}}>★ 未入力（{miss.filter(m=>!m.soft).length}件）</div>
-                  {miss.filter(m=>!m.soft).map((m,i)=>(
-                    <div key={i} style={{fontSize:13,padding:"5px 8px",marginBottom:4,background:"#fff5f5",borderLeft:"3px solid #c62828",cursor:"pointer"}}
-                      onClick={()=>{setOpenSec(p=>({...p,[m.sec]:true}));setShowMiss(false);}}>{m.label}</div>
-                  ))}
-                </>}
-                {miss.filter(m=>m.soft).length>0&&<>
-                  <div style={{fontSize:13,fontWeight:"bold",color:"#c8860a",margin:"14px 0 6px"}}>☆ 確認（{miss.filter(m=>m.soft).length}件）</div>
-                  {miss.filter(m=>m.soft).map((m,i)=>(
-                    <div key={i} style={{fontSize:13,padding:"5px 8px",marginBottom:4,background:"#fffaf0",borderLeft:"3px solid #c8860a",cursor:"pointer"}}
-                      onClick={()=>{setOpenSec(p=>({...p,[m.sec]:true}));setShowMiss(false);}}>{m.label}</div>
-                  ))}
-                  <div style={{fontSize:12,color:"#666",marginTop:8,lineHeight:1.7}}>
-                    ☆は未入力でも問題ない場合があります。決済時間は、振込のみの決済では記載が不要な場合があります。
-                    振込先は、代表の売主様の口座へ一括で振り込む場合、2人目以降は空欄で構いません。
-                  </div>
-                </>}
-                <div style={{fontSize:12,color:"#888",marginTop:12}}>項目名を押すと、その項目があるセクションが開きます。</div>
-              </>}
-            <button onClick={()=>setShowMiss(false)} style={{width:"100%",marginTop:16,padding:"9px",background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:13}}>閉じる</button>
-          </div>
-        </div>
-      )}
-
-      {/* ===== 印刷前の確認 ===== */}
-      {printAsk&&(
-        <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000}}>
-          <div style={{background:"#fff",borderRadius:8,padding:"22px",width:"min(92vw,480px)",maxHeight:"80vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
-            <div style={{fontSize:15,fontWeight:"bold",color:"#8b0000",marginBottom:10}}>
-              未入力が{printAsk.length}件あります。このまま印刷しますか？
-            </div>
-            {printAsk.filter(m=>!m.soft).length>0&&<>
-              <div style={{fontSize:13,fontWeight:"bold",color:"#c62828",margin:"8px 0 4px"}}>★ 未入力</div>
-              <div style={{fontSize:13,padding:"6px 8px",background:"#fff5f5",borderLeft:"3px solid #c62828",lineHeight:1.8}}>
-                {printAsk.filter(m=>!m.soft).map(m=>m.label).join(" / ")}
-              </div>
-            </>}
-            {printAsk.filter(m=>m.soft).length>0&&<>
-              <div style={{fontSize:13,fontWeight:"bold",color:"#c8860a",margin:"12px 0 4px"}}>☆ 確認</div>
-              <div style={{fontSize:13,padding:"6px 8px",background:"#fffaf0",borderLeft:"3px solid #c8860a",lineHeight:1.8}}>
-                {printAsk.filter(m=>m.soft).map(m=>m.label).join(" / ")}
-              </div>
-              <div style={{fontSize:12,color:"#666",marginTop:6,lineHeight:1.7}}>
-                振込のみの決済では時間の記載が不要な場合があります。代表の売主様の口座へ一括で振り込む場合、2人目以降の振込先は空欄で構いません。
-              </div>
-            </>}
-            <div style={{display:"flex",gap:8,marginTop:18}}>
-              <button onClick={()=>{setPrintAsk(null);setTimeout(()=>window.print(),80);}}
-                style={{flex:1,padding:"10px",background:"#8b0000",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontSize:13}}>このまま印刷</button>
-              <button onClick={()=>setPrintAsk(null)}
-                style={{flex:2,padding:"10px",background:"#1a3a6b",color:"#fff",border:"none",borderRadius:4,cursor:"pointer",fontWeight:"bold",fontSize:13}}>戻って入力する</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showManual&&(
         <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000}} onClick={()=>setShowManual(false)}>
