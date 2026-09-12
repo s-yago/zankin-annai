@@ -64,6 +64,8 @@ const INIT={
     {label:"その他経費",amt:0,method:"②ViVi",bankName:"",bankType:"普通",bankNo:"",bankHolder:""},
   ],
   sJuminCount:"1",sInkanCount:"1",sKenriCount:"1",landParcelCount:"1",sKenriCountOverride:"",
+  sItemKenri:true,sItemHanko:true,sItemJumin:true,sItemKoseki:true,sItemInkan:true,sItemKagi:true,
+  azukariItems:[],azukariDate:"",azukariFrom:"",azukariStaff:"",
   sKosekiHuhyo:"表示",showInkanWarning:"表示",
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
   sMultiNote:"",
@@ -273,20 +275,27 @@ function TRow({label,value,bold,indent,sub,total,warn,colSpan,wrap}){
 // 売主持参物
 function SellerItems({d,c}){
   const multiSeller=getSellers(d).length>1;
+  const kenri=calcKenriCount(d);
+  const sItemKenri=d.sItemKenri!==false;
+  const sItemHanko=d.sItemHanko!==false;
+  const sItemJumin=d.sItemJumin!==false;
+  const sItemKoseki=d.sItemKoseki!==false;
+  const sItemInkan=d.sItemInkan!==false;
+  const sItemKagi=d.sItemKagi!==false;
   return(
     <div style={{border:"1px solid #aaa",padding:"6px 10px",background:"#fafafa",marginBottom:6,fontSize:10}}>
       {multiSeller&&d.sMultiNote&&<div style={{color:"#8b0000",fontWeight:"bold",marginBottom:4}}>⚠ {d.sMultiNote}</div>}
-      {(()=>{const kenri=calcKenriCount(d);return kenri>0&&<div>□　登記識別情報通知（権利証）　{kenri}通</div>;})()} 
-      <div>□　実印、本人確認書類、通帳{multiSeller&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>
-      {num(d.sJuminCount)>0&&<div>□　住民票　{multiSeller?"各":""}{d.sJuminCount}通{multiSeller&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
-      {d.sKosekiHuhyo==="表示"&&<div>□　戸籍の附票の写し</div>}
-      {num(d.sInkanCount)>0&&<div>□　印鑑証明書　{multiSeller?"各":""}{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず残金決済時より３か月以内のものをご用意ください</span></div>}
+      {sItemKenri&&kenri>0&&<div>□　登記識別情報通知（権利証）　{kenri}通</div>}
+      {sItemHanko&&<div>□　実印、本人確認書類、通帳{multiSeller&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（各自ご持参ください）</span>}</div>}
+      {sItemJumin&&num(d.sJuminCount)>0&&<div>□　住民票　{multiSeller?"各":""}{d.sJuminCount}通{multiSeller&&<span style={{color:"#555",fontSize:9,marginLeft:4}}>（世帯が同一でない場合はそれぞれ必要となります）</span>}</div>}
+      {sItemKoseki&&d.sKosekiHuhyo==="表示"&&<div>□　戸籍の附票の写し</div>}
+      {sItemInkan&&num(d.sInkanCount)>0&&<div>□　印鑑証明書　{multiSeller?"各":""}{d.sInkanCount}通　<span style={{color:"#8b0000"}}>※必ず残金決済時より３か月以内のものをご用意ください</span></div>}
       {c.sCash>0&&(()=>{
         const cashItems=[...(d.sProxies||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0),...(d.sExtraItems||[]).filter(x=>x.method==="③現金"&&num(x.amt)>0)];
         const cashLabel=cashItems.map(x=>x.label).join("・");
         return <div style={{color:"#8b0000",fontWeight:"bold"}}>□　現金　{fmt(c.sCash)}円（{cashLabel}）</div>;
       })()}
-      <div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>
+      {sItemKagi&&<div>{d.propType==="戸建"?"□　カギ・建築確認・図面一式等":"□　カギ・管理規約・建築確認等"}</div>}
       {d.sExtraLabel1&&<div>□　{d.sExtraLabel1}</div>}
       {d.sExtraLabel2&&<div>□　{d.sExtraLabel2}</div>}
       {d.sExtraLabel3&&<div>□　{d.sExtraLabel3}</div>}
@@ -749,6 +758,82 @@ function BuyerGuide({d,c}){
         ))}
         {d.bNote}
       </div>}
+    </div>
+  );
+}
+
+// =================== 手付金領収書 ===================
+function DepositReceipt({d,c}){
+  const pWord=d.propType==="マンション"?"マンション":d.propType==="土地"?"土地":"土地建物";
+  const zipDisp=d.addressZip?`〒${d.addressZip.slice(0,3)}-${d.addressZip.slice(3)} `:"";
+  const buyers=getBuyers(d);
+  const depositAmt=Math.round(num(d.deposit));
+  return(
+    <div style={DOC.page}>
+      <DocHeader d={d}/>
+      <div style={DOC.docTitle}>手 付 金 領 収 書</div>
+      <div style={{marginBottom:14}}>{buyers.map((b,i)=><span key={i} style={{...DOC.addressee,marginRight:12}}>{b.name} 様</span>)}</div>
+      {depositAmt===0&&<div style={DOC.warningBox}>⚠ 手付金が入力されていません。③取引金額・清算金で手付金を入力してください。</div>}
+      <div style={{textAlign:"center",fontSize:24,fontWeight:"bold",padding:"14px 0",border:"2px solid #1a3a6b",marginBottom:14,background:"#f5f8ff",letterSpacing:2}}>金　{fmt(depositAmt)} 円</div>
+      <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
+        <tbody>
+          <TRow label="但　し" value={`${zipDisp}${d.address} の${pWord}売買代金の手付金として`} wrap/>
+          <TRow label="領収日" value={jDate(d.contractDate)||jDate(d.settlementDT)}/>
+        </tbody>
+      </table>
+      <div style={{fontSize:11,margin:"6px 0 18px"}}>上記正に領収致しました。</div>
+      <SellerSignBlock d={d}/>
+      <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
+    </div>
+  );
+}
+
+// =================== 預かり証 ===================
+function AzukariDoc({d,c}){
+  const sellers=getSellers(d);
+  const buyers=getBuyers(d);
+  const items=(d.azukariItems||[]).filter(x=>x.checked&&x.label);
+  const isSeller=d.azukariFrom==="売主"||!d.azukariFrom;
+  const fromPeople=isSeller?sellers:buyers;
+  return(
+    <div style={DOC.page}>
+      <DocHeader d={d}/>
+      <div style={DOC.docTitle}>預　か　り　証</div>
+      {items.length===0&&<div style={DOC.warningBox}>⚠ 預かり項目が設定されていません。④売主設定の「預かり証設定」で項目を追加してください。</div>}
+      <div style={{textAlign:"right",marginBottom:8,fontSize:10}}>{jDate(d.azukariDate||d.settlementDT)}</div>
+      <div style={{marginBottom:12}}>
+        {fromPeople.map((p,i)=><span key={i} style={{...DOC.addressee,marginRight:12,fontSize:13}}>{p.name} 様</span>)}
+      </div>
+      <div style={{fontSize:11,margin:"4px 0 14px",lineHeight:2}}>
+        下記の物件に関し、以下のものをお預かりしたことを証します。
+      </div>
+      <div style={{...DOC.sectionHead,background:"#1a3a6b",color:"#fff",padding:"4px 10px",marginBottom:0}}>■ 物　件</div>
+      <table style={{...DOC.table,marginBottom:12}}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
+        <tbody>
+          <TRow label="物件種別" value={d.propType+(d.propType==="マンション"&&d.mansionName?`　${d.mansionName} ${d.roomNo||""}`:"　"+d.address)}/>
+        </tbody>
+      </table>
+      <div style={{...DOC.sectionHead,background:"#1a3a6b",color:"#fff",padding:"4px 10px",marginBottom:0}}>■ 預かり内容</div>
+      <table style={{...DOC.table,marginBottom:16}}>
+        <thead><tr><th style={DOC.tdHead}>No.</th><th style={DOC.tdHead}>品　目</th><th style={DOC.tdHead}>数量・備考</th></tr></thead>
+        <tbody>
+          {items.length>0?items.map((x,i)=>(
+            <tr key={i}><td style={{...DOC.td,textAlign:"center",width:"8%"}}>{i+1}</td><td style={DOC.td}>{x.label}</td><td style={{...DOC.td,width:"35%"}}>{x.note||""}</td></tr>
+          )):<tr><td colSpan={3} style={{...DOC.td,color:"#aaa",textAlign:"center"}}>（預かり項目を設定してください）</td></tr>}
+        </tbody>
+      </table>
+      <div style={{fontSize:11,lineHeight:2,marginBottom:20}}>
+        上記のものを確かにお預かりいたしました。
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:40,marginTop:16}}>
+        <div style={{textAlign:"center",fontSize:10}}>
+          <div style={{marginBottom:40}}>お預かりした者（当社）</div>
+          <div>ViVi不動産株式会社</div>
+          <div>担当：{d.azukariStaff||d.staff}</div>
+          <span style={DOC.stamp}>印</span>
+        </div>
+      </div>
+      <div style={DOC.footer}>ViVi不動産株式会社　TEL：0120-145-151　担当：{d.staff}</div>
     </div>
   );
 }
@@ -1484,8 +1569,8 @@ function ManualContent(){
   </div>);
 }
 
-const TABS=["案内_売主","案内_買主","領収書","実測清算覚書","固都税清算書","管理費等清算書","引渡確認書","給水装置変更届"];
-const TAB_COMPS=[SellerGuide,BuyerGuide,Receipt,CoverageMemo,TaxDoc,MgmtDoc,HandoverDoc,WaterDoc];
+const TABS=["案内_売主","案内_買主","手付金領収書","領収書","実測清算覚書","固都税清算書","管理費等清算書","引渡確認書","給水装置変更届","預かり証"];
+const TAB_COMPS=[SellerGuide,BuyerGuide,DepositReceipt,Receipt,CoverageMemo,TaxDoc,MgmtDoc,HandoverDoc,WaterDoc,AzukariDoc];
 const SK="vivi_saved_cases";
 
 // アコーディオン — App外のトップレベルで定義することでフォーカス問題を回避
@@ -1780,10 +1865,60 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="戸籍の附票の写し"><TB val={d.sKosekiHuhyo} onChange={set("sKosekiHuhyo")} opts={["表示","非表示"]}/></F>
         <F label="印鑑証明通数"><SI val={String(d.sInkanCount)} onChange={set("sInkanCount")} opts={["0","1","2","3"]}/></F>
         <F label="印鑑証明書注意事項"><TB val={d.showInkanWarning} onChange={set("showInkanWarning")} opts={["表示","非表示"]}/></F>
+        <div style={{fontSize:10,fontWeight:"bold",color:"#1a3a6b",marginBottom:3,marginTop:4}}>持参物の表示設定</div>
+        <div style={{fontSize:9,color:"#888",marginBottom:4}}>チェックを外すと案内書から非表示になります</div>
+        {[
+          ["sItemKenri","登記識別情報通知（権利証）"],
+          ["sItemHanko","実印・本人確認書類・通帳"],
+          ["sItemJumin","住民票"],
+          ["sItemKoseki","戸籍の附票の写し"],
+          ["sItemInkan","印鑑証明書"],
+          ["sItemKagi",d.propType==="マンション"?"カギ・管理規約・建築確認等":"カギ・建築確認・図面一式等"],
+        ].map(([key,label])=>(
+          <div key={key} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,padding:"3px 6px",background:d[key]===false?"#fff0f0":"#f0fff4",borderRadius:3,border:`1px solid ${d[key]===false?"#f0b0b0":"#b0e0b0"}`}}>
+            <input type="checkbox" checked={d[key]!==false} onChange={e=>set(key)(e.target.checked)} style={{width:14,height:14,cursor:"pointer"}}/>
+            <span style={{fontSize:10,color:d[key]===false?"#c00":"#333",textDecoration:d[key]===false?"line-through":"none"}}>{label}</span>
+          </div>
+        ))}
         <F label="その他持参物①"><TI val={d.sExtraLabel1} onChange={set("sExtraLabel1")} placeholder="例：固定資産税納税通知書"/></F>
         <F label="その他持参物②"><TI val={d.sExtraLabel2} onChange={set("sExtraLabel2")} placeholder="例：建物図面"/></F>
         <F label="その他持参物③"><TI val={d.sExtraLabel3} onChange={set("sExtraLabel3")} placeholder="例：マンション管理費領収書"/></F>
         <F label="複数売主時の注意書き"><TI val={d.sMultiNote} onChange={set("sMultiNote")} placeholder="例：ご夫婦それぞれ実印が必要です"/></F>
+        <div style={{fontSize:10,fontWeight:"bold",color:"#5a3000",marginBottom:3,marginTop:8,background:"#fff3cd",padding:"4px 8px",borderRadius:3,border:"1px solid #ffc107"}}>📋 預かり証の設定</div>
+        <F label="預かり相手">
+          <TB val={d.azukariFrom||"売主"} onChange={set("azukariFrom")} opts={["売主","買主"]}/>
+        </F>
+        <F label="預かり日">
+          <DI val={d.azukariDate||""} onChange={set("azukariDate")}/>
+        </F>
+        <F label="預かり担当者"><TI val={d.azukariStaff||""} onChange={set("azukariStaff")} placeholder="空欄=担当者名を使用"/></F>
+        <div style={{fontSize:9,color:"#555",marginBottom:3}}>預かり項目（チェックON＝預かり証に表示）</div>
+        {(()=>{
+          const defaultItems=[
+            {id:"kenri",label:"登記識別情報通知（権利証）",note:""},
+            {id:"inkan",label:"印鑑証明書",note:""},
+            {id:"jumin",label:"住民票",note:""},
+            {id:"kagi",label:"カギ",note:""},
+            {id:"zumen",label:"建築確認・図面一式",note:""},
+            {id:"kanri",label:"管理規約・使用細則",note:""},
+            {id:"genkin",label:"現金",note:""},
+            {id:"tessuu",label:"手数料（領収書）",note:""},
+          ];
+          const items=d.azukariItems&&d.azukariItems.length>0?d.azukariItems:defaultItems;
+          const setItems=newItems=>setD(p=>({...p,azukariItems:newItems}));
+          const currentItems=d.azukariItems&&d.azukariItems.length>0?d.azukariItems:defaultItems.map(x=>({...x,checked:false}));
+          return(<>
+            {currentItems.map((x,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:3,padding:"3px 5px",background:x.checked?"#fffbe6":"#f9f9f9",borderRadius:3,border:`1px solid ${x.checked?"#ffc107":"#ddd"}`}}>
+                <input type="checkbox" checked={!!x.checked} onChange={e=>{const n=[...currentItems];n[i]={...n[i],checked:e.target.checked};setItems(n);}} style={{width:14,height:14,cursor:"pointer"}}/>
+                <input defaultValue={x.label} onBlur={e=>{const n=[...currentItems];n[i]={...n[i],label:e.target.value};setItems(n);}} style={{...iS,flex:2,fontSize:9,padding:"2px 4px"}}/>
+                <input defaultValue={x.note||""} onBlur={e=>{const n=[...currentItems];n[i]={...n[i],note:e.target.value};setItems(n);}} placeholder="数量・備考" style={{...iS,flex:1,fontSize:9,padding:"2px 4px"}}/>
+                <button onClick={()=>{const n=currentItems.filter((_,j)=>j!==i);setItems(n);}} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",flexShrink:0}}>✕</button>
+              </div>
+            ))}
+            <button onClick={()=>setItems([...currentItems,{id:`custom_${Date.now()}`,label:"",note:"",checked:true}])} style={{fontSize:9,padding:"2px 6px",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,cursor:"pointer",width:"100%",marginTop:2}}>＋ 項目を追加</button>
+          </>);
+        })()}
         <div style={{fontSize:10,fontWeight:"bold",color:"#8b0000",marginBottom:3,marginTop:4}}>その他諸費用（売主様ご負担・直接支払分）</div>
         <div style={{fontSize:9,color:"#888",marginBottom:4}}>残金受取後に売主様が直接支払う費用（住所変更登記・解体・ハウスクリーニング等）</div>
         {(d.sExtraItems||[]).map((x,i)=>(
