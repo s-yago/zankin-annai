@@ -1263,111 +1263,223 @@ function WaterDoc({d,c}){
 
 // =================== マニュアル ===================
 function ManualContent(){
-  const h2={fontSize:13,fontWeight:"bold",color:"#fff",background:"#1a3a6b",padding:"5px 10px",borderRadius:4,marginTop:18,marginBottom:8};
-  const h3={fontSize:12,fontWeight:"bold",color:"#1a3a6b",borderLeft:"3px solid #1a3a6b",paddingLeft:8,marginTop:12,marginBottom:4};
-  const box={background:"#f0f4ff",border:"1px solid #c0cce8",borderRadius:4,padding:"8px 12px",marginBottom:8,fontSize:10};
-  const warn={background:"#fff8e0",border:"1px solid #c8860a",borderRadius:4,padding:"8px 12px",marginBottom:8,fontSize:10};
+  const h2={fontSize:13,fontWeight:"bold",color:"#fff",background:"#1a3a6b",padding:"6px 12px",borderRadius:4,marginTop:20,marginBottom:8,letterSpacing:1};
+  const h3={fontSize:11,fontWeight:"bold",color:"#1a3a6b",borderLeft:"3px solid #1a3a6b",paddingLeft:8,marginTop:10,marginBottom:4};
+  const box={background:"#f0f4ff",border:"1px solid #c0cce8",borderRadius:4,padding:"8px 12px",marginBottom:6,fontSize:10,lineHeight:1.8};
+  const warn={background:"#fff8e0",border:"1px solid #c8860a",borderRadius:4,padding:"8px 12px",marginBottom:6,fontSize:10,lineHeight:1.8};
+  const tip={background:"#f0fff4",border:"1px solid #4caf50",borderRadius:4,padding:"8px 12px",marginBottom:6,fontSize:10,lineHeight:1.8};
   const tbl={width:"100%",borderCollapse:"collapse",marginBottom:8,fontSize:10};
-  const th={background:"#1a3a6b",color:"#fff",padding:"4px 8px",border:"1px solid #aaa"};
-  const td={padding:"4px 8px",border:"1px solid #ccc",verticalAlign:"top"};
-  const td2={...td,background:"#f8f8f8"};
-  return(<div>
-    <div style={{...box,borderColor:"#1a3a6b",background:"#eef3fb"}}>
-      このツールは、ViVi不動産の残金決済に必要な各種書類（売主・買主案内、領収書、清算書、確認書等）を自動作成するシステムです。左側の入力パネルに情報を入力すると、右側にリアルタイムでプレビューが表示されます。
+  const th={background:"#1a3a6b",color:"#fff",padding:"5px 8px",border:"1px solid #aaa",textAlign:"left"};
+  const td={padding:"5px 8px",border:"1px solid #ccc",verticalAlign:"top",lineHeight:1.7};
+  const td2={...td,background:"#f0f4ff",fontWeight:"bold",whiteSpace:"nowrap"};
+  const badge=(label,bg,col)=><span style={{display:"inline-block",background:bg,color:col,border:`1px solid ${col}`,borderRadius:3,padding:"1px 6px",fontSize:9,fontWeight:"bold",marginRight:3}}>{label}</span>;
+  const step=(n,title,desc)=><div style={{display:"flex",gap:8,marginBottom:8,alignItems:"flex-start"}}>
+    <div style={{background:"#1a3a6b",color:"#fff",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:"bold",flexShrink:0}}>{n}</div>
+    <div><div style={{fontWeight:"bold",fontSize:11,marginBottom:2}}>{title}</div><div style={{fontSize:10,color:"#444",lineHeight:1.7}}>{desc}</div></div>
+  </div>;
+
+  return(<div style={{fontSize:10}}>
+    <div style={{background:"#eef3fb",border:"1px solid #1a3a6b",borderRadius:6,padding:"10px 14px",marginBottom:12,fontSize:10,lineHeight:1.8}}>
+      <strong style={{color:"#1a3a6b",fontSize:11}}>ViVi不動産 残金決済・清算書作成ツール</strong><br/>
+      売主様・買主様への残金決済案内書、領収書、清算書、引渡確認書などを自動作成します。<br/>
+      左の入力パネルに情報を入力すると、右側にリアルタイムでプレビューが表示されます。
     </div>
 
-    <div style={h2}>① 基本的な使い方の流れ</div>
-    <div style={{...box}}>
-      <div style={{fontWeight:"bold",marginBottom:4}}>【STEP 1】新規案件を入力する</div>
-      入力パネル上部の「＋新規」ボタンをクリック → 各セクションを開いて情報を入力 → 右側のプレビューでリアルタイム確認
-    </div>
-    <div style={{...box}}>
-      <div style={{fontWeight:"bold",marginBottom:4}}>【STEP 2】保存する</div>
-      「💾 保存」ボタン → 案件名を入力してOK。上書き保存は「💾 上書き」、別名保存は「📋 別名」ボタン。
-    </div>
-    <div style={{...box}}>
-      <div style={{fontWeight:"bold",marginBottom:4}}>【STEP 3】印刷・PDF化する</div>
-      右側プレビューのタブで印刷したい書類を選択 → ブラウザの印刷機能（Ctrl+P / ⌘+P）を使用。PDFとして保存する場合は、プリンターで「PDFに保存」を選択。
-    </div>
+    {/* ===== 基本の流れ ===== */}
+    <div style={h2}>① 基本的な使い方</div>
+    {step(1,"新規案件を作成","入力パネル上部の「＋新規」ボタンをクリック。各セクション（①〜⑥）を開いて情報を入力します。")}
+    {step(2,"ハトサポPDFから自動読込（推奨）","オレンジ色の「🏠 ハトサポPDFから読込」ボタンをクリック。取引成立台帳PDFを選ぶと、売主・買主・物件情報・契約日・売買代金などを自動入力します。読み込み後に確認ダイアログが表示されます。")}
+    {step(3,"プレビューで確認","右側のタブをクリックして各書類をプレビュー。上部のサマリーバーに残代金・売主受取額・買主総額・自己資金が表示されます。")}
+    {step(4,"保存","「💾 保存」ボタンで案件名をつけて保存（最大30件）。次回から「📂 履歴」で呼び出せます。")}
+    {step(5,"印刷・PDF化","印刷したいタブを選択 → ブラウザの「🖨 印刷/PDF」ボタンまたはCtrl+P。給水装置変更届は専用の印刷ウィンドウボタンを使用してください。")}
 
-    <div style={h2}>② 入力パネルの構成</div>
+    {/* ===== 入力パネル構成 ===== */}
+    <div style={h2}>② 入力セクションの構成</div>
     <table style={tbl}>
       <thead><tr><th style={th}>セクション</th><th style={th}>主な入力内容</th></tr></thead>
       <tbody>
-        <tr><td style={td2}>① 基本情報・物件・当事者</td><td style={td}>取引種別、物件種別・所在地・面積、売主・買主の氏名・住所・口座情報、決済日時・場所</td></tr>
-        <tr><td style={td2}>② 司法書士・本人面談</td><td style={td}>担当事務所・担当者名、売主・買主それぞれの面談日時・場所</td></tr>
-        <tr><td style={td2}>③ 取引金額・清算金</td><td style={td}>売買代金・手付金、固都税・管理費清算、実測清算の設定</td></tr>
-        <tr><td style={td2}>④ 売主様の設定</td><td style={td}>ローン残債・仲介手数料、代行費用（支払方法選択）、その他諸費用、備考欄</td></tr>
-        <tr><td style={td2}>⑤ 買主様の設定</td><td style={td}>仲介手数料・ローン情報・金消日時、その他諸費用、持参物フリー欄、備考欄</td></tr>
+        <tr><td style={td2}>① 基本情報・物件・当事者</td><td style={td}>物件種別・所在地・面積、売主・買主の氏名・住所・口座・代理人、契約日・決済日時・場所</td></tr>
+        <tr><td style={td2}>② 司法書士・本人面談</td><td style={td}>担当司法書士事務所・担当者、売主本人面談・買主本人確認の日時・場所・タイミング・持参物</td></tr>
+        <tr><td style={td2}>③ 取引金額・清算金</td><td style={td}>売買代金・手付金、固都税・管理費清算設定、実測清算（平米単価・面積）</td></tr>
+        <tr><td style={td2}>④ 売主様の設定</td><td style={td}>ローン残債・仲介手数料、代行費用・支払方法、登記識別情報通知通数、持参物設定、備考欄</td></tr>
+        <tr><td style={td2}>⑤ 買主様の設定</td><td style={td}>仲介手数料・ローン融資額・金消日時、諸費用・引落費用、持参物・決済書類通数、備考欄</td></tr>
         <tr><td style={td2}>⑥ その他設定</td><td style={td}>ライフライン代行対応、担当者名</td></tr>
       </tbody>
     </table>
 
-    <div style={h2}>③ 売主・買主が複数の場合</div>
-    <div style={h3}>売主の追加</div>
-    <div style={box}>①基本情報の「売主」欄で「＋売主を追加」ボタンをクリック。売主ごとに氏名・住所・振込口座・振込金額を設定できます。<br/>
-    ・振込金額を入力すると残額が自動計算されて次の売主欄に表示されます。<br/>
-    ・2件目以降は「振込手数料は売主様ご負担」が自動表示されます。<br/>
-    ・本人面談への出席（来る/来ない）も売主ごとに設定できます。</div>
-    <div style={h3}>買主の追加</div>
-    <div style={box}>①基本情報の「買主」欄で「＋買主を追加」ボタンをクリック。<br/>
-    ・住宅ローン利用時：全員出席必須のため出席設定は不要です。<br/>
-    ・ローン非利用時：本人面談・残金決済への出席（来る/来ない）を買主ごとに設定できます。</div>
+    {/* ===== ハトサポPDF読込 ===== */}
+    <div style={h2}>③ ハトサポPDF読込機能</div>
+    <div style={box}>
+      取引成立台帳（区分所有建物売買・土地建物売買・土地売買）のPDFから以下の情報を自動取得します。<br/>
+      　・売主・買主の氏名・住所（複数名対応）<br/>
+      　・代理人・遺言執行者の氏名（本人欄が空欄の場合も対応）<br/>
+      　・物件種別・マンション名・号室・所在地・住居表示<br/>
+      　・契約成立日・売買代金・手付金
+    </div>
+    <div style={warn}>
+      ⚠ PDFの種類によっては一部読み取れない場合があります。読込後は必ず内容を確認・修正してください。<br/>
+      　・代理人住所は自動取得されない場合があります（手動入力してください）<br/>
+      　・土地建物の場合、住居表示が「実施区域外」の場合は住居表示欄が空欄になります
+    </div>
 
-    <div style={h2}>④ 代行費用・諸費用の支払方法</div>
+    {/* ===== 売主・買主が複数 ===== */}
+    <div style={h2}>④ 売主・買主が複数の場合</div>
+    <div style={h3}>売主の追加</div>
+    <div style={box}>
+      「売主」欄の「＋ 売主を追加」ボタンをクリック。売主ごとに設定できます：<br/>
+      　・氏名・住所・振込口座（銀行名・種別・口座番号・名義人）<br/>
+      　・振込金額（空欄=残額が自動計算）<br/>
+      　・2人目以降は「振込手数料は売主様ご負担」と自動表示<br/>
+      　・本人面談への出席（来る/来ない）
+    </div>
+    <div style={h3}>代理人の追加</div>
+    <div style={box}>
+      各売主・買主カードの「＋代理人追加」ボタン（黄色）をクリック。<br/>
+      　・代理人氏名・代理人住所（法律事務所等）を入力<br/>
+      　・案内書の備考欄・領収書・覚書の署名欄に代理人情報が自動表示されます<br/>
+      　・遺言執行者の場合：本人欄が空欄でも代理人名が本人名として設定されます
+    </div>
+    <div style={h3}>買主の追加</div>
+    <div style={box}>
+      「買主」欄の「＋ 買主を追加」ボタンをクリック。<br/>
+      　・ローン利用時：全員出席必須のため出席設定は不要<br/>
+      　・ローン非利用時：本人面談・残金決済への出席（来る/来ない）を個別設定可能
+    </div>
+
+    {/* ===== 代行費用の支払方法 ===== */}
+    <div style={h2}>⑤ 代行費用・諸費用の支払方法</div>
     <table style={tbl}>
-      <thead><tr><th style={th}>選択肢</th><th style={th}>内容</th><th style={th}>案内書への反映</th></tr></thead>
+      <thead><tr><th style={th}>選択肢</th><th style={th}>内容</th><th style={th}>案内書への表示</th></tr></thead>
       <tbody>
-        <tr><td style={td2}>②ViVi</td><td style={td}>当社経由でお支払い</td><td style={td}>②ViVi不動産へのお振込に含まれる</td></tr>
-        <tr><td style={td2}>③現金</td><td style={td}>当日現金でお支払い</td><td style={td}>持参物欄に自動表示。備考欄への記載が促される</td></tr>
-        <tr><td style={td2}>別口座</td><td style={td}>別途指定口座へ振込</td><td style={td}>振込先一覧に別口座として自動表示</td></tr>
+        <tr><td style={td2}>②ViVi</td><td style={td}>当社経由でお支払い</td><td style={td}>「②ViVi不動産へのお振込」に合算</td></tr>
+        <tr><td style={td2}>③現金</td><td style={td}>当日現金でお支払い</td><td style={td}>持参物欄に金額付きで表示。備考欄への記載促進アラートが出る</td></tr>
+        <tr><td style={td2}>別口座</td><td style={td}>指定口座へ直接振込</td><td style={td}>★入金額の内訳として表示。「残金決済後3日以内にお振込ください」と案内</td></tr>
       </tbody>
     </table>
-    <div style={warn}>⚠ ③現金を選んだ項目がある場合、入力パネルに警告ボックスが表示されます。備考欄に現金の取り扱い方法（事前に自分でご用意 / 残代金受取後に引き出し等）を必ず記載してください。</div>
+    <div style={warn}>
+      ⚠ 「③現金」を選んだ項目がある場合、備考欄に現金の取り扱い方法を必ず記載してください。<br/>
+      例：「残代金受取後に引き出して司法書士へお支払いください」など
+    </div>
+    <div style={tip}>
+      💡【別口座の表示について】<br/>
+      売主案内の「お金の流れ」では、★売主様口座へのご入金額＝収入(A)－当社経由分(B)で計算されます。別口座振込分は★の入金額の内訳として表示され、「差引：実質手取り額」も併記されます。
+    </div>
 
-    <div style={h2}>⑤ 出力できる書類一覧</div>
+    {/* ===== 登記識別情報通知 ===== */}
+    <div style={h2}>⑥ 登記識別情報通知（権利証）通数の自動計算</div>
+    <div style={box}>
+      通数＝不動産の個数 × 売主（名義人）の人数 で自動計算されます。<br/><br/>
+      <table style={{...tbl,marginBottom:0}}>
+        <thead><tr><th style={th}>物件種別</th><th style={th}>不動産個数の考え方</th><th style={th}>例（売主2名）</th></tr></thead>
+        <tbody>
+          <tr><td style={td2}>マンション（敷地権化済）</td><td style={td}>1個</td><td style={td}>1×2＝2通</td></tr>
+          <tr><td style={td2}>戸建</td><td style={td}>建物1＋土地筆数</td><td style={td}>（1+1）×2＝4通</td></tr>
+          <tr><td style={td2}>土地</td><td style={td}>土地筆数</td><td style={td}>1×2＝2通</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style={box}>
+      ④売主設定欄の「土地の筆数」で筆数を変更できます（マンションでも敷地権化されていない場合に使用可）。<br/>
+      自動計算値は手入力で上書きでき、「リセット」ボタンで自動計算に戻せます。
+    </div>
+
+    {/* ===== 固都税清算 ===== */}
+    <div style={h2}>⑦ 固都税・管理費清算の設定</div>
+    <div style={h3}>固都税清算</div>
+    <div style={box}>
+      ③取引金額欄で設定します：<br/>
+      　・固都税年額を入力（都市計画税あり/なしも選択可）<br/>
+      　・起算日：4/1（富山市標準）または1/1<br/>
+      　・端数処理：切り捨て／四捨五入／切り上げ<br/>
+      　・越年精算：翌年度分も含める場合は「あり」
+    </div>
+    <div style={h3}>管理費等清算（マンションのみ）</div>
+    <div style={box}>
+      管理費・修繕積立金・その他（駐車場代等）の月額を入力。<br/>
+      清算範囲：当月のみ／翌月まで／翌々月まで　から選択。日割り計算を自動で行います。
+    </div>
+
+    {/* ===== 実測清算 ===== */}
+    <div style={h2}>⑧ 実測清算（覚書）の設定</div>
+    <div style={box}>
+      ③取引金額欄で「平米単価」「公簿面積」「実測面積」をすべて入力すると実測清算が有効になります。<br/>
+      　・確定売買金額＝平米単価×実測面積（円未満切り捨て）<br/>
+      　・残代金＝確定売買金額－手付金<br/>
+      実測清算覚書タブに計算結果・署名欄が自動表示されます。
+    </div>
+
+    {/* ===== 持参物 ===== */}
+    <div style={h2}>⑨ 持参物の設定</div>
+    <div style={box}>
+      各持参物欄は空欄の場合デフォルト文言が表示されます。変更したい場合のみ入力してください。<br/><br/>
+      <table style={{...tbl,marginBottom:0}}>
+        <thead><tr><th style={th}>設定欄</th><th style={th}>デフォルト表示</th><th style={th}>設定場所</th></tr></thead>
+        <tbody>
+          <tr><td style={td2}>本人面談持参物（買主）</td><td style={td}>実印、本人確認書類、通帳（スマホ）</td><td style={td}>②司法書士・面談</td></tr>
+          <tr><td style={td2}>金消持参物（買主）</td><td style={td}>実印、通帳、スマホ</td><td style={td}>⑤買主設定</td></tr>
+          <tr><td style={td2}>決済持参物（買主）</td><td style={td}>実印、本人確認書類、通帳（スマホ）</td><td style={td}>⑤買主設定</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    {/* ===== 出力書類 ===== */}
+    <div style={h2}>⑩ 出力できる書類一覧</div>
     <table style={tbl}>
       <thead><tr><th style={th}>タブ名</th><th style={th}>書類の内容</th><th style={th}>備考</th></tr></thead>
       <tbody>
-        <tr><td style={td2}>案内_売主</td><td style={td}>売主様向け残金決済案内</td><td style={td}>面談・決済日時、お金の流れ、持参物</td></tr>
-        <tr><td style={td2}>案内_買主</td><td style={td}>買主様向け残金決済案内</td><td style={td}>金消・面談・決済日時、必要資金、振込先</td></tr>
-        <tr><td style={td2}>領収書</td><td style={td}>売買残代金の領収書</td><td style={td}>売主全員の署名欄あり</td></tr>
-        <tr><td style={td2}>実測清算覚書</td><td style={td}>実測面積の清算確認書</td><td style={td}>実測清算設定時のみ有効</td></tr>
-        <tr><td style={td2}>固都税清算書</td><td style={td}>固定資産税・都市計画税の清算金領収書</td><td style={td}>清算金がある場合</td></tr>
-        <tr><td style={td2}>管理費等清算書</td><td style={td}>管理費・修繕積立金の清算金領収書</td><td style={td}>マンションのみ</td></tr>
-        <tr><td style={td2}>引渡確認書</td><td style={td}>売買物件引渡確認書</td><td style={td}>鍵等の本数は手書き</td></tr>
-        <tr><td style={td2}>給水装置変更届</td><td style={td}>給水装置所有者変更届</td><td style={td}>戸建・土地のみ（マンション非対応）</td></tr>
+        <tr><td style={td2}>案内_売主</td><td style={td}>売主様向け残金決済案内</td><td style={td}>面談・決済日時、お金の流れ（精算内訳）、持参物、火災保険・固都税案内</td></tr>
+        <tr><td style={td2}>案内_買主</td><td style={td}>買主様向け残金決済案内</td><td style={td}>本人確認・金消・決済日時、必要資金の内訳、振込先一覧</td></tr>
+        <tr><td style={td2}>領収書</td><td style={td}>売買残代金の領収書</td><td style={td}>売主全員の署名欄・代理人欄あり</td></tr>
+        <tr><td style={td2}>実測清算覚書</td><td style={td}>実測面積確定の覚書</td><td style={td}>平米単価・実測面積の入力がある場合のみ有効</td></tr>
+        <tr><td style={td2}>固都税清算書</td><td style={td}>固定資産税等の清算金領収書</td><td style={td}>清算金額・計算内訳・売主署名欄</td></tr>
+        <tr><td style={td2}>管理費等清算書</td><td style={td}>管理費・修繕積立金の清算金領収書</td><td style={td}>マンションのみ。日割り計算内訳付き</td></tr>
+        <tr><td style={td2}>引渡確認書</td><td style={td}>売買物件引渡確認書</td><td style={td}>鍵等の本数は当日手書き</td></tr>
+        <tr><td style={td2}>給水装置変更届</td><td style={td}>給水装置所有者変更届</td><td style={td}>戸建・土地のみ。「A4専用印刷ウィンドウ」ボタンから印刷</td></tr>
       </tbody>
     </table>
 
-    <div style={h2}>⑥ 保存・履歴機能</div>
+    {/* ===== 保存・履歴 ===== */}
+    <div style={h2}>⑪ 保存・履歴・データ管理</div>
     <div style={box}>
-      ・「💾 保存」：現在の入力内容に名前をつけて保存（最大30件）<br/>
-      ・「💾 上書き」：現在編集中の案件を上書き保存<br/>
-      ・「📋 別名」：現在の案件を別の名前でコピー保存<br/>
-      ・「📂 履歴」：保存済みの案件一覧を表示。クリックで読み込み、削除も可能<br/>
-      ※ データはブラウザのローカルストレージに保存されます。ブラウザのデータを削除すると消えますのでご注意ください。
+      <strong>保存ボタン</strong><br/>
+      　・「💾 保存」：案件名をつけて新規保存（最大30件）<br/>
+      　・「💾 上書き」：編集中の案件を上書き保存<br/>
+      　・「📋 別名」：別の名前でコピー保存<br/>
+      　・「📂 履歴(N)」：保存済み一覧から読み込み・削除<br/><br/>
+      <strong>JSONファイルでのバックアップ</strong><br/>
+      　・「📤 JSONで保存」：案件データをJSONファイルとしてダウンロード<br/>
+      　・「📥 JSONを読込」：別のデバイスやバックアップからデータを復元
+    </div>
+    <div style={warn}>
+      ⚠ データはブラウザのローカルストレージに保存されます。<br/>
+      　・別のブラウザ・デバイスでは引き継がれません<br/>
+      　・ブラウザの「閲覧データ削除」でデータが消える場合があります<br/>
+      　→ 重要な案件は「📤 JSONで保存」でバックアップを取ることをおすすめします
     </div>
 
-    <div style={h2}>⑦ よくある設定パターン</div>
-    <div style={h3}>ローンなし・集合決済</div>
-    <div style={box}>取引種別：売主／ローン利用：なし／決済集合：あり　→ 金消契約欄は非表示になります</div>
-    <div style={h3}>ローンあり・振込決済</div>
-    <div style={box}>ローン利用：あり／決済集合：なし　→ 金消契約のみ来場、残金決済は振込で完了するパターン</div>
-    <div style={h3}>売主が夫婦2名</div>
-    <div style={box}>①基本情報の「＋売主を追加」で2名分入力。それぞれに振込口座と振込金額を設定。2人目の振込手数料は自動的に売主ご負担と表示されます。</div>
-    <div style={h3}>解体費用を当社経由で回収する場合</div>
-    <div style={box}>④売主設定の「その他諸費用」→「＋費用を追加」→ 費用名「建物解体費」、支払方法「②ViVi」を選択。買主から当社経由でお預かりし、業者へ支払います。</div>
-    <div style={h3}>司法書士への抵当権抹消費用を当日現金で</div>
-    <div style={box}>④売主設定の代行費用「抵当権抹消・住所登記変更」→「③現金」を選択。備考欄に「残代金受取後に引き出してその場でお支払いください」等を記載。</div>
+    {/* ===== よくあるパターン ===== */}
+    <div style={h2}>⑫ よくある設定パターン</div>
+    <div style={h3}>パターン①：ローンなし・集合決済（現金売買）</div>
+    <div style={tip}>ローン利用：なし　／　決済集合：あり<br/>→ 金消契約・本人確認欄は非表示。シンプルな集合決済の案内になります。</div>
+    <div style={h3}>パターン②：ローンあり・振込決済</div>
+    <div style={tip}>ローン利用：あり　／　決済集合：なし<br/>→ 金消契約時のみ来場。残金は振込で完了する案内になります。本人確認は「金消契約時に併せて実施」に設定すると別途面談の表示が消えます。</div>
+    <div style={h3}>パターン③：売主が夫婦2名（共有名義）</div>
+    <div style={tip}>「＋売主を追加」で2名登録。土地1筆なら「土地の筆数：1」、売主2名 → 登記識別情報通知は自動で（1+1）×2＝4通と計算されます。それぞれ振込口座・振込金額を設定（1人目に金額入力→残額が2人目に自動表示）。</div>
+    <div style={h3}>パターン④：抵当権抹消費用を司法書士経由で支払う</div>
+    <div style={tip}>④売主設定の「抵当権抹消・住所登記変更」欄に金額を入力し「②ViVi」を選択。→ 当社経由で司法書士へ支払います。</div>
+    <div style={h3}>パターン⑤：解体費用を買主側から回収する</div>
+    <div style={tip}>④売主設定の「その他諸費用」→「＋費用を追加」→ 費用名「建物解体費」、支払方法「②ViVi」。買主→ViVi→業者の流れで表示されます。</div>
+    <div style={h3}>パターン⑥：遺言執行者が代理人として手続きする場合</div>
+    <div style={tip}>ハトサポPDFを読み込むと、売主本人欄が空欄の場合に代理人（遺言執行者）名が自動設定されます。代理人住所（法律事務所等）は手動で入力してください。</div>
 
-    <div style={h2}>⑧ 注意事項</div>
+    {/* ===== 注意事項 ===== */}
+    <div style={h2}>⑬ 注意事項</div>
     <div style={warn}>
-      ・金額の単位はすべて「円」です。<br/>
-      ・固都税の起算日は「4/1」（富山市標準）または「1/1」から選択できます。<br/>
-      ・翌年度がうるう年の場合、日数は自動的に366日と表示されます。<br/>
-      ・実測清算を行う場合は「平米単価」「公簿面積」「実測面積」をすべて入力してください。<br/>
-      ・データはこのブラウザ内にのみ保存されます。別のデバイスやブラウザでは引き継がれません。
+      ・金額の単位はすべて「円」です（カンマなしで入力）<br/>
+      ・固都税の起算日は「4/1」（富山市標準）から設定してください<br/>
+      ・実測清算は「平米単価」「公簿面積」「実測面積」の3項目すべて入力が必要です<br/>
+      ・給水装置変更届の印刷は必ず「A4専用印刷ウィンドウ」ボタンから行ってください<br/>
+      ・このツールはViVi不動産専用です。社外への配布・共有はご遠慮ください
     </div>
   </div>);
 }
