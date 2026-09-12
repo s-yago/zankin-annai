@@ -66,6 +66,7 @@ const INIT={
   sJuminCount:"1",sInkanCount:"1",sKenriCount:"1",landParcelCount:"1",sKenriCountOverride:"",
   sItemKenri:true,sItemHanko:true,sItemJumin:true,sItemKoseki:true,sItemInkan:true,sItemKagi:true,
   azukariItems:[],azukariDate:"",azukariFrom:"",azukariStaff:"",
+  azukariItemsBuyer:[],azukariDateBuyer:"",azukariStaffBuyer:"",
   sKosekiHuhyo:"表示",showInkanWarning:"表示",
   sExtraLabel1:"",sExtraLabel2:"",sExtraLabel3:"",
   sMultiNote:"",
@@ -789,18 +790,22 @@ function DepositReceipt({d,c}){
 }
 
 // =================== 預かり証 ===================
-function AzukariDoc({d,c}){
+function AzukariDoc({d,c,fixedFrom}){
   const sellers=getSellers(d);
   const buyers=getBuyers(d);
-  const items=(d.azukariItems||[]).filter(x=>x.checked&&x.label);
-  const isSeller=d.azukariFrom==="売主"||!d.azukariFrom;
+  const from=fixedFrom||(d.azukariFrom||"売主");
+  const isSeller=from==="売主";
   const fromPeople=isSeller?sellers:buyers;
+  const itemsKey=isSeller?"azukariItems":"azukariItemsBuyer";
+  const dateKey=isSeller?"azukariDate":"azukariDateBuyer";
+  const staffKey=isSeller?"azukariStaff":"azukariStaffBuyer";
+  const items=(d[itemsKey]||[]).filter(x=>x.checked&&x.label);
   return(
     <div style={DOC.page}>
       <DocHeader d={d}/>
       <div style={DOC.docTitle}>預　か　り　証</div>
       {items.length===0&&<div style={DOC.warningBox}>⚠ 預かり項目が設定されていません。④売主設定の「預かり証設定」で項目を追加してください。</div>}
-      <div style={{textAlign:"right",marginBottom:8,fontSize:10}}>{jDate(d.azukariDate||d.settlementDT)}</div>
+      <div style={{textAlign:"right",marginBottom:8,fontSize:10}}>{jDate(d[dateKey]||d.settlementDT)}</div>
       <div style={{marginBottom:12}}>
         {fromPeople.map((p,i)=><span key={i} style={{...DOC.addressee,marginRight:12,fontSize:13}}>{p.name} 様</span>)}
       </div>
@@ -829,7 +834,7 @@ function AzukariDoc({d,c}){
         <div style={{textAlign:"center",fontSize:10}}>
           <div style={{marginBottom:40}}>お預かりした者（当社）</div>
           <div>ViVi不動産株式会社</div>
-          <div>担当：{d.azukariStaff||d.staff}</div>
+          <div>担当：{d[staffKey]||d.staff}</div>
           <span style={DOC.stamp}>印</span>
         </div>
       </div>
@@ -1569,8 +1574,11 @@ function ManualContent(){
   </div>);
 }
 
-const TABS=["案内_売主","案内_買主","手付金領収書","領収書","実測清算覚書","固都税清算書","管理費等清算書","引渡確認書","給水装置変更届","預かり証"];
-const TAB_COMPS=[SellerGuide,BuyerGuide,DepositReceipt,Receipt,CoverageMemo,TaxDoc,MgmtDoc,HandoverDoc,WaterDoc,AzukariDoc];
+const TABS=["案内_売主","案内_買主","手付金領収書","残代金領収書","実測清算覚書","固都税清算書","管理費等清算書","引渡確認書","給水装置変更届","預かり証_売主","預かり証_買主"];
+const TAB_COMPS=[SellerGuide,BuyerGuide,DepositReceipt,Receipt,CoverageMemo,TaxDoc,MgmtDoc,HandoverDoc,WaterDoc,
+  (props)=><AzukariDoc {...props} fixedFrom="売主"/>,
+  (props)=><AzukariDoc {...props} fixedFrom="買主"/>
+];
 const SK="vivi_saved_cases";
 
 // アコーディオン — App外のトップレベルで定義することでフォーカス問題を回避
@@ -1884,39 +1892,47 @@ function InputPanelCompInner({d,setD,setTab,sp,openSec,setOpenSec,saved,setSaved
         <F label="その他持参物②"><TI val={d.sExtraLabel2} onChange={set("sExtraLabel2")} placeholder="例：建物図面"/></F>
         <F label="その他持参物③"><TI val={d.sExtraLabel3} onChange={set("sExtraLabel3")} placeholder="例：マンション管理費領収書"/></F>
         <F label="複数売主時の注意書き"><TI val={d.sMultiNote} onChange={set("sMultiNote")} placeholder="例：ご夫婦それぞれ実印が必要です"/></F>
-        <div style={{fontSize:10,fontWeight:"bold",color:"#5a3000",marginBottom:3,marginTop:8,background:"#fff3cd",padding:"4px 8px",borderRadius:3,border:"1px solid #ffc107"}}>📋 預かり証の設定</div>
-        <F label="預かり相手">
-          <TB val={d.azukariFrom||"売主"} onChange={set("azukariFrom")} opts={["売主","買主"]}/>
-        </F>
-        <F label="預かり日">
-          <DI val={d.azukariDate||""} onChange={set("azukariDate")}/>
-        </F>
-        <F label="預かり担当者"><TI val={d.azukariStaff||""} onChange={set("azukariStaff")} placeholder="空欄=担当者名を使用"/></F>
-        <div style={{fontSize:9,color:"#555",marginBottom:3}}>預かり項目（チェックON＝預かり証に表示）</div>
         {(()=>{
-          const defaultItems=[
-            {id:"kenri",label:"登記識別情報通知（権利証）",note:""},
-            {id:"inkan",label:"印鑑証明書",note:""},
-            {id:"jumin",label:"住民票",note:""},
-            {id:"kagi",label:"カギ",note:""},
-            {id:"zumen",label:"建築確認・図面一式",note:""},
-            {id:"kanri",label:"管理規約・使用細則",note:""},
-            {id:"genkin",label:"現金",note:""},
-            {id:"tessuu",label:"手数料（領収書）",note:""},
+          const defaultItemsSeller=[
+            {id:"kenri",label:"登記識別情報通知（権利証）",note:"",checked:false},
+            {id:"inkan",label:"印鑑証明書",note:"",checked:false},
+            {id:"jumin",label:"住民票",note:"",checked:false},
+            {id:"kagi",label:"カギ",note:"",checked:false},
+            {id:"zumen",label:"建築確認・図面一式",note:"",checked:false},
+            {id:"kanri",label:"管理規約・使用細則",note:"",checked:false},
+            {id:"genkin",label:"現金",note:"",checked:false},
+            {id:"tessuu",label:"手数料（領収書）",note:"",checked:false},
           ];
-          const items=d.azukariItems&&d.azukariItems.length>0?d.azukariItems:defaultItems;
-          const setItems=newItems=>setD(p=>({...p,azukariItems:newItems}));
-          const currentItems=d.azukariItems&&d.azukariItems.length>0?d.azukariItems:defaultItems.map(x=>({...x,checked:false}));
-          return(<>
-            {currentItems.map((x,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:3,padding:"3px 5px",background:x.checked?"#fffbe6":"#f9f9f9",borderRadius:3,border:`1px solid ${x.checked?"#ffc107":"#ddd"}`}}>
-                <input type="checkbox" checked={!!x.checked} onChange={e=>{const n=[...currentItems];n[i]={...n[i],checked:e.target.checked};setItems(n);}} style={{width:14,height:14,cursor:"pointer"}}/>
-                <input defaultValue={x.label} onBlur={e=>{const n=[...currentItems];n[i]={...n[i],label:e.target.value};setItems(n);}} style={{...iS,flex:2,fontSize:9,padding:"2px 4px"}}/>
-                <input defaultValue={x.note||""} onBlur={e=>{const n=[...currentItems];n[i]={...n[i],note:e.target.value};setItems(n);}} placeholder="数量・備考" style={{...iS,flex:1,fontSize:9,padding:"2px 4px"}}/>
-                <button onClick={()=>{const n=currentItems.filter((_,j)=>j!==i);setItems(n);}} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",flexShrink:0}}>✕</button>
+          const defaultItemsBuyer=[
+            {id:"genkin",label:"現金",note:"",checked:false},
+            {id:"tessuu",label:"手数料（領収書）",note:"",checked:false},
+            {id:"jumin",label:"住民票",note:"",checked:false},
+            {id:"inkan",label:"印鑑証明書",note:"",checked:false},
+          ];
+          const AzukariPanel=({title,storeKey,defaults,color})=>{
+            const currentItems=d[storeKey]&&d[storeKey].length>0?d[storeKey]:defaults;
+            const setItems=newItems=>setD(p=>({...p,[storeKey]:newItems}));
+            return(<>
+              <div style={{fontSize:10,fontWeight:"bold",color:color==="sell"?"#8b0000":"#1a6b3a",marginBottom:3,marginTop:8,background:color==="sell"?"#fde8e8":"#dcfde8",padding:"4px 8px",borderRadius:3,border:`1px solid ${color==="sell"?"#c66":"#4a6"}`}}>📋 預かり証の設定（{title}）</div>
+              <div style={{display:"flex",gap:3,marginBottom:3}}>
+                <F label="預かり日" half><DI val={(color==="sell"?d.azukariDate:d.azukariDateBuyer)||""} onChange={set(color==="sell"?"azukariDate":"azukariDateBuyer")}/></F>
+                <F label="担当者" half><TI val={(color==="sell"?d.azukariStaff:d.azukariStaffBuyer)||""} onChange={set(color==="sell"?"azukariStaff":"azukariStaffBuyer")} placeholder="空欄=担当者名"/></F>
               </div>
-            ))}
-            <button onClick={()=>setItems([...currentItems,{id:`custom_${Date.now()}`,label:"",note:"",checked:true}])} style={{fontSize:9,padding:"2px 6px",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,cursor:"pointer",width:"100%",marginTop:2}}>＋ 項目を追加</button>
+              <div style={{fontSize:9,color:"#555",marginBottom:3}}>預かり項目（✓ON＝預かり証に表示）</div>
+              {currentItems.map((x,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:3,padding:"3px 5px",background:x.checked?"#fffbe6":"#f9f9f9",borderRadius:3,border:`1px solid ${x.checked?"#ffc107":"#ddd"}`}}>
+                  <input type="checkbox" checked={!!x.checked} onChange={e=>{const n=[...currentItems];n[i]={...n[i],checked:e.target.checked};setItems(n);}} style={{width:14,height:14,cursor:"pointer"}}/>
+                  <input defaultValue={x.label} onBlur={e=>{const n=[...currentItems];n[i]={...n[i],label:e.target.value};setItems(n);}} style={{...iS,flex:2,fontSize:9,padding:"2px 4px"}}/>
+                  <input defaultValue={x.note||""} onBlur={e=>{const n=[...currentItems];n[i]={...n[i],note:e.target.value};setItems(n);}} placeholder="数量・備考" style={{...iS,flex:1,fontSize:9,padding:"2px 4px"}}/>
+                  <button onClick={()=>setItems(currentItems.filter((_,j)=>j!==i))} style={{fontSize:9,color:"#c00",background:"none",border:"none",cursor:"pointer",flexShrink:0}}>✕</button>
+                </div>
+              ))}
+              <button onClick={()=>setItems([...currentItems,{id:`custom_${Date.now()}`,label:"",note:"",checked:true}])} style={{fontSize:9,padding:"2px 6px",background:"#fff3cd",border:"1px solid #ffc107",borderRadius:3,cursor:"pointer",width:"100%",marginTop:2}}>＋ 項目を追加</button>
+            </>);
+          };
+          return(<>
+            <AzukariPanel title="売主" storeKey="azukariItems" defaults={defaultItemsSeller} color="sell"/>
+            <AzukariPanel title="買主" storeKey="azukariItemsBuyer" defaults={defaultItemsBuyer} color="buy"/>
           </>);
         })()}
         <div style={{fontSize:10,fontWeight:"bold",color:"#8b0000",marginBottom:3,marginTop:4}}>その他諸費用（売主様ご負担・直接支払分）</div>
