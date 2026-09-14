@@ -457,8 +457,10 @@ function SellerGuide({d,c}){
                 {x.bankName&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#1a4a6b",paddingLeft:32,background:"#fff8e8"}}>振込先：{x.bankName} {x.bankType} {x.bankNo}（{x.bankHolder}）</td></tr>}
               </React.Fragment>
             ))}
-            <tr><td colSpan={2} style={{...DOC.td,fontSize:10,paddingLeft:12,background:"#fff8e8",color:"#8b5000",borderTop:"1px dashed #c8860a"}}>　└ 差引：実質手取り額</td></tr>
-            <tr><td style={{...DOC.td,paddingLeft:24,fontSize:11,background:"#fff3cd",fontWeight:"bold",color:"#5a3000"}}>（★入金額 − 別口座振込分）</td><td style={{...DOC.tdRight,fontSize:11,background:"#fff3cd",fontWeight:"bold",color:"#5a3000"}}>{yen(c.aToS-c.sProxyBetsu)}</td></tr>
+            <tr><td colSpan={2} style={{...DOC.td,paddingLeft:12,background:"#fff8e8",color:"#8b5000",borderTop:"1px dashed #c8860a"}}>
+              <span style={{fontSize:10}}>　└ 差引：実質手取り額</span>
+            </td></tr>
+            <tr><td style={{...DOC.td,paddingLeft:24,fontSize:13,background:"#fff3cd",fontWeight:"bold",color:"#5a3000"}}>（★入金額 − 別口座振込分）</td><td style={{...DOC.tdRight,fontSize:16,background:"#fff3cd",fontWeight:"bold",color:"#8b0000"}}>{yen(c.aToS-c.sProxyBetsu)}</td></tr>
             <tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#8b5000",paddingLeft:12,background:"#fff8e8"}}>※残金決済後３日以内に上記各口座へお振込みください。</td></tr>
           </>}
           {c.sExtraSeparate>0&&<>
@@ -470,7 +472,8 @@ function SellerGuide({d,c}){
                 {x.method==="③現金"&&<tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#555",paddingLeft:20}}>（現金でお支払い）</td></tr>}
               </React.Fragment>
             ))}
-            <tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#1a6b3a",paddingLeft:8}}>差引：売主様の最終手取り　{yen(c.aToS-c.sExtraSeparate)}</td></tr>
+            <tr><td colSpan={2} style={{...DOC.td,fontSize:9,color:"#1a6b3a",paddingLeft:8,background:"#e8fde8",fontWeight:"bold",borderTop:"1px dashed #4a6"}}>差引：売主様の最終手取り</td></tr>
+            <tr><td style={{...DOC.td,paddingLeft:16,fontSize:13,background:"#e8fde8",fontWeight:"bold",color:"#1a6b3a"}}>（ご入金額 − 諸費用）</td><td style={{...DOC.tdRight,fontSize:16,background:"#e8fde8",fontWeight:"bold",color:"#1a6b3a"}}>{yen(c.aToS-c.sExtraSeparate)}</td></tr>
           </>}
         </tbody>
       </table>
