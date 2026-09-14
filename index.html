@@ -881,7 +881,7 @@ function TaxDoc({d,c}){
       <div style={{textAlign:"center",fontSize:22,fontWeight:"bold",padding:"12px 0",border:"2px solid #1a3a6b",marginBottom:12,background:"#f5f8ff"}}>金　{fmt(c.tBuy)} 円</div>
       <table style={DOC.table}><colgroup><col style={{width:"25%"}}/><col style={{width:"75%"}}/></colgroup>
         <tbody>
-          <TRow label="但　し" value={`${d.address} にかかる${c.taxLabel}の清算金として`} wrap/>
+          <TRow label="但　し" value={`${d.address} にかかる${c.taxSellerYearFull}分${c.taxLabel}の清算金として`} wrap/>
           <TRow label="領収日" value={jDate(d.settlementDT)}/>
         </tbody>
       </table>
@@ -1081,14 +1081,14 @@ function HandoverDoc({d,c}){
             <tr>
               <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>土地</td>
               <td style={labelSt}>所　在</td>
-              <td style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
+              <td style={cellSt}>{zipDisp}{d.address}</td>
             </tr>
             <tr><td style={labelSt}>地　積</td><td style={cellSt}>{d.landArea&&`${d.landArea} ㎡`}</td></tr>
             <tr><td style={labelSt}>備　考</td><td style={cellSt}></td></tr>
             <tr>
               <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>建物</td>
               <td style={labelSt}>所在地</td>
-              <td style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
+              <td style={cellSt}>{zipDisp}{d.address}</td>
             </tr>
             <tr><td style={labelSt}>付属建物</td><td style={cellSt}></td></tr>
             <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　　本、勝手口　　　本、物置　　　本、宅配ボックス　　　本</td></tr>
@@ -1097,7 +1097,7 @@ function HandoverDoc({d,c}){
             <tr>
               <td rowSpan={3} style={{...labelSt,width:"8%",textAlign:"center"}}>土地</td>
               <td style={labelSt}>所　在</td>
-              <td style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
+              <td style={cellSt}>{zipDisp}{d.address}</td>
             </tr>
             <tr><td style={labelSt}>地　積</td><td style={cellSt}>{d.landArea&&`${d.landArea} ㎡`}</td></tr>
             <tr><td style={labelSt}>備　考</td><td style={cellSt}></td></tr>
@@ -1110,7 +1110,7 @@ function HandoverDoc({d,c}){
             </tr>
             <tr>
               <td style={labelSt}>所在地</td>
-              <td style={cellSt}>{zipDisp}{d.addressJukyo||d.address}</td>
+              <td style={cellSt}>{zipDisp}{d.address}</td>
             </tr>
             <tr><td style={labelSt}>備　考</td><td style={cellSt}>鍵　　　本、トランクルーム　　　本、宅配ボックスカード　　　枚、ポスト番号　　　　　　</td></tr>
           </>}
