@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>残金案内は移転しました</title>
+<style>
+  :root{--bg:#f4f2ee;--card:#fff;--text:#1f2a37;--muted:#5b6573;--accent:#1a3a6b;--ok:#2e7d32;--line:#dcd6cc}
+  @media (prefers-color-scheme: dark){:root{--bg:#1b1d21;--card:#25282e;--text:#eef0f3;--muted:#b3bac4;--accent:#6ea6ec;--ok:#6fcf75;--line:#3a3f47}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;padding:24px;display:flex;justify-content:center}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;max-width:760px;width:100%;padding:36px}
+  h1{font-size:28px;margin:0 0 18px}
+  p{font-size:19px;line-height:1.8;margin:0 0 14px}
+  .count{font-size:26px;font-weight:bold;color:var(--ok)}
+  button{font-size:22px;font-weight:bold;padding:16px 32px;border:none;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer;margin:10px 0 18px}
+  button:disabled{opacity:.4;cursor:default}
+  ol{font-size:18px;line-height:1.9;padding-left:1.4em}
+  a.go{display:inline-block;font-size:24px;font-weight:bold;padding:18px 36px;border-radius:12px;background:var(--ok);color:#fff;text-decoration:none;margin:6px 0 10px}
+  h2{font-size:22px;margin:22px 0 12px}
+  hr{border:none;border-top:1px solid var(--line);margin:24px 0}
+  .note{font-size:16px;color:var(--muted)}
+  li.case{font-size:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>残金案内は移転しました</h1>
+  <p>セキュリティ強化のため、残金案内は<b>社内専用の新しい場所</b>に移りました。<br>会社のGoogleアカウント（@vivi-f.jp）で開いてください。パスワードは不要です。</p>
+  <p><a class="go" href="https://script.google.com/a/macros/vivi-f.jp/s/AKfycbyUa2yMiaWTaFjtKXo20ptT-ZyNM0I9cxIwhIRqJfOFlBPEx-HdgLdBpEffZn6-G08qSg/exec" target="_blank" rel="noopener">新しい残金案内を開く</a></p>
+  <hr>
+  <h2>このパソコンに保存した案件を移す</h2>
+  <p>以前「保存」した案件は、このパソコンの中に残っています。下の手順で新しいツールに移してください。</p>
+  <p>このパソコンに保存されている案件：<span class="count" id="cnt">確認中…</span></p>
+  <ul id="list"></ul>
+  <button id="btn" disabled>保存データを書き出す</button>
+  <ol>
+    <li>上のボタンを押すと「zankin_hikkoshi_日付.json」というファイルがダウンロードされます</li>
+    <li>上の緑のボタンで新しい残金案内を開き、左側の「📦 以前の保存データを取り込む」を押して、そのファイルを選びます</li>
+    <li>取り込みが終わったら、ダウンロードしたファイルは<b>削除</b>してください（お客様の情報が入っています）</li>
+  </ol>
+  <p class="note">※ 使っているパソコン・ブラウザごとに1回ずつ行ってください。<br>※ 0件と表示された場合、このパソコンには保存された案件がありません（何もしなくて大丈夫です）。</p>
+</div>
+<script>
+  const SK = "vivi_saved_cases";
+  let cases = [];
+  try { cases = JSON.parse(localStorage.getItem(SK) || "[]"); if (!Array.isArray(cases)) cases = []; } catch (e) { cases = []; }
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  document.getElementById("cnt").textContent = cases.length + " 件";
+  document.getElementById("list").innerHTML = cases.map(c => `<li class="case">${esc(c.name)}（${esc(c.savedAt)}）</li>`).join("");
+  const btn = document.getElementById("btn");
+  btn.disabled = cases.length === 0;
+  btn.onclick = () => {
+    const d = new Date();
+    const ymd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+    const blob = new Blob([JSON.stringify({ type: "zankin-backup", exportedAt: d.toLocaleString("ja-JP"), cases }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "zankin_hikkoshi_" + ymd + ".json"; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+</script>
+</body>
+</html>
